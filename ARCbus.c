@@ -72,6 +72,7 @@ void initCLK(void){
   //also initialize timing generator for flash memory
   FCTL2=FWKEY|FSSEL_2|33;
 
+  //TODO: change for production code
   //set port 5 to output clocks
   P5DIR=BIT4|BIT5|BIT6;
   P5SEL=BIT4|BIT5|BIT6;
@@ -442,19 +443,21 @@ static void ARC_bus_run(void *p) __toplevel{
             //write first byte into the Tx buffer to start transfer
             UCA0TXBUF=*arcBus_stat.spi_stat.tx;
           break;
-          #ifndef CDH_LIB
+          
           case CMD_SPI_COMPLETE:
             //turn off SPI
             SPI_deactivate();
             //SPI transfer is done
             //notify CDH board
             //TODO: some sort of error check to make sure that a SPI transfer was requested and send an ERROR if one was not
+#ifndef CDH_LIB
             BUS_cmd_init(pk,CMD_SPI_CLEAR);
             BUS_cmd_tx(BUS_ADDR_CDH,pk,0,0,SEND_BGND);
+#endif
             //notify calling task
             ctl_events_set_clear(&arcBus_stat.events,BUS_EV_SPI_COMPLETE,0);
           break;
-          #endif
+
           case CMD_NACK:
             //TODO: handle this better somehow?
             //set event 
