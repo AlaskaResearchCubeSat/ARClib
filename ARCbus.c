@@ -6,8 +6,12 @@
 #include "crc.h"
 #include "spi.h"
 
-//for testing
+#define PRINT_DEBUG
+
+#ifdef PRINT_DEBUG
+  //for testing
 #include <stdio.h>
+#endif
 
 //flags for internal BUS events
 enum{BUS_INT_EV_I2C_CMD_RX=(1<<0),BUS_INT_EV_SPI_COMPLETE=(1<<1)};
@@ -74,8 +78,8 @@ void initCLK(void){
 
   //TODO: change for production code
   //set port 5 to output clocks
-  P5DIR=BIT4|BIT5|BIT6;
-  P5SEL=BIT4|BIT5|BIT6;
+  //P5DIR=BIT4|BIT5|BIT6;
+  //P5SEL=BIT4|BIT5|BIT6;
   
   //set time ticker to zero
   ticker_time=0;
@@ -226,9 +230,9 @@ void initARCbus(unsigned char addr){
   //======[setup pin interrupts]=======
 
   //rising edge
-  //P2IES=0x00;
+  //P1IES=0x00;
   //falling edge
-  P2IES=0xFF;
+  P1IES=0xFF;
   
   
   #ifdef CDH_LIB
@@ -415,6 +419,7 @@ static void ARC_bus_run(void *p) __toplevel{
             SPI_buf[arcBus_stat.spi_stat.len]=crc>>8;
             SPI_buf[arcBus_stat.spi_stat.len+1]=crc;
             //setup SPI structure
+            //TODO: make sure that buffer is not being used
             arcBus_stat.spi_stat.rx=SPI_buf;
             arcBus_stat.spi_stat.tx=SPI_buf;
             //Setup SPI bus to exchange data as master
@@ -462,8 +467,10 @@ static void ARC_bus_run(void *p) __toplevel{
             //TODO: handle this better somehow?
             //set event 
             ctl_events_set_clear(&arcBus_stat.events,BUS_EV_CMD_NACK,0);
-            //TESTING: print message
-            printf("\r\nNACK recived for command %i with reason %i\r\n",ptr[0],ptr[1]);
+            #ifdef PRINT_DEBUG
+              //TESTING: print message
+              printf("\r\nNACK recived for command %i with reason %i\r\n",ptr[0],ptr[1]);
+            #endif
           break;
           default:
             //check for subsystem command
@@ -472,7 +479,9 @@ static void ARC_bus_run(void *p) __toplevel{
         }
         //malformed command, send nack if requested
         if(resp!=0 && i2c_buf[0]&CMD_TX_NACK){
-          printf("Error : resp %i\r\n",resp);
+          #ifdef PRINT_DEBUG
+            printf("Error : resp %i\r\n",resp);
+          #endif
           //setup command
           ptr=BUS_cmd_init(pk,CMD_NACK);
           //send NACK reason
@@ -482,11 +491,13 @@ static void ARC_bus_run(void *p) __toplevel{
         }
       }else if(cmd!=CMD_NACK){
         //CRC check failed, send NACK
-        printf("Error : bad CRC Command %i\r\nRecived CRC 0x%02X calculated CRC 0x%02X\r\n",cmd,ptr[len],crc);
-        //print out packet
-        for(i=0;i<len;i++){
-          printf("0x%02X ",ptr[i]);
-        }
+        #ifdef PRINT_DEBUG
+          printf("Error : bad CRC Command %i\r\nRecived CRC 0x%02X calculated CRC 0x%02X\r\n",cmd,ptr[len],crc);
+          //print out packet
+          for(i=0;i<len;i++){
+            printf("0x%02X ",ptr[i]);
+          }
+        #endif
         //setup command
         ptr=BUS_cmd_init(pk,CMD_NACK);
         //send NACK reason
@@ -514,8 +525,12 @@ void mainLoop(void) __toplevel{
   for(;;){    
       //kick watchdog
       WDT_KICK();
-      //go to low power mode
-      LPM0;
+      #ifndef IDLE_DEBUG
+        //go to low power mode
+        LPM0;
+      #else
+        P7OUT^=BIT7;
+      #endif
   }
 }
 
@@ -949,7 +964,7 @@ void bus_int(void) __ctl_interrupt[PORT1_VECTOR]{
   //set events for flags
   ctl_events_set_clear(&arcBus_stat.PortEvents,flags,0);
   //TESTING: send time check event
-  ctl_events_set_clear(&SUB_events,SUB_EV_TIME_CHECK,0);
+  //ctl_events_set_clear(&SUB_events,SUB_EV_TIME_CHECK,0);
 }
 
 
