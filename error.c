@@ -20,6 +20,10 @@ void ctl_handle_error(CTL_ERROR_CODE_t e){
       __no_operation();
       //puts("Error: Unspesified Error\r");
     break;
+    case CTL_MUTEX_UNLOCK_CALL_ERROR:
+      __no_operation();
+      //puts("Error: Mutex Unlock Call\r");
+    break;
     default:
       __no_operation();
       //printf("Error: Unknown error code %i\r\n",e);

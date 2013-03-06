@@ -21,7 +21,7 @@ BUS_STAT arcBus_stat;
    
 //buffer for SPI transactions
 //TODO: make this buffer available for other uses
-unsigned char SPI_buf[2048+2];
+//unsigned char SPI_buf[2048+2];
 
 //events for subsystems
 CTL_EVENT_SET_t SUB_events;
@@ -65,7 +65,9 @@ static void ARC_bus_run(void *p) __toplevel{
   for(;;){
     //wait for something to happen
     e = ctl_events_wait(CTL_EVENT_WAIT_ANY_EVENTS_WITH_AUTO_CLEAR,&BUS_INT_events,BUS_INT_EV_ALL,CTL_TIMEOUT_NONE,0);
-    if(e&BUS_INT_EV_SPI_COMPLETE){
+    if(e&BUS_INT_EV_BUFF_UNLOCK){
+      BUS_free_buffer();
+    }if(e&BUS_INT_EV_SPI_COMPLETE){
       //check if SPI was in progress
       if(SPI_addr){
         //turn off SPI
