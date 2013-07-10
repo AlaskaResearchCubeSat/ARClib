@@ -18,10 +18,6 @@ CTL_TASK_t idle_task,ARC_bus_task;
 unsigned BUS_stack[256];
 
 BUS_STAT arcBus_stat;
-   
-//buffer for SPI transactions
-//TODO: make this buffer available for other uses
-//unsigned char SPI_buf[2048+2];
 
 //events for subsystems
 CTL_EVENT_SET_t SUB_events;
@@ -30,21 +26,26 @@ CTL_EVENT_SET_t SUB_events;
 static void ARC_bus_run(void *p) __toplevel{
   unsigned int e;
   unsigned char len;
-  unsigned char addr,resp,cmd;
+  unsigned char addr,cmd;
+  char resp;
   unsigned char pk[40];
   unsigned char *ptr;
   unsigned short crc;
+  unsigned char *SPI_buf=NULL;
+
   //address of SPI slave during transaction
   unsigned char SPI_addr=0;
   ticker nt;
   int snd,i;
   //first send "I'm on" command
-  BUS_cmd_init(pk,CMD_SUB_POWERUP);//setup command
+  //BUS_cmd_init(pk,CMD_SUB_POWERUP);//setup command
   //send command
-  resp=BUS_cmd_tx(BUS_ADDR_CDH,pk,0,0,SEND_FOREGROUND);
+  //TODO: this seems to be causing problems when the CDH is not present
+  //THIS NEEDS TO BE FIXED!!!!
+  //resp=BUS_cmd_tx(BUS_ADDR_CDH,pk,0,0,SEND_FOREGROUND);
   #ifndef CDH_LIB         //Subsystem board 
     //check for failed send
-    if(resp!=RET_SUCCESS){
+    /*if(resp!=RET_SUCCESS){
       //wait a bit
       ctl_timeout_wait(ctl_get_current_time()+30);
       //resend
@@ -52,12 +53,16 @@ static void ARC_bus_run(void *p) __toplevel{
       //check for success
       if(resp!=RET_SUCCESS){
         //Failed
-        puts("Failed to detect CDH board\r");
+        #ifdef PRINT_DEBUG
+          puts("Failed to detect CDH board\r");
+        #endif
       }
-    }
+    }*/
   #else     //CDH board, check for other CDH board
     if(resp==RET_SUCCESS){
-      puts("Other CDH board detected.\r");
+      #ifdef PRINT_DEBUG
+        puts("Other CDH board detected.\r");
+      #endif
       //TODO : this is bad. perhaps do something here to recover
     }
   #endif
@@ -66,15 +71,20 @@ static void ARC_bus_run(void *p) __toplevel{
     //wait for something to happen
     e = ctl_events_wait(CTL_EVENT_WAIT_ANY_EVENTS_WITH_AUTO_CLEAR,&BUS_INT_events,BUS_INT_EV_ALL,CTL_TIMEOUT_NONE,0);
     if(e&BUS_INT_EV_BUFF_UNLOCK){
+      SPI_buf=NULL;
       BUS_free_buffer();
-    }if(e&BUS_INT_EV_SPI_COMPLETE){
+    }
+    if(e&BUS_INT_EV_RELEASE_MUTEX){
+      BUS_I2C_release();
+    }
+    if(e&BUS_INT_EV_SPI_COMPLETE){
       //check if SPI was in progress
       if(SPI_addr){
         //turn off SPI
         SPI_deactivate();
         //done with SPI send command
         BUS_cmd_init(pk,CMD_SPI_COMPLETE);
-        BUS_cmd_tx(SPI_addr,pk,0,0,SEND_BGND);
+        BUS_cmd_tx(SPI_addr,pk,0,0,BUS_I2C_SEND_BGND);
         //transaction complete, clear address
         SPI_addr=0;
         //assemble CRC
@@ -83,9 +93,15 @@ static void ARC_bus_run(void *p) __toplevel{
         //check CRC
         if(crc!=crc16(SPI_buf,arcBus_stat.spi_stat.len)){
           //Bad CRC
+          //clear buffer pointer
+          SPI_buf=NULL;
+          //free buffer
+          BUS_free_buffer();
+          //send event
           ctl_events_set_clear(&SUB_events,SUB_EV_SPI_ERR_CRC,0);
         }else{
           //tell subsystem, SPI data received
+          //Subsystem must signal to free the buffer
           ctl_events_set_clear(&SUB_events,SUB_EV_SPI_DAT,0);
         }
       }
@@ -99,7 +115,7 @@ static void ARC_bus_run(void *p) __toplevel{
       //compute crc
       crc=crc8(i2c_buf,len-1);
       //get length of payload
-      len=len-I2C_CRC_LEN-I2C_HDR_LEN;
+      len=len-BUS_I2C_CRC_LEN-BUS_I2C_HDR_LEN;
       //get sender address
       addr=CMD_ADDR_MASK&i2c_buf[0];
       //get command type
@@ -166,13 +182,23 @@ static void ARC_bus_run(void *p) __toplevel{
             arcBus_stat.spi_stat.len=ptr[1];//LSB
             arcBus_stat.spi_stat.len|=(((unsigned short)ptr[0])<<8);//MSB
             //check length account for 16bit CRC
-            if(arcBus_stat.spi_stat.len+2>sizeof(SPI_buf)){
+            if(arcBus_stat.spi_stat.len+2>BUS_get_buffer_size()){
               //length is too long
               //cause NACK to be sent
               resp=ERR_SPI_LEN;
               break;
             }
-            //TODO: give error if already sending
+            //check if already transmitting
+            if(SPI_buf!=NULL){
+              resp=ERR_SPI_BUSY;
+              break;
+            }
+            SPI_buf=BUS_get_buffer(CTL_TIMEOUT_NOW,0);
+            //check if buffer was locked
+            if(SPI_buf==NULL){
+              resp=ERR_BUFFER_BUSY;
+              break;
+            }
             //save address of SPI slave
             SPI_addr=addr;
             //TODO : Fill with actual data
@@ -200,7 +226,7 @@ static void ARC_bus_run(void *p) __toplevel{
             // Destination DMA address: rx buffer.
             DMA0DA = (unsigned short)SPI_buf;
             // The size of the block to be transferred
-            DMA0SZ = arcBus_stat.spi_stat.len+SPI_CRC_LEN;
+            DMA0SZ = arcBus_stat.spi_stat.len+BUS_SPI_CRC_LEN;
             // Configure the DMA transfer, single byte transfer with destination increment
             DMA0CTL = DMAIE|DMADT_0|DMASBDB|DMAEN|DMADSTINCR1|DMADSTINCR0;
             // Source DMA address: tx buffer
@@ -209,7 +235,7 @@ static void ARC_bus_run(void *p) __toplevel{
             // Destination DMA address: the transmit buffer.
             DMA1DA = (unsigned int)(&UCA0TXBUF);
             // The size of the block to be transferred
-            DMA1SZ = arcBus_stat.spi_stat.len+SPI_CRC_LEN-1;
+            DMA1SZ = arcBus_stat.spi_stat.len+BUS_SPI_CRC_LEN-1;
             // Configure the DMA transfer, single byte transfer with source increment
             DMA1CTL=DMADT_0|DMASBDB|DMAEN|DMASRCINCR1|DMASRCINCR0;
             //write first byte into the Tx buffer to start transfer
@@ -224,12 +250,43 @@ static void ARC_bus_run(void *p) __toplevel{
             //TODO: some sort of error check to make sure that a SPI transfer was requested and send an ERROR if one was not
 #ifndef CDH_LIB
             BUS_cmd_init(pk,CMD_SPI_CLEAR);
-            BUS_cmd_tx(BUS_ADDR_CDH,pk,0,0,SEND_BGND);
+            BUS_cmd_tx(BUS_ADDR_CDH,pk,0,0,BUS_I2C_SEND_BGND);
 #endif
             //notify calling task
             ctl_events_set_clear(&arcBus_stat.events,BUS_EV_SPI_COMPLETE,0);
           break;
-
+          case CMD_ASYNC_SETUP:
+            //check length
+            if(len!=1){
+              resp=ERR_PK_LEN;
+              break;
+            }
+            switch(ptr[0]){
+              case ASYNC_OPEN:
+                if(!async_open_remote(addr)){
+                  //send open event
+                  ctl_events_set_clear(&SUB_events,SUB_EV_ASYNC_OPEN,0);
+                }
+              break;
+              case ASYNC_CLOSE:
+                //check if sending address corosponds to async address
+                if(async_addr!=addr){
+                  //ERROR : not open
+                  //TODO: do something here
+                  //resp=
+                  break;
+                }
+                //close async connection
+                async_close_remote();
+                //send event
+                ctl_events_set_clear(&SUB_events,SUB_EV_ASYNC_CLOSE,0);
+              break;
+            }
+          break;
+          case CMD_ASYNC_DAT:
+            //post bytes to queue
+            ctl_byte_queue_post_multi_nb(&async_rxQ,len,ptr);
+          break;
           case CMD_NACK:
             //TODO: handle this better somehow?
             //set event 
@@ -247,14 +304,14 @@ static void ARC_bus_run(void *p) __toplevel{
         //malformed command, send nack if requested
         if(resp!=0 && i2c_buf[0]&CMD_TX_NACK){
           #ifdef PRINT_DEBUG
-            printf("Error : resp %i\r\n",resp);
+            printf("Error : resp %i\r\n",(char)resp);
           #endif
           //setup command
           ptr=BUS_cmd_init(pk,CMD_NACK);
           //send NACK reason
           ptr[0]=resp;
           //send packet
-          BUS_cmd_tx(addr,pk,1,0,SEND_BGND);
+          BUS_cmd_tx(addr,pk,1,0,BUS_I2C_SEND_BGND);
         }
       }else if(cmd!=CMD_NACK){
         //CRC check failed, send NACK
@@ -270,8 +327,13 @@ static void ARC_bus_run(void *p) __toplevel{
         //send NACK reason
         ptr[0]=ERR_BAD_CRC;
         //send packet
-        BUS_cmd_tx(addr,pk,1,0,SEND_BGND);
+        BUS_cmd_tx(addr,pk,1,0,BUS_I2C_SEND_BGND);
       }
+    }
+    //async timer timed out, send data
+    if(e&BUS_INT_EV_ASYNC_TIMEOUT){
+      //send some data
+      async_send_data();
     }
   }
 }
@@ -286,6 +348,8 @@ void mainLoop(void) __toplevel{
   ctl_events_init(&BUS_INT_events,0);
   //start ARCbus task
   ctl_task_run(&ARC_bus_task,20,ARC_bus_run,NULL,"ARC_Bus",sizeof(BUS_stack)/sizeof(BUS_stack[0])-2,BUS_stack+1,0);
+  //kick WDT to give us some time
+  WDT_KICK();
   // drop to lowest priority to start created tasks running.
   ctl_task_set_priority(&idle_task,0); 
   
@@ -298,7 +362,7 @@ void mainLoop(void) __toplevel{
         //go to low power mode
         LPM0;
       #else
-        P7OUT^=BIT7;
+        P7OUT^=BIT0+BIT1+BIT2+BIT3;
       #endif
   }
 }

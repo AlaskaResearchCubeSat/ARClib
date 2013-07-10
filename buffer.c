@@ -8,8 +8,9 @@
 CTL_MUTEX_t buffer_mutex;
 
 //buffer for SPI transactions
-//TODO: make this buffer available for other uses
-static unsigned char Buffer[2048+2];
+//static unsigned char Buffer[4096+2];
+//static unsigned char Buffer[2048+2];
+static unsigned char Buffer[1024+2];
 
 //setup stuff for buffer usage
 void BUS_init_buffer(void){
@@ -17,6 +18,12 @@ void BUS_init_buffer(void){
   ctl_mutex_init(&buffer_mutex);
 }
 
+//return buffer size
+const unsigned int BUS_get_buffer_size(void){
+  return sizeof(Buffer);
+}
+
+//lock buffer and return pointer to buffer
 void* BUS_get_buffer(CTL_TIMEOUT_t t, CTL_TIME_t timeout){
   if(ctl_mutex_lock(&buffer_mutex,t,timeout)){
     //lock aquired, return buffer
@@ -27,15 +34,18 @@ void* BUS_get_buffer(CTL_TIMEOUT_t t, CTL_TIME_t timeout){
   }
 }
 
+//free buffer
 void BUS_free_buffer(void){
   ctl_mutex_unlock(&buffer_mutex);
 }
 
+//get buffer if it was locked by ARCbus
 void* BUS_get_buffer_from_event(void){
   //TODO: error chekcing
   return Buffer;
 }
 
+//free buffer if it was locket by ARCbus
 void BUS_free_buffer_from_event(void){
   //bus internal events
   extern CTL_EVENT_SET_t BUS_INT_events;

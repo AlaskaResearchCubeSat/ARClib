@@ -31,3 +31,4 @@ void ctl_handle_error(CTL_ERROR_CODE_t e){
   //something went wrong, reset
   WDT_RESET();
 }
+

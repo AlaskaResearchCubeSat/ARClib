@@ -6,7 +6,7 @@
 //setup UCA0 for master operation
 void SPI_master_setup(void){
   //set mode
-  arcBus_stat.spi_stat.mode=SPI_MASTER;
+  arcBus_stat.spi_stat.mode=BUS_SPI_MASTER;
   //put UCA0 into master mode
   UCA0CTL0|=UCMST;
   //set pins for SPI usage
@@ -18,7 +18,7 @@ void SPI_master_setup(void){
 //setup UCA0 for slave operation
 void SPI_slave_setup(void){
   //set mode
-  arcBus_stat.spi_stat.mode=SPI_SLAVE;
+  arcBus_stat.spi_stat.mode=BUS_SPI_SLAVE;
   //put UCA0 into slave mode
   UCA0CTL0&=~UCMST;
   //set pins for SPI usage
@@ -34,5 +34,5 @@ void SPI_deactivate(void){
   //set pins as inputs
   P3SEL&=~(BIT0|BIT4|BIT5);
   //set mode
-  arcBus_stat.spi_stat.mode=SPI_IDLE;
+  arcBus_stat.spi_stat.mode=BUS_SPI_IDLE;
 }

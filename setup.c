@@ -5,6 +5,8 @@
 #include "ARCbus.h"
 #include "crc.h"
 #include "spi.h"
+#include "DMA.h"
+#include "ARCbus_internal.h"
 
 
 //=============[initialization commands]=============
@@ -67,6 +69,10 @@ void ARC_setup(void){
   //set timer to increment by 1
   ctl_time_increment=1;  
   
+
+  //init buffer
+  BUS_init_buffer();
+
   //TODO: determine if ctl_timeslice_period should be set to allow preemptive rescheduling
   
   //kick watchdog
@@ -132,10 +138,13 @@ void initARCbus(unsigned char addr){
   ctl_events_init(&arcBus_stat.events,0);     //bus events
   ctl_events_init(&SUB_events,0);             //subsystem events
   ctl_events_init(&arcBus_stat.PortEvents,0);
+  ctl_events_init(&DMA_events,0);
+  //I2C mutex init
+  ctl_mutex_init(&arcBus_stat.i2c_stat.mutex);
   //set I2C to idle mode
-  arcBus_stat.i2c_stat.mode=I2C_IDLE;
+  arcBus_stat.i2c_stat.mode=BUS_I2C_IDLE;
   //set SPI to idle mode
-  arcBus_stat.spi_stat.mode=SPI_IDLE;
+  arcBus_stat.spi_stat.mode=BUS_SPI_IDLE;
   //startup with power off
   powerState=SUB_PWR_OFF;
   //============[setup I2C]============ 
