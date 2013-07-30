@@ -1,0 +1,9 @@
+#crossworks backup files
+*.bak
+*.hzs
+
+#build directories
+MSP430 Debug/
+MSP430 Release/
+MSP430 Debug CDH/
+MSP430 Release CDH/
