@@ -88,15 +88,30 @@ int BUS_cmd_tx(unsigned char addr,unsigned char *buff,unsigned short len,unsigne
     return ERR_BAD_LEN;
   }
   //if running in the background check to see that we are the ARCbus task
-  if(bgnd && ctl_task_executing!=&ARC_bus_task){
-    //invalid argument
-    return ERR_INVALID_ARGUMENT;
+  if(bgnd){
+    if(ctl_task_executing!=&ARC_bus_task){
+      //invalid argument
+      return ERR_INVALID_ARGUMENT;
+    }
+    //release mutex after complete
+    arcBus_stat.i2c_stat.mutex_release=1;
+  }else{
+    //don't release mutex after complete
+    arcBus_stat.i2c_stat.mutex_release=0;
   }
   //wait for the bus to become free
   if(BUS_I2C_lock()){
     //I2C bus is in use
     return ERR_TIMEOUT;
   }    
+  //make sure that we are not calling while running in the background
+  if(ctl_task_executing!=&ARC_bus_task && arcBus_stat.i2c_stat.mutex.lock_count!=1){
+    //only allow function to be entered once at a time
+    //release I2C bus
+    BUS_I2C_release();
+    //TODO : perhaps provide a better error here
+    return ERR_TIMEOUT;
+  }
   //Setup for I2C transaction  
   //set slave address
   UCB0I2CSA=addr;
@@ -124,8 +139,6 @@ int BUS_cmd_tx(unsigned char addr,unsigned char *buff,unsigned short len,unsigne
   UCB0CTL1|=UCTXSTT;
   //if transmitting in the background, return
   if(bgnd){
-    //release mutex after complete
-    arcBus_stat.i2c_stat.mutex_release=1;
     //return success
     return RET_SUCCESS;
   }

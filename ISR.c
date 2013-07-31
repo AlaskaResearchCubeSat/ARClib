@@ -74,6 +74,8 @@ void UC0_TX(void) __ctl_interrupt[USCIAB0TX_VECTOR]{
         }else{
           //set event
           ctl_events_set_clear(&BUS_INT_events,BUS_INT_EV_RELEASE_MUTEX,0);
+          //clear flag
+          arcBus_stat.i2c_stat.mutex_release=0;
         }
         //set state to idle
         arcBus_stat.i2c_stat.mode=BUS_I2C_IDLE;
@@ -107,6 +109,8 @@ void UC0_rx(void) __ctl_interrupt[USCIAB0RX_VECTOR]{
     }else{
       //set event
       ctl_events_set_clear(&BUS_INT_events,BUS_INT_EV_RELEASE_MUTEX,0);
+      //clear flag
+      arcBus_stat.i2c_stat.mutex_release=0;
     }
     //set state to idle
     arcBus_stat.i2c_stat.mode=BUS_I2C_IDLE;
