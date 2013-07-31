@@ -147,23 +147,24 @@ int BUS_cmd_tx(unsigned char addr,unsigned char *buff,unsigned short len,unsigne
   e=ctl_events_wait(CTL_EVENT_WAIT_ANY_EVENTS_WITH_AUTO_CLEAR,&arcBus_stat.events,BUS_EV_I2C_MASTER,CTL_TIMEOUT_DELAY,2048);
   //release I2C bus
   BUS_I2C_release();
-  //check event for error
-  if(e==BUS_EV_I2C_COMPLETE){
+  //check which event(s) happened
+  switch(e){
+    case BUS_EV_I2C_COMPLETE:
       //no error
       return RET_SUCCESS;
-  }else{
-    //mask event bits
-    e&=BUS_EV_I2C_MASTER;
-    if(e){
-      //TODO: give more informative error messages
-      return ERR_UNKNOWN;
-    }else{
+    case BUS_EV_I2C_NACK:
+      //I2C device did not acknowledge
+      return ERR_I2C_NACK;
+    case 0:
       //no event happened, so time out
       return ERR_TIMEOUT;
-    }
+    default:
+      //error is not defined
+      return ERR_UNKNOWN;
   }
 }
 
+//send/receive SPI data over the bus
 int BUS_SPI_txrx(unsigned char addr,unsigned char *tx,unsigned char *rx,unsigned short len){
   unsigned char buf[10],*ptr;
   unsigned int e;
