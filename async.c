@@ -5,11 +5,8 @@
 
 #include "ARCbus_internal.h"
 
-#define   ASYNC_TARGET_SIZE   15
-#define   ASYNC_MAX_SIZE      35
-
-unsigned char txbuf[256];
-unsigned char rxbuf[300];
+unsigned char txbuf[ASYNC_TXQ_SIZE];
+unsigned char rxbuf[ASYNC_RXQ_SIZE];
 
 unsigned char async_addr=0;
 unsigned short async_timer=0;
@@ -19,6 +16,9 @@ CTL_BYTE_QUEUE_t async_rxQ;
 
 CTL_EVENT_SET_t *closed_event=NULL;
 CTL_EVENT_SET_t closed_flag=0;
+
+unsigned short txFlow=ASYNC_FLOW_RUNNING;
+unsigned short rxFlow=ASYNC_FLOW_RUNNING;
 
 //check if communicating with a board
 int async_isOpen(void){
@@ -43,6 +43,9 @@ int async_open(unsigned char addr){
     //Error: async is already open
     return ERR_BUSY;
   }
+  //clear flow control
+  txFlow=ASYNC_FLOW_RUNNING;
+  rxFlow=ASYNC_FLOW_RUNNING;
   //setup byte queues
   ctl_byte_queue_init(&async_txQ,txbuf,sizeof(txbuf));
   ctl_byte_queue_init(&async_rxQ,rxbuf,sizeof(rxbuf));
@@ -78,6 +81,9 @@ int async_open_remote(unsigned char addr){
   }
   //set address
   async_addr=addr;
+  //clear flow control
+  txFlow=ASYNC_FLOW_RUNNING;
+  rxFlow=ASYNC_FLOW_RUNNING;
   //setup byte queues
   ctl_byte_queue_init(&async_txQ,txbuf,sizeof(txbuf));
   ctl_byte_queue_init(&async_rxQ,rxbuf,sizeof(rxbuf));
@@ -130,6 +136,11 @@ int async_send_data(void){
   unsigned char buff[BUS_I2C_HDR_LEN+ASYNC_MAX_SIZE+BUS_I2C_CRC_LEN];
   unsigned char *ptr;
   unsigned short len;
+  //check flow control
+  if(txFlow==ASYNC_FLOW_STOPPED){
+     //flow has stopped, unable to send
+     return ERR_FLOW_CTL_STOPPED;
+  }
   //stop timer
   async_timer=0;
   //setup packet 
@@ -144,7 +155,7 @@ int async_send_data(void){
   return BUS_cmd_tx(async_addr,buff,len,0,BUS_I2C_SEND_FOREGROUND);
 }
 
-//transmit a charecter
+//transmit a character
 int async_TxChar(unsigned char c){
   unsigned int t;
   int res=c;
@@ -168,6 +179,9 @@ int async_TxChar(unsigned char c){
 }
 
 int async_Getc(void){
+  unsigned char buff[BUS_I2C_HDR_LEN+1+BUS_I2C_CRC_LEN];
+  unsigned char *ptr;
+  int resp;
   unsigned char c;
   //check if open
   if(!async_isOpen()){
@@ -176,10 +190,25 @@ int async_Getc(void){
   }
   //receive a byte from the queue
   ctl_byte_queue_receive(&async_rxQ,&c,CTL_TIMEOUT_NONE,0);
+  //check if flow can be restarted
+  if(rxFlow==ASYNC_FLOW_STOPPED && ctl_byte_queue_num_free(&async_rxQ)>=ASYNC_FLOW_RESTART_THRESHOLD){
+    //setup packet 
+    ptr=BUS_cmd_init(buff,CMD_ASYNC_SETUP);
+    ptr[0]=ASYNC_RESTART;
+    //send data
+    resp=BUS_cmd_tx(async_addr,buff,1,0,BUS_I2C_SEND_FOREGROUND);
+    //check if command was successful
+    if(resp==RET_SUCCESS){
+      //flow control is running
+      rxFlow=ASYNC_FLOW_RUNNING;
+    }
+    //if command was not successful command will be sent again next time async_Getc is called
+  }
   //return byte from queue
   return c;
 }
 
+//return a character only if one is available
 int async_CheckKey(void){
   unsigned char c;
   if(ctl_byte_queue_receive_nb(&async_rxQ,&c)){

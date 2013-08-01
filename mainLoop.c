@@ -281,11 +281,43 @@ static void ARC_bus_run(void *p) __toplevel{
                 //send event
                 ctl_events_set_clear(&SUB_events,SUB_EV_ASYNC_CLOSE,0);
               break;
+              case ASYNC_STOP:
+                //check that async address is sender address
+                if(addr!=async_addr){
+                  //TODO: handle error here
+                  break;
+                }
+                //stop async from sending
+                txFlow=ASYNC_FLOW_STOPPED;
+              break;
+              case ASYNC_RESTART:
+                //check that async address is sender address
+                if(addr!=async_addr){
+                  //TODO: handle error here
+                  break;
+                }
+                //restart async sending
+                txFlow=ASYNC_FLOW_RUNNING;
+                //send data
+                async_send_data();
+              break;
+              default:
+                //unknown command: handle accordingly
+                __no_operation();
             }
           break;
           case CMD_ASYNC_DAT:
+            //TODO: check sender address
             //post bytes to queue
             ctl_byte_queue_post_multi_nb(&async_rxQ,len,ptr);
+            //check free bytes in queue
+            if(ctl_byte_queue_num_free(&async_rxQ)>=ASYNC_FLOW_STOP_THRESHOLD){              
+              //stop async from sending
+              BUS_cmd_init(pk,CMD_ASYNC_SETUP)[1]=ASYNC_STOP;
+              BUS_cmd_tx(async_addr,pk,0,0,BUS_I2C_SEND_BGND);
+              rxFlow=ASYNC_FLOW_STOPPED;
+              
+            }
           break;
           case CMD_NACK:
             //TODO: handle this better somehow?

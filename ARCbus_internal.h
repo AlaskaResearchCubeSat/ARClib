@@ -7,12 +7,26 @@
      //for testing
     #include <stdio.h>
   #endif
+      
+      
+
+#define   ASYNC_TARGET_SIZE                     15
+#define   ASYNC_MAX_SIZE                        35
+
+#define   ASYNC_RXQ_SIZE                        300
+#define   ASYNC_TXQ_SIZE                        256
+
+#define   ASYNC_FLOW_RESTART_THRESHOLD          15
+#define   ASYNC_FLOW_STOP_THRESHOLD             (ASYNC_RXQ_SIZE-(ASYNC_MAX_SIZE+ASYNC_MAX_SIZE/2))
+      
+  //values for async flow control
+  enum{ASYNC_FLOW_RUNNING,ASYNC_FLOW_STOPPED};
   
   //flags for internal BUS events
   enum{BUS_INT_EV_I2C_CMD_RX=(1<<0),BUS_INT_EV_SPI_COMPLETE=(1<<1),BUS_INT_EV_BUFF_UNLOCK=(1<<2),BUS_INT_EV_ASYNC_TIMEOUT=(1<<3),BUS_INT_EV_RELEASE_MUTEX=(1<<4)};
 
   //values for async setup command
-  enum{ASYNC_OPEN,ASYNC_CLOSE};
+  enum{ASYNC_OPEN,ASYNC_CLOSE,ASYNC_STOP,ASYNC_RESTART};
 
   //all events for ARCBUS internal commands
   #define BUS_INT_EV_ALL    (BUS_INT_EV_I2C_CMD_RX|BUS_INT_EV_SPI_COMPLETE|BUS_INT_EV_BUFF_UNLOCK|BUS_INT_EV_ASYNC_TIMEOUT|BUS_INT_EV_RELEASE_MUTEX)
@@ -52,6 +66,9 @@
   //address for async communications
   extern unsigned char async_addr;
   extern unsigned short async_timer;
+  //flow control vars for async
+  extern unsigned short txFlow;
+  extern unsigned short rxFlow;
   //queues for async communications
   extern CTL_BYTE_QUEUE_t async_txQ;
   extern CTL_BYTE_QUEUE_t async_rxQ;
