@@ -22,6 +22,9 @@ BUS_STAT arcBus_stat;
 //events for subsystems
 CTL_EVENT_SET_t SUB_events;
 
+//address of SPI slave during transaction
+static unsigned char SPI_addr=0;
+
 static void ARC_bus_helper(void *p);
 
 //ARC bus Task, do ARC bus stuff
@@ -34,11 +37,9 @@ static void ARC_bus_run(void *p) __toplevel{
   unsigned char *ptr;
   unsigned short crc;
   unsigned char *SPI_buf=NULL;
-
-  //address of SPI slave during transaction
-  unsigned char SPI_addr=0;
   ticker nt;
   int snd,i;
+  SPI_addr=0;
   //first send "I'm on" command
   //BUS_cmd_init(pk,CMD_SUB_POWERUP);//setup command
   //send command
@@ -94,9 +95,8 @@ static void ARC_bus_run(void *p) __toplevel{
       if(SPI_addr){
         //turn off SPI
         SPI_deactivate();
-        //done with SPI send command
-        BUS_cmd_init(pk,CMD_SPI_COMPLETE);
-        BUS_cmd_tx(SPI_addr,pk,0,0,BUS_I2C_SEND_BGND);
+        //tell helper thread to send SPI complete command
+        ctl_events_set_clear(&BUS_helper_events,BUS_HELPER_EV_SPI_COMPLETE_CMD,0);
         //transaction complete, clear address
         SPI_addr=0;
         //assemble CRC
@@ -350,12 +350,27 @@ static void ARC_bus_run(void *p) __toplevel{
 //ARC bus Task, do ARC bus stuff
 static void ARC_bus_helper(void *p) __toplevel{
   unsigned int e;
+  int resp;
+  unsigned char *ptr,pk[BUS_I2C_HDR_LEN+0+BUS_I2C_CRC_LEN];
   for(;;){
     e=ctl_events_wait(CTL_EVENT_WAIT_ANY_EVENTS_WITH_AUTO_CLEAR,&BUS_helper_events,BUS_HELPER_EV_ALL,CTL_TIMEOUT_NONE,0);
     //async timer timed out, send data
     if(e&BUS_HELPER_EV_ASYNC_TIMEOUT){
       //send some data
       async_send_data();
+    }
+    if(e&BUS_HELPER_EV_SPI_COMPLETE_CMD){      
+      //done with SPI send command
+      BUS_cmd_init(pk,CMD_SPI_COMPLETE);
+      resp=BUS_cmd_tx(SPI_addr,pk,0,0,BUS_I2C_SEND_FOREGROUND);
+      //check if command was successful and try again if it failed
+      if(resp!=RET_SUCCESS){
+        resp=BUS_cmd_tx(SPI_addr,pk,0,0,BUS_I2C_SEND_FOREGROUND);
+      }
+      //check if command sent successfully
+      if(resp!=RET_SUCCESS){
+        //TODO: report error
+      }
     }
   }
 }

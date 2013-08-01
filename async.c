@@ -101,12 +101,15 @@ int async_close(void){
   *ptr=ASYNC_CLOSE;
   //send command
   resp=BUS_cmd_tx(async_addr,buff,1,0,BUS_I2C_SEND_FOREGROUND);
-  //clear address
-  async_addr=0;
-  //check for closed event
-  if(closed_event){
-    //send event
-    ctl_events_set_clear(closed_event,closed_flag,0);
+  //check if command sent successfully
+  if(resp==RET_SUCCESS){
+    //clear address
+    async_addr=0;
+    //check for closed event
+    if(closed_event){
+      //send event
+      ctl_events_set_clear(closed_event,closed_flag,0);
+    }
   }
   return resp;
 }
