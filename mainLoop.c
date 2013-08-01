@@ -77,13 +77,18 @@ static void ARC_bus_run(void *p) __toplevel{
   for(;;){
     //wait for something to happen
     e = ctl_events_wait(CTL_EVENT_WAIT_ANY_EVENTS_WITH_AUTO_CLEAR,&BUS_INT_events,BUS_INT_EV_ALL,CTL_TIMEOUT_NONE,0);
+    //check if buffer can be unlocked
     if(e&BUS_INT_EV_BUFF_UNLOCK){
       SPI_buf=NULL;
+      //unlock buffer
       BUS_free_buffer();
     }
+    //check if I2C mutex can be released
     if(e&BUS_INT_EV_RELEASE_MUTEX){
+      //release I2C mutex
       BUS_I2C_release();
     }
+    //check if a SPI transaction is complete
     if(e&BUS_INT_EV_SPI_COMPLETE){
       //check if SPI was in progress
       if(SPI_addr){
@@ -113,6 +118,7 @@ static void ARC_bus_run(void *p) __toplevel{
         }
       }
     }
+    //check if an I2C command has been received
     if(e&BUS_INT_EV_I2C_CMD_RX){
       //=====================[I2C Command Received, Process command]===============================
       //clear response
@@ -337,11 +343,6 @@ static void ARC_bus_run(void *p) __toplevel{
         BUS_cmd_tx(addr,pk,1,0,BUS_I2C_SEND_BGND);
       }
     }
-    //async timer timed out, send data
-    if(e&BUS_INT_EV_ASYNC_TIMEOUT){
-      //send some data
-      async_send_data();
-    }
   }
 }
     
@@ -351,6 +352,11 @@ static void ARC_bus_helper(void *p) __toplevel{
   unsigned int e;
   for(;;){
     e=ctl_events_wait(CTL_EVENT_WAIT_ANY_EVENTS_WITH_AUTO_CLEAR,&BUS_helper_events,BUS_HELPER_EV_ALL,CTL_TIMEOUT_NONE,0);
+    //async timer timed out, send data
+    if(e&BUS_HELPER_EV_ASYNC_TIMEOUT){
+      //send some data
+      async_send_data();
+    }
   }
 }
 
