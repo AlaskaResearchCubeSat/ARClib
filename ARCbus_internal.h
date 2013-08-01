@@ -17,6 +17,10 @@
   //all events for ARCBUS internal commands
   #define BUS_INT_EV_ALL    (BUS_INT_EV_I2C_CMD_RX|BUS_INT_EV_SPI_COMPLETE|BUS_INT_EV_BUFF_UNLOCK|BUS_INT_EV_ASYNC_TIMEOUT|BUS_INT_EV_RELEASE_MUTEX)
 
+  //flags for bus helper events
+  //enum{};
+
+  #define BUS_HELPER_EV_ALL (0)
   
   //task structure for idle task and ARC bus task
   extern CTL_TASK_t idle_task,ARC_bus_task;

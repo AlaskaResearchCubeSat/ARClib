@@ -9,18 +9,20 @@
 #include "ARCbus_internal.h"
 
 //bus internal events
-CTL_EVENT_SET_t BUS_INT_events;
+CTL_EVENT_SET_t BUS_INT_events,BUS_helper_events;
 
 //task structure for idle task and ARC bus task
-CTL_TASK_t idle_task,ARC_bus_task;
+CTL_TASK_t idle_task,ARC_bus_task,ARC_bus_helper_task;
 
 //stack for ARC bus task
-unsigned BUS_stack[256];
+unsigned BUS_stack[256],helper_stack[100];
 
 BUS_STAT arcBus_stat;
 
 //events for subsystems
 CTL_EVENT_SET_t SUB_events;
+
+static void ARC_bus_helper(void *p);
 
 //ARC bus Task, do ARC bus stuff
 static void ARC_bus_run(void *p) __toplevel{
@@ -66,6 +68,11 @@ static void ARC_bus_run(void *p) __toplevel{
       //TODO : this is bad. perhaps do something here to recover
     }
   #endif
+  //initialize helper events
+  ctl_events_init(&BUS_helper_events,0);
+  //start helper task
+  ctl_task_run(&ARC_bus_helper_task,18,ARC_bus_helper,NULL,"ARC_Bus_helper",sizeof(helper_stack)/sizeof(helper_stack[0])-2,helper_stack+1,0);
+  
   //event loop
   for(;;){
     //wait for something to happen
@@ -335,6 +342,15 @@ static void ARC_bus_run(void *p) __toplevel{
       //send some data
       async_send_data();
     }
+  }
+}
+    
+    
+//ARC bus Task, do ARC bus stuff
+static void ARC_bus_helper(void *p) __toplevel{
+  unsigned int e;
+  for(;;){
+    e=ctl_events_wait(CTL_EVENT_WAIT_ANY_EVENTS_WITH_AUTO_CLEAR,&BUS_helper_events,BUS_HELPER_EV_ALL,CTL_TIMEOUT_NONE,0);
   }
 }
 
