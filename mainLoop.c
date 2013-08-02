@@ -9,18 +9,23 @@
 #include "ARCbus_internal.h"
 
 //bus internal events
-CTL_EVENT_SET_t BUS_INT_events;
+CTL_EVENT_SET_t BUS_INT_events,BUS_helper_events;
 
 //task structure for idle task and ARC bus task
-CTL_TASK_t idle_task,ARC_bus_task;
+CTL_TASK_t idle_task,ARC_bus_task,ARC_bus_helper_task;
 
 //stack for ARC bus task
-unsigned BUS_stack[256];
+unsigned BUS_stack[256],helper_stack[100];
 
 BUS_STAT arcBus_stat;
 
 //events for subsystems
 CTL_EVENT_SET_t SUB_events;
+
+//address of SPI slave during transaction
+static unsigned char SPI_addr=0;
+
+static void ARC_bus_helper(void *p);
 
 //ARC bus Task, do ARC bus stuff
 static void ARC_bus_run(void *p) __toplevel{
@@ -32,11 +37,9 @@ static void ARC_bus_run(void *p) __toplevel{
   unsigned char *ptr;
   unsigned short crc;
   unsigned char *SPI_buf=NULL;
-
-  //address of SPI slave during transaction
-  unsigned char SPI_addr=0;
   ticker nt;
   int snd,i;
+  SPI_addr=0;
   //first send "I'm on" command
   //BUS_cmd_init(pk,CMD_SUB_POWERUP);//setup command
   //send command
@@ -66,25 +69,34 @@ static void ARC_bus_run(void *p) __toplevel{
       //TODO : this is bad. perhaps do something here to recover
     }
   #endif
+  //initialize helper events
+  ctl_events_init(&BUS_helper_events,0);
+  //start helper task
+  ctl_task_run(&ARC_bus_helper_task,18,ARC_bus_helper,NULL,"ARC_Bus_helper",sizeof(helper_stack)/sizeof(helper_stack[0])-2,helper_stack+1,0);
+  
   //event loop
   for(;;){
     //wait for something to happen
     e = ctl_events_wait(CTL_EVENT_WAIT_ANY_EVENTS_WITH_AUTO_CLEAR,&BUS_INT_events,BUS_INT_EV_ALL,CTL_TIMEOUT_NONE,0);
+    //check if buffer can be unlocked
     if(e&BUS_INT_EV_BUFF_UNLOCK){
       SPI_buf=NULL;
+      //unlock buffer
       BUS_free_buffer();
     }
+    //check if I2C mutex can be released
     if(e&BUS_INT_EV_RELEASE_MUTEX){
+      //release I2C mutex
       BUS_I2C_release();
     }
+    //check if a SPI transaction is complete
     if(e&BUS_INT_EV_SPI_COMPLETE){
       //check if SPI was in progress
       if(SPI_addr){
         //turn off SPI
         SPI_deactivate();
-        //done with SPI send command
-        BUS_cmd_init(pk,CMD_SPI_COMPLETE);
-        BUS_cmd_tx(SPI_addr,pk,0,0,BUS_I2C_SEND_BGND);
+        //tell helper thread to send SPI complete command
+        ctl_events_set_clear(&BUS_helper_events,BUS_HELPER_EV_SPI_COMPLETE_CMD,0);
         //transaction complete, clear address
         SPI_addr=0;
         //assemble CRC
@@ -106,6 +118,7 @@ static void ARC_bus_run(void *p) __toplevel{
         }
       }
     }
+    //check if an I2C command has been received
     if(e&BUS_INT_EV_I2C_CMD_RX){
       //=====================[I2C Command Received, Process command]===============================
       //clear response
@@ -249,8 +262,7 @@ static void ARC_bus_run(void *p) __toplevel{
             //notify CDH board
             //TODO: some sort of error check to make sure that a SPI transfer was requested and send an ERROR if one was not
 #ifndef CDH_LIB
-            BUS_cmd_init(pk,CMD_SPI_CLEAR);
-            BUS_cmd_tx(BUS_ADDR_CDH,pk,0,0,BUS_I2C_SEND_BGND);
+            ctl_events_set_clear(&BUS_helper_events,BUS_HELPER_EV_SPI_CLEAR_CMD,0);
 #endif
             //notify calling task
             ctl_events_set_clear(&arcBus_stat.events,BUS_EV_SPI_COMPLETE,0);
@@ -263,10 +275,8 @@ static void ARC_bus_run(void *p) __toplevel{
             }
             switch(ptr[0]){
               case ASYNC_OPEN:
-                if(!async_open_remote(addr)){
-                  //send open event
-                  ctl_events_set_clear(&SUB_events,SUB_EV_ASYNC_OPEN,0);
-                }
+                //open remote connection
+                async_open_remote(addr);
               break;
               case ASYNC_CLOSE:
                 //check if sending address corosponds to async address
@@ -276,10 +286,8 @@ static void ARC_bus_run(void *p) __toplevel{
                   //resp=
                   break;
                 }
-                //close async connection
-                async_close_remote();
-                //send event
-                ctl_events_set_clear(&SUB_events,SUB_EV_ASYNC_CLOSE,0);
+                //tell helper thread to close connection
+                ctl_events_set_clear(&BUS_helper_events,BUS_HELPER_EV_ASYNC_CLOSE,0);
               break;
               case ASYNC_STOP:
                 //check that async address is sender address
@@ -362,10 +370,53 @@ static void ARC_bus_run(void *p) __toplevel{
         BUS_cmd_tx(addr,pk,1,0,BUS_I2C_SEND_BGND);
       }
     }
+  }
+}
+    
+    
+//ARC bus Task, do ARC bus stuff
+static void ARC_bus_helper(void *p) __toplevel{
+  unsigned int e;
+  int resp;
+  unsigned char *ptr,pk[BUS_I2C_HDR_LEN+0+BUS_I2C_CRC_LEN];
+  for(;;){
+    e=ctl_events_wait(CTL_EVENT_WAIT_ANY_EVENTS_WITH_AUTO_CLEAR,&BUS_helper_events,BUS_HELPER_EV_ALL,CTL_TIMEOUT_NONE,0);
     //async timer timed out, send data
-    if(e&BUS_INT_EV_ASYNC_TIMEOUT){
+    if(e&BUS_HELPER_EV_ASYNC_TIMEOUT){
       //send some data
       async_send_data();
+    }
+    if(e&BUS_HELPER_EV_SPI_COMPLETE_CMD){      
+      //done with SPI send command
+      BUS_cmd_init(pk,CMD_SPI_COMPLETE);
+      resp=BUS_cmd_tx(SPI_addr,pk,0,0,BUS_I2C_SEND_FOREGROUND);
+      //check if command was successful and try again if it failed
+      if(resp!=RET_SUCCESS){
+        resp=BUS_cmd_tx(SPI_addr,pk,0,0,BUS_I2C_SEND_FOREGROUND);
+      }
+      //check if command sent successfully
+      if(resp!=RET_SUCCESS){
+        //TODO: report error
+      }
+    }
+    if(e&BUS_HELPER_EV_SPI_CLEAR_CMD){
+      //done with SPI send command
+      BUS_cmd_init(pk,CMD_SPI_CLEAR);
+      resp=BUS_cmd_tx(BUS_ADDR_CDH,pk,0,0,BUS_I2C_SEND_FOREGROUND);
+      //check if command was successful and try again if it failed
+      if(resp!=RET_SUCCESS){
+        resp=BUS_cmd_tx(BUS_ADDR_CDH,pk,0,0,BUS_I2C_SEND_FOREGROUND);
+      }
+      //check if command sent successfully
+      if(resp!=RET_SUCCESS){
+        //TODO: report error
+      }
+    }
+    if(e&BUS_HELPER_EV_ASYNC_CLOSE){      
+      //close async connection
+      async_close_remote();
+      //send event
+      ctl_events_set_clear(&SUB_events,SUB_EV_ASYNC_CLOSE,0);
     }
   }
 }

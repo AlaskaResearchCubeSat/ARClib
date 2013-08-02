@@ -87,13 +87,15 @@ int async_open_remote(unsigned char addr){
   //setup byte queues
   ctl_byte_queue_init(&async_txQ,txbuf,sizeof(txbuf));
   ctl_byte_queue_init(&async_rxQ,rxbuf,sizeof(rxbuf));
+  //send open event
+  ctl_events_set_clear(&SUB_events,SUB_EV_ASYNC_OPEN,0);
   //return success
   return RET_SUCCESS;
 }
 
 //close current connection
 int async_close(void){
-  int resp;
+  int resp,i;
   unsigned char buff[BUS_I2C_HDR_LEN+1+BUS_I2C_CRC_LEN],*ptr;
   if(!async_isOpen()){
     //async is not open, nothing to do
@@ -105,24 +107,35 @@ int async_close(void){
   ptr=BUS_cmd_init(buff,CMD_ASYNC_SETUP);
   //send close command
   *ptr=ASYNC_CLOSE;
-  //send command
-  resp=BUS_cmd_tx(async_addr,buff,1,0,BUS_I2C_SEND_FOREGROUND);
-  //clear address
-  async_addr=0;
-  //check for closed event
-  if(closed_event){
-    //send event
-    ctl_events_set_clear(closed_event,closed_flag,0);
+  for(i=0;i<2;i++){
+    //send command
+    resp=BUS_cmd_tx(async_addr,buff,1,0,BUS_I2C_SEND_FOREGROUND);
+    //check if command sent successfully
+    if(resp==RET_SUCCESS){
+      //clear address
+      async_addr=0;
+      //check for closed event
+      if(closed_event){
+        //send event
+        ctl_events_set_clear(closed_event,closed_flag,0);
+      }
+      return resp;
+    }
   }
   return resp;
 }
 
 //close current connection
 int async_close_remote(void){
+  //check if async is open
   if(!async_isOpen()){
-    //Error: async is already open
+    //Error: async is not open
+    //TODO: better error?
     return ERR_BUSY;
   }
+  //send remaining data
+  async_send_data();
+  //clear async address
   async_addr=0;
   //check for closed event
   if(closed_event){

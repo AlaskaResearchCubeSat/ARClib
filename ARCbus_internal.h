@@ -23,14 +23,19 @@
   enum{ASYNC_FLOW_RUNNING,ASYNC_FLOW_STOPPED};
   
   //flags for internal BUS events
-  enum{BUS_INT_EV_I2C_CMD_RX=(1<<0),BUS_INT_EV_SPI_COMPLETE=(1<<1),BUS_INT_EV_BUFF_UNLOCK=(1<<2),BUS_INT_EV_ASYNC_TIMEOUT=(1<<3),BUS_INT_EV_RELEASE_MUTEX=(1<<4)};
+  enum{BUS_INT_EV_I2C_CMD_RX=(1<<0),BUS_INT_EV_SPI_COMPLETE=(1<<1),BUS_INT_EV_BUFF_UNLOCK=(1<<2),BUS_INT_EV_RELEASE_MUTEX=(1<<3)};
 
   //values for async setup command
   enum{ASYNC_OPEN,ASYNC_CLOSE,ASYNC_STOP,ASYNC_RESTART};
 
   //all events for ARCBUS internal commands
-  #define BUS_INT_EV_ALL    (BUS_INT_EV_I2C_CMD_RX|BUS_INT_EV_SPI_COMPLETE|BUS_INT_EV_BUFF_UNLOCK|BUS_INT_EV_ASYNC_TIMEOUT|BUS_INT_EV_RELEASE_MUTEX)
+  #define BUS_INT_EV_ALL    (BUS_INT_EV_I2C_CMD_RX|BUS_INT_EV_SPI_COMPLETE|BUS_INT_EV_BUFF_UNLOCK|BUS_INT_EV_RELEASE_MUTEX)
 
+  //flags for bus helper events
+  enum{BUS_HELPER_EV_ASYNC_TIMEOUT=1<<0,BUS_HELPER_EV_SPI_COMPLETE_CMD=1<<1,BUS_HELPER_EV_SPI_CLEAR_CMD=1<<2,BUS_HELPER_EV_ASYNC_CLOSE=1<<3};
+
+  //all helper task events
+  #define BUS_HELPER_EV_ALL (BUS_HELPER_EV_ASYNC_TIMEOUT|BUS_HELPER_EV_SPI_COMPLETE_CMD|BUS_HELPER_EV_SPI_CLEAR_CMD|BUS_HELPER_EV_ASYNC_CLOSE)
   
   //task structure for idle task and ARC bus task
   extern CTL_TASK_t idle_task,ARC_bus_task;
@@ -58,7 +63,7 @@
 
   
   //events for subsystems
-  extern CTL_EVENT_SET_t SUB_events;
+  extern CTL_EVENT_SET_t SUB_events,BUS_helper_events,BUS_INT_events;
 
   //setup stuff for buffer usage
   void BUS_init_buffer(void);

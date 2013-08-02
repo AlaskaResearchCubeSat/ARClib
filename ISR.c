@@ -11,9 +11,6 @@
 //buffer for ISR command receive
 unsigned char i2c_buf[40];
 
-//bus internal events
-extern CTL_EVENT_SET_t BUS_INT_events;
-
 //DMA events
 CTL_EVENT_SET_t DMA_events;
 
@@ -223,7 +220,7 @@ void task_tick(void) __ctl_interrupt[TIMERA0_VECTOR]{
   if(async_timer){
     async_timer--;
     if(!async_timer){
-      ctl_events_set_clear(&BUS_INT_events,BUS_INT_EV_ASYNC_TIMEOUT,0);
+      ctl_events_set_clear(&BUS_helper_events,BUS_HELPER_EV_ASYNC_TIMEOUT,0);
     }
   }
 }
