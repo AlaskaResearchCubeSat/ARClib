@@ -8,8 +8,6 @@
     #include <stdio.h>
   #endif
       
-      
-
 #define   ASYNC_TARGET_SIZE                     15
 #define   ASYNC_MAX_SIZE                        35
 

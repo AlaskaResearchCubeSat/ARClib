@@ -306,8 +306,8 @@ static void ARC_bus_run(void *p) __toplevel{
                 }
                 //restart async sending
                 txFlow=ASYNC_FLOW_RUNNING;
-                //send data
-                async_send_data();
+                //tell helper to send data
+                ctl_events_set_clear(&BUS_helper_events,BUS_HELPER_EV_ASYNC_TIMEOUT,0);
               break;
               default:
                 //unknown command: handle accordingly
@@ -319,12 +319,11 @@ static void ARC_bus_run(void *p) __toplevel{
             //post bytes to queue
             ctl_byte_queue_post_multi_nb(&async_rxQ,len,ptr);
             //check free bytes in queue
-            if(ctl_byte_queue_num_free(&async_rxQ)>=ASYNC_FLOW_STOP_THRESHOLD){              
+            if(rxFlow==ASYNC_FLOW_RUNNING && ctl_byte_queue_num_free(&async_rxQ)>=ASYNC_FLOW_STOP_THRESHOLD){              
               //stop async from sending
               BUS_cmd_init(pk,CMD_ASYNC_SETUP)[1]=ASYNC_STOP;
               BUS_cmd_tx(async_addr,pk,0,0,BUS_I2C_SEND_BGND);
               rxFlow=ASYNC_FLOW_STOPPED;
-              
             }
           break;
           case CMD_NACK:
@@ -378,14 +377,10 @@ static void ARC_bus_run(void *p) __toplevel{
 static void ARC_bus_helper(void *p) __toplevel{
   unsigned int e;
   int resp;
+  unsigned num;
   unsigned char *ptr,pk[BUS_I2C_HDR_LEN+0+BUS_I2C_CRC_LEN];
   for(;;){
     e=ctl_events_wait(CTL_EVENT_WAIT_ANY_EVENTS_WITH_AUTO_CLEAR,&BUS_helper_events,BUS_HELPER_EV_ALL,CTL_TIMEOUT_NONE,0);
-    //async timer timed out, send data
-    if(e&BUS_HELPER_EV_ASYNC_TIMEOUT){
-      //send some data
-      async_send_data();
-    }
     if(e&BUS_HELPER_EV_SPI_COMPLETE_CMD){      
       //done with SPI send command
       BUS_cmd_init(pk,CMD_SPI_COMPLETE);
@@ -417,6 +412,20 @@ static void ARC_bus_helper(void *p) __toplevel{
       async_close_remote();
       //send event
       ctl_events_set_clear(&SUB_events,SUB_EV_ASYNC_CLOSE,0);
+    }
+    //async timer timed out, send data
+    //do this last because it will restart if there is more data to send
+    if(e&BUS_HELPER_EV_ASYNC_TIMEOUT){
+      //send some data
+      async_send_data();
+      num=ctl_byte_queue_num_used(&async_txQ);
+      if(num>ASYNC_TARGET_SIZE){
+        //send more data
+        ctl_events_set_clear(&BUS_helper_events,BUS_HELPER_EV_ASYNC_TIMEOUT,0);
+      }else if(num!=0 && async_timer!=0){
+        //there are a few chars left, reset timer
+        async_timer=30;
+      }
     }
   }
 }
