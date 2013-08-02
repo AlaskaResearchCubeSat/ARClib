@@ -81,6 +81,8 @@ int async_open_remote(unsigned char addr){
   //setup byte queues
   ctl_byte_queue_init(&async_txQ,txbuf,sizeof(txbuf));
   ctl_byte_queue_init(&async_rxQ,rxbuf,sizeof(rxbuf));
+  //send open event
+  ctl_events_set_clear(&SUB_events,SUB_EV_ASYNC_OPEN,0);
   //return success
   return RET_SUCCESS;
 }
@@ -116,10 +118,15 @@ int async_close(void){
 
 //close current connection
 int async_close_remote(void){
+  //check if async is open
   if(!async_isOpen()){
-    //Error: async is already open
+    //Error: async is not open
+    //TODO: better error?
     return ERR_BUSY;
   }
+  //send remaining data
+  async_send_data();
+  //clear async address
   async_addr=0;
   //check for closed event
   if(closed_event){

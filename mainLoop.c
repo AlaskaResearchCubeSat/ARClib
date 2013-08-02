@@ -262,8 +262,7 @@ static void ARC_bus_run(void *p) __toplevel{
             //notify CDH board
             //TODO: some sort of error check to make sure that a SPI transfer was requested and send an ERROR if one was not
 #ifndef CDH_LIB
-            BUS_cmd_init(pk,CMD_SPI_CLEAR);
-            BUS_cmd_tx(BUS_ADDR_CDH,pk,0,0,BUS_I2C_SEND_BGND);
+            ctl_events_set_clear(&BUS_helper_events,BUS_HELPER_EV_SPI_CLEAR_CMD,0);
 #endif
             //notify calling task
             ctl_events_set_clear(&arcBus_stat.events,BUS_EV_SPI_COMPLETE,0);
@@ -276,10 +275,8 @@ static void ARC_bus_run(void *p) __toplevel{
             }
             switch(ptr[0]){
               case ASYNC_OPEN:
-                if(!async_open_remote(addr)){
-                  //send open event
-                  ctl_events_set_clear(&SUB_events,SUB_EV_ASYNC_OPEN,0);
-                }
+                //open remote connection
+                async_open_remote(addr);
               break;
               case ASYNC_CLOSE:
                 //check if sending address corosponds to async address
@@ -289,10 +286,8 @@ static void ARC_bus_run(void *p) __toplevel{
                   //resp=
                   break;
                 }
-                //close async connection
-                async_close_remote();
-                //send event
-                ctl_events_set_clear(&SUB_events,SUB_EV_ASYNC_CLOSE,0);
+                //tell helper thread to close connection
+                ctl_events_set_clear(&BUS_helper_events,BUS_HELPER_EV_ASYNC_CLOSE,0);
               break;
             }
           break;
@@ -371,6 +366,25 @@ static void ARC_bus_helper(void *p) __toplevel{
       if(resp!=RET_SUCCESS){
         //TODO: report error
       }
+    }
+    if(e&BUS_HELPER_EV_SPI_CLEAR_CMD){
+      //done with SPI send command
+      BUS_cmd_init(pk,CMD_SPI_CLEAR);
+      resp=BUS_cmd_tx(BUS_ADDR_CDH,pk,0,0,BUS_I2C_SEND_FOREGROUND);
+      //check if command was successful and try again if it failed
+      if(resp!=RET_SUCCESS){
+        resp=BUS_cmd_tx(BUS_ADDR_CDH,pk,0,0,BUS_I2C_SEND_FOREGROUND);
+      }
+      //check if command sent successfully
+      if(resp!=RET_SUCCESS){
+        //TODO: report error
+      }
+    }
+    if(e&BUS_HELPER_EV_ASYNC_CLOSE){      
+      //close async connection
+      async_close_remote();
+      //send event
+      ctl_events_set_clear(&SUB_events,SUB_EV_ASYNC_CLOSE,0);
     }
   }
 }
