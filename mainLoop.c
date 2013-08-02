@@ -307,7 +307,7 @@ static void ARC_bus_run(void *p) __toplevel{
                 //restart async sending
                 txFlow=ASYNC_FLOW_RUNNING;
                 //tell helper to send data
-                ctl_events_set_clear(&BUS_helper_events,BUS_HELPER_EV_ASYNC_TIMEOUT,0);
+                ctl_events_set_clear(&BUS_helper_events,BUS_HELPER_EV_ASYNC_SEND,0);
               break;
               default:
                 //unknown command: handle accordingly
@@ -415,13 +415,13 @@ static void ARC_bus_helper(void *p) __toplevel{
     }
     //async timer timed out, send data
     //do this last because it will restart if there is more data to send
-    if(e&BUS_HELPER_EV_ASYNC_TIMEOUT){
+    if(e&BUS_HELPER_EV_ASYNC_SEND){
       //send some data
       async_send_data();
       num=ctl_byte_queue_num_used(&async_txQ);
       if(num>ASYNC_TARGET_SIZE){
         //send more data
-        ctl_events_set_clear(&BUS_helper_events,BUS_HELPER_EV_ASYNC_TIMEOUT,0);
+        ctl_events_set_clear(&BUS_helper_events,BUS_HELPER_EV_ASYNC_SEND,0);
       }else if(num!=0 && async_timer!=0){
         //there are a few chars left, reset timer
         async_timer=30;

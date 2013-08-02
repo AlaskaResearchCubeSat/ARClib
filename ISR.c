@@ -220,7 +220,7 @@ void task_tick(void) __ctl_interrupt[TIMERA0_VECTOR]{
   if(async_timer){
     async_timer--;
     if(!async_timer){
-      ctl_events_set_clear(&BUS_helper_events,BUS_HELPER_EV_ASYNC_TIMEOUT,0);
+      ctl_events_set_clear(&BUS_helper_events,BUS_HELPER_EV_ASYNC_SEND,0);
     }
   }
 }
