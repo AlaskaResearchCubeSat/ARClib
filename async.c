@@ -97,7 +97,6 @@ int async_close(void){
   }
   //send remaining data
   async_send_data();
-  //pause a bit so 
   //setup command
   ptr=BUS_cmd_init(buff,CMD_ASYNC_SETUP);
   //send close command
