@@ -182,7 +182,7 @@ int async_TxChar(unsigned char c){
   //check how many bytes are in the queue
   if(ctl_byte_queue_num_used(&async_txQ)>=ASYNC_TARGET_SIZE){
     //enough bytes to send now
-    async_send_data();
+    ctl_events_set_clear(&BUS_helper_events,BUS_HELPER_EV_ASYNC_SEND,0);
   }else{
     //set timeout for next interval
     async_timer=30;

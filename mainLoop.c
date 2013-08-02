@@ -320,10 +320,7 @@ static void ARC_bus_run(void *p) __toplevel{
             ctl_byte_queue_post_multi_nb(&async_rxQ,len,ptr);
             //check free bytes in queue
             if(rxFlow==ASYNC_FLOW_RUNNING && ctl_byte_queue_num_free(&async_rxQ)>=ASYNC_FLOW_STOP_THRESHOLD){              
-              //stop async from sending
-              BUS_cmd_init(pk,CMD_ASYNC_SETUP)[1]=ASYNC_STOP;
-              BUS_cmd_tx(async_addr,pk,0,0,BUS_I2C_SEND_BGND);
-              rxFlow=ASYNC_FLOW_STOPPED;
+              ctl_events_set_clear(&BUS_helper_events,BUS_HELPER_EV_ASYNC_STOP,0);
             }
           break;
           case CMD_NACK:
@@ -378,7 +375,7 @@ static void ARC_bus_helper(void *p) __toplevel{
   unsigned int e;
   int resp;
   unsigned num;
-  unsigned char *ptr,pk[BUS_I2C_HDR_LEN+0+BUS_I2C_CRC_LEN];
+  unsigned char *ptr,pk[BUS_I2C_HDR_LEN+2+BUS_I2C_CRC_LEN];
   for(;;){
     e=ctl_events_wait(CTL_EVENT_WAIT_ANY_EVENTS_WITH_AUTO_CLEAR,&BUS_helper_events,BUS_HELPER_EV_ALL,CTL_TIMEOUT_NONE,0);
     if(e&BUS_HELPER_EV_SPI_COMPLETE_CMD){      
@@ -412,6 +409,15 @@ static void ARC_bus_helper(void *p) __toplevel{
       async_close_remote();
       //send event
       ctl_events_set_clear(&SUB_events,SUB_EV_ASYNC_CLOSE,0);
+    }
+    if(e&BUS_HELPER_EV_ASYNC_STOP){
+      //stop async from sending
+      ptr=BUS_cmd_init(pk,CMD_ASYNC_SETUP);
+      ptr[0]=ASYNC_STOP;
+      BUS_cmd_tx(async_addr,pk,1,0,BUS_I2C_SEND_FOREGROUND);
+      if(resp==RET_SUCCESS){
+        rxFlow=ASYNC_FLOW_STOPPED;  
+      }
     }
     //async timer timed out, send data
     //do this last because it will restart if there is more data to send
