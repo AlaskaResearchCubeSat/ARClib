@@ -89,7 +89,7 @@ int async_open_remote(unsigned char addr){
 
 //close current connection
 int async_close(void){
-  int resp;
+  int resp,i;
   unsigned char buff[BUS_I2C_HDR_LEN+1+BUS_I2C_CRC_LEN],*ptr;
   if(!async_isOpen()){
     //async is not open, nothing to do
@@ -97,20 +97,24 @@ int async_close(void){
   }
   //send remaining data
   async_send_data();
+  //pause a bit so 
   //setup command
   ptr=BUS_cmd_init(buff,CMD_ASYNC_SETUP);
   //send close command
   *ptr=ASYNC_CLOSE;
-  //send command
-  resp=BUS_cmd_tx(async_addr,buff,1,0,BUS_I2C_SEND_FOREGROUND);
-  //check if command sent successfully
-  if(resp==RET_SUCCESS){
-    //clear address
-    async_addr=0;
-    //check for closed event
-    if(closed_event){
-      //send event
-      ctl_events_set_clear(closed_event,closed_flag,0);
+  for(i=0;i<2;i++){
+    //send command
+    resp=BUS_cmd_tx(async_addr,buff,1,0,BUS_I2C_SEND_FOREGROUND);
+    //check if command sent successfully
+    if(resp==RET_SUCCESS){
+      //clear address
+      async_addr=0;
+      //check for closed event
+      if(closed_event){
+        //send event
+        ctl_events_set_clear(closed_event,closed_flag,0);
+      }
+      return resp;
     }
   }
   return resp;
