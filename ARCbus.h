@@ -9,6 +9,15 @@
 #define WDT_STOP()        (WDTCTL=WDTPW|WDTHOLD|WDTCNTCL)
 #define WDT_RESET()       (WDTCTL=0)
 
+//thread priorities
+enum{BUS_PRI_EXTRA_LOW=20,BUS_PRI_LOW=50,BUS_PRI_NORMAL=80,BUS_PRI_HIGH=110,BUS_PRI_EXTRA_HIGH=140,BUS_PRI_EXTREME=170,BUS_PRI_CRITICAL=200};
+
+//priority for main arcbus task
+#define BUS_PRI_ARCBUS        (BUS_PRI_EXTRA_HIGH+20)
+//priority for arcbus helper task
+#define BUS_PRI_ARCBUS_HELPER (BUS_PRI_EXTRA_HIGH+18)
+
+
 //Flags for events handled by BUS functions (ex BUS_cmd_tx)
 enum{BUS_EV_CMD_NACK=(1<<0),BUS_EV_I2C_COMPLETE=(1<<1),BUS_EV_I2C_NACK=(1<<2),BUS_EV_SPI_COMPLETE=(1<<3)};
 //all events for SPI master
