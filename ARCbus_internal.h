@@ -14,8 +14,10 @@
 #define   ASYNC_RXQ_SIZE                        300
 #define   ASYNC_TXQ_SIZE                        256
 
+//if the number of used bytes falls below this threshld then restart incoming data
 #define   ASYNC_FLOW_RESTART_THRESHOLD          15
-#define   ASYNC_FLOW_STOP_THRESHOLD             (ASYNC_RXQ_SIZE-(ASYNC_MAX_SIZE+ASYNC_MAX_SIZE/2))
+//if the number of free bytes falls below this threshold then stop incoming data
+#define   ASYNC_FLOW_STOP_THRESHOLD             (ASYNC_MAX_SIZE+ASYNC_MAX_SIZE/2+5)
       
   //values for async flow control
   enum{ASYNC_FLOW_OFF,ASYNC_FLOW_RUNNING,ASYNC_FLOW_RESTARTING,ASYNC_FLOW_STOPPED};

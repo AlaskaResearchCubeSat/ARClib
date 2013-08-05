@@ -208,7 +208,7 @@ int async_Getc(void){
   //receive a byte from the queue
   ctl_byte_queue_receive(&async_rxQ,&c,CTL_TIMEOUT_NONE,0);
   //check if flow can be restarted
-  if(rxFlow!=ASYNC_FLOW_RUNNING && rxFlow!=ASYNC_FLOW_STOPPED && ctl_byte_queue_num_free(&async_rxQ)>=ASYNC_FLOW_RESTART_THRESHOLD){
+  if(rxFlow!=ASYNC_FLOW_RUNNING && rxFlow!=ASYNC_FLOW_STOPPED && ctl_byte_queue_num_used(&async_rxQ)<=ASYNC_FLOW_RESTART_THRESHOLD){
     //setup packet 
     ptr=BUS_cmd_init(buff,CMD_ASYNC_SETUP);
     ptr[0]=ASYNC_RESTART;

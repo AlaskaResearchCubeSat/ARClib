@@ -331,7 +331,7 @@ static void ARC_bus_run(void *p) __toplevel{
               rxFlow=ASYNC_FLOW_RUNNING;
             }
             //check free bytes in queue
-            if(rxFlow!=ASYNC_FLOW_OFF && ctl_byte_queue_num_free(&async_rxQ)>=ASYNC_FLOW_STOP_THRESHOLD){              
+            if(rxFlow!=ASYNC_FLOW_OFF && ctl_byte_queue_num_free(&async_rxQ)<=ASYNC_FLOW_STOP_THRESHOLD){              
               //tell helper thread to send stop command
               ctl_events_set_clear(&BUS_helper_events,BUS_HELPER_EV_ASYNC_STOP,0);
             }
