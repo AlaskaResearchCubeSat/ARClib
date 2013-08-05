@@ -72,7 +72,7 @@ static void ARC_bus_run(void *p) __toplevel{
   //initialize helper events
   ctl_events_init(&BUS_helper_events,0);
   //start helper task
-  ctl_task_run(&ARC_bus_helper_task,18,ARC_bus_helper,NULL,"ARC_Bus_helper",sizeof(helper_stack)/sizeof(helper_stack[0])-2,helper_stack+1,0);
+  ctl_task_run(&ARC_bus_helper_task,BUS_PRI_ARCBUS_HELPER,ARC_bus_helper,NULL,"ARC_Bus_helper",sizeof(helper_stack)/sizeof(helper_stack[0])-2,helper_stack+1,0);
   
   //event loop
   for(;;){
@@ -398,7 +398,7 @@ void mainLoop(void) __toplevel{
   //initialize events
   ctl_events_init(&BUS_INT_events,0);
   //start ARCbus task
-  ctl_task_run(&ARC_bus_task,20,ARC_bus_run,NULL,"ARC_Bus",sizeof(BUS_stack)/sizeof(BUS_stack[0])-2,BUS_stack+1,0);
+  ctl_task_run(&ARC_bus_task,BUS_PRI_ARCBUS,ARC_bus_run,NULL,"ARC_Bus",sizeof(BUS_stack)/sizeof(BUS_stack[0])-2,BUS_stack+1,0);
   //kick WDT to give us some time
   WDT_KICK();
   // drop to lowest priority to start created tasks running.
