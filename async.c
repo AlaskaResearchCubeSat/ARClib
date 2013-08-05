@@ -149,13 +149,12 @@ int async_send_data(void){
   unsigned char buff[BUS_I2C_HDR_LEN+ASYNC_MAX_SIZE+BUS_I2C_CRC_LEN];
   unsigned char *ptr;
   unsigned short len;
+  int ret;
   //check flow control
   if(txFlow==ASYNC_FLOW_STOPPED){
      //flow has stopped, unable to send
      return ERR_FLOW_CTL_STOPPED;
   }
-  //stop timer
-  async_timer=0;
   //setup packet 
   ptr=BUS_cmd_init(buff,CMD_ASYNC_DAT);
   //get bytes from queue
@@ -165,7 +164,12 @@ int async_send_data(void){
     return RET_SUCCESS;
   }
   //send data
-  return BUS_cmd_tx(async_addr,buff,len,0,BUS_I2C_SEND_FOREGROUND);
+  ret=BUS_cmd_tx(async_addr,buff,len,0,BUS_I2C_SEND_FOREGROUND);
+  if(ret==RET_SUCCESS){
+    //TESTING: toggle LED
+    P7OUT^=BIT0;
+  }
+  return ret;
 }
 
 //transmit a character
@@ -204,7 +208,7 @@ int async_Getc(void){
   //receive a byte from the queue
   ctl_byte_queue_receive(&async_rxQ,&c,CTL_TIMEOUT_NONE,0);
   //check if flow can be restarted
-  if(rxFlow==ASYNC_FLOW_STOPPED && ctl_byte_queue_num_free(&async_rxQ)>=ASYNC_FLOW_RESTART_THRESHOLD){
+  if(rxFlow!=ASYNC_FLOW_RUNNING && rxFlow!=ASYNC_FLOW_STOPPED && ctl_byte_queue_num_free(&async_rxQ)>=ASYNC_FLOW_RESTART_THRESHOLD){
     //setup packet 
     ptr=BUS_cmd_init(buff,CMD_ASYNC_SETUP);
     ptr[0]=ASYNC_RESTART;
@@ -212,8 +216,10 @@ int async_Getc(void){
     resp=BUS_cmd_tx(async_addr,buff,1,0,BUS_I2C_SEND_FOREGROUND);
     //check if command was successful
     if(resp==RET_SUCCESS){
-      //flow control is running
-      rxFlow=ASYNC_FLOW_RUNNING;
+      //flow control is restarting
+      rxFlow=ASYNC_FLOW_RESTARTING;
+      //TESTING: set LED
+      P7OUT&=~BIT2;
     }
     //if command was not successful command will be sent again next time async_Getc is called
   }

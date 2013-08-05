@@ -297,6 +297,8 @@ static void ARC_bus_run(void *p) __toplevel{
                 }
                 //stop async from sending
                 txFlow=ASYNC_FLOW_STOPPED;
+                //TESTING: set LED
+                P7OUT|=BIT1;
               break;
               case ASYNC_RESTART:
                 //check that async address is sender address
@@ -306,11 +308,14 @@ static void ARC_bus_run(void *p) __toplevel{
                 }
                 //restart async sending
                 txFlow=ASYNC_FLOW_RUNNING;
+                //TESTING: set LED
+                P7OUT&=~BIT1;
                 //tell helper to send data
                 ctl_events_set_clear(&BUS_helper_events,BUS_HELPER_EV_ASYNC_SEND,0);
               break;
               default:
                 //unknown command: handle accordingly
+                //TODO: handle this better
                 __no_operation();
             }
           break;
@@ -318,8 +323,16 @@ static void ARC_bus_run(void *p) __toplevel{
             //TODO: check sender address
             //post bytes to queue
             ctl_byte_queue_post_multi_nb(&async_rxQ,len,ptr);
+            //TESTING: toggle LED
+            P7OUT^=BIT3;
+            //check if restarting
+            if(rxFlow==ASYNC_FLOW_RESTARTING){
+              //flow is running, packet recieved
+              rxFlow=ASYNC_FLOW_RUNNING;
+            }
             //check free bytes in queue
-            if(rxFlow==ASYNC_FLOW_RUNNING && ctl_byte_queue_num_free(&async_rxQ)>=ASYNC_FLOW_STOP_THRESHOLD){              
+            if(rxFlow!=ASYNC_FLOW_OFF && ctl_byte_queue_num_free(&async_rxQ)>=ASYNC_FLOW_STOP_THRESHOLD){              
+              //tell helper thread to send stop command
               ctl_events_set_clear(&BUS_helper_events,BUS_HELPER_EV_ASYNC_STOP,0);
             }
           break;
@@ -416,7 +429,10 @@ static void ARC_bus_helper(void *p) __toplevel{
       ptr[0]=ASYNC_STOP;
       BUS_cmd_tx(async_addr,pk,1,0,BUS_I2C_SEND_FOREGROUND);
       if(resp==RET_SUCCESS){
+        //command sent, track status
         rxFlow=ASYNC_FLOW_STOPPED;  
+        //TESTING: set LED
+        P7OUT|=BIT2;
       }
     }
     //async timer timed out, send data
@@ -428,7 +444,7 @@ static void ARC_bus_helper(void *p) __toplevel{
       if(num>ASYNC_TARGET_SIZE){
         //send more data
         ctl_events_set_clear(&BUS_helper_events,BUS_HELPER_EV_ASYNC_SEND,0);
-      }else if(num!=0 && async_timer!=0){
+      }else if(num!=0 && async_timer==0){
         //there are a few chars left, reset timer
         async_timer=30;
       }
