@@ -7,7 +7,6 @@
 #define WDT_KICK()        (WDTCTL=WDTPW|WDTCNTCL|WDTSSEL)
 //#define WDT_KICK          WDT_STOP
 #define WDT_STOP()        (WDTCTL=WDTPW|WDTHOLD|WDTCNTCL)
-#define WDT_RESET()       (WDTCTL=0)
 
 //thread priorities
 enum{BUS_PRI_EXTRA_LOW=20,BUS_PRI_LOW=50,BUS_PRI_NORMAL=80,BUS_PRI_HIGH=110,BUS_PRI_EXTRA_HIGH=140,BUS_PRI_EXTREME=170,BUS_PRI_CRITICAL=200};
@@ -175,6 +174,8 @@ void async_setup_events(CTL_EVENT_SET_t *e,CTL_EVENT_SET_t txnotfull,CTL_EVENT_S
 void async_setup_close_event(CTL_EVENT_SET_t *e,CTL_EVENT_SET_t closed);
 //send a chunk of async data from the queue
 int async_send_data(void);
+
+void reset(unsigned char level,unsigned short source,int err, unsigned short argument);
 
 //get error string for bus errors
 const char *BUS_error_str(int error);

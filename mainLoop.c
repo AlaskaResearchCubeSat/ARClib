@@ -181,8 +181,8 @@ static void ARC_bus_run(void *p) __toplevel{
             if(len!=0){
               resp=ERR_PK_LEN;
             }
-            //cause a PUC by writing the wrong password to the watchdog
-            WDT_RESET();
+            //reset msp430
+            reset(ERR_LEV_INFO,BUS_ERR_SRC_MAIN_LOOP,MAIN_LOOP_ERR_RESET,0);
             //TODO: code should never get here, handle this if it does happen
             break;
           case CMD_SPI_RDY:
