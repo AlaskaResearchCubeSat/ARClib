@@ -439,14 +439,19 @@ static void ARC_bus_helper(void *p) __toplevel{
     //do this last because it will restart if there is more data to send
     if(e&BUS_HELPER_EV_ASYNC_SEND){
       //send some data
-      async_send_data();
-      num=ctl_byte_queue_num_used(&async_txQ);
-      if(num>ASYNC_TARGET_SIZE){
-        //send more data
-        ctl_events_set_clear(&BUS_helper_events,BUS_HELPER_EV_ASYNC_SEND,0);
-      }else if(num!=0 && async_timer==0){
-        //there are a few chars left, reset timer
-        async_timer=30;
+      resp=async_send_data();
+      //check if flow stopped
+      if(resp!=ERR_FLOW_CTL_STOPPED){
+        //get number of bytes in the que
+        num=ctl_byte_queue_num_used(&async_txQ);
+        //set threshold accordingly
+        if(num>ASYNC_TARGET_SIZE){
+          //set short timeout, chars in buffer
+          async_timer=2;
+        }else if(num!=0 && async_timer==0){
+          //there are a few chars left, reset timer
+          async_timer=30;
+        }
       }
     }
   }
