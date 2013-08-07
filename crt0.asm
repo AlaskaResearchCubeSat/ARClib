@@ -7,23 +7,6 @@
 //
 // THIS FILE IS PROVIDED AS IS WITH NO WARRANTY OF ANY KIND, INCLUDING THE
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-//
-// Preprocessor Definitions:
-//
-// __NOVECTORS - if defined .vectors section isn't allocated
-//
-// FULL_LIBRARY - if defined argc, argv are setup by debug_getargs, exit symbol is defined and executes
-//                on return from main, exit calls atexit functions and then debug_exit
-//
-// ARGSSPACE - ram size in bytes to contain the debug_getargs
-
-#ifndef ARGSSPACE
-#define ARGSSPACE 128
-#endif
-
-#ifdef FULL_LIBRARY
-        .public _exit
-#endif
 
 #include <msp430.h>
 
@@ -38,8 +21,6 @@
 ; Executed upon reset
 __reset proc
 
-; Turn off watchdog.  You can enable it in main() if required.
-        ;mov.w #WDTPW+WDTHOLD, &WDTCTL
 ; Kick Watchdog
         mov.w #WDTPW+WDTCNTCL+WDTSSEL, &WDTCTL
 
@@ -68,26 +49,12 @@ __reset proc
 ; Kick Watchdog
         mov.w #WDTPW+WDTCNTCL+WDTSSEL, &WDTCTL
 
-#ifdef FULL_LIBRARY
-        mov.w   #ARGSSPACE, r15
-        mov.w   #args, r14
-        callx   #_debug_getargs
-        mov.w   #args, r14
-#else
         mov.w   #0, r15
         mov.w   #0, r14
-#endif
 ; Call user entry point void main(void).
         callx   #_main
-#ifdef FULL_LIBRARY
-        endproc
-_exit   proc
-        mov     r15, r5
-        callx   #__execute_at_exit_fns
-        mov     r5, r15
-        callx   #_debug_exit
-#endif
 ; If main() returns, kick off again.
+;TODO: report error here
         jmp     __reset
         endproc
 
@@ -100,26 +67,12 @@ ___heap_start__::
         DW      heap_size
         DS      heap_size-4    
 
-#ifndef __NOVECTORS
-; Reset vector
-        .vectors
-        .keep
-        org     RESET_VECTOR
-        dw      __reset
-#endif
-
 ; Initialise the IDATA0 section by duplicating the contents into the
 ; CONST section and copying them on startup.
         .const
 data_init_begin:
         .init  "IDATA0"
 data_init_end:
-
-#ifdef FULL_LIBRARY
-        .bss
-args:
-        .space ARGSSPACE
-#endif
 
 ; Define symbols for runtime support routines.  The 16-bit and 32-bit
 ; multipliers do not have the same addresses over all MSP430 variants,
