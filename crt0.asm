@@ -9,6 +9,7 @@
 // WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 
 #include <msp430.h>
+#include "Magic.h"
 
 ; Create sections
         .data
@@ -23,6 +24,15 @@ __reset proc
 
 ; Kick Watchdog
         mov.w #WDTPW+WDTCNTCL+WDTSSEL, &WDTCTL
+
+;check saved error magic number
+        cmp   #RESET_MAGIC_PRE,&_saved_error
+        jne   other_reset
+        mov.w #RESET_MAGIC_POST,&_saved_error
+        jmp   saved_error_end
+other_reset:
+        mov.w #RESET_MAGIC_POST,&_saved_error
+saved_error_end:
 
 ; Set up stack.
         mov.w   #___RAM_Address+___RAM_Size, sp
