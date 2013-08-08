@@ -25,6 +25,9 @@ __reset proc
 ; Kick Watchdog
         mov.w #WDTPW+WDTCNTCL+WDTSSEL, &WDTCTL
 
+; Set up stack.
+        mov.w   #___RAM_Address+___RAM_Size, sp
+
 ;check saved error magic number
         cmp   #RESET_MAGIC_PRE,&_saved_error
         jne   other_reset
@@ -33,9 +36,6 @@ __reset proc
 other_reset:
         mov.w #RESET_MAGIC_POST,&_saved_error
 saved_error_end:
-
-; Set up stack.
-        mov.w   #___RAM_Address+___RAM_Size, sp
 
 ; Copy from initialised data section to data section.
         LINKIF  SIZEOF(IDATA0)
