@@ -56,6 +56,14 @@ other_reset:
         mov.w #RESET_MAGIC_POST,&_saved_error
 saved_error_end:
 
+;Save contents of saved_error so that they can be restored after initialization
+        mov.w #5,r15
+        mov.w #_saved_error,r14
+save_lp:
+        push.w @r14+
+        sub.w #1,r15
+        jne save_lp
+
 ; Copy from initialised data section to data section.
         LINKIF  SIZEOF(IDATA0)
         mov.w   #SFB(IDATA0), r15
@@ -78,6 +86,17 @@ saved_error_end:
 ; Kick Watchdog
         mov.w #WDTPW+WDTCNTCL+WDTSSEL, &WDTCTL
 
+;Restore contents of saved_error
+        mov.w #5,r15
+        mov.w #_saved_error+10,r14
+restore_lp:
+        sub.w #2,r14
+        pop.w @r14
+        sub.w #1,r15
+        jne restore_lp
+
+
+
 #ifdef FULL_LIBRARY
         mov.w   #ARGSSPACE, r15
         mov.w   #args, r14
@@ -98,6 +117,7 @@ _exit   proc
         callx   #_debug_exit
 #endif
 ; If main() returns, kick off again.
+;TODO : save error status
         jmp     __reset
         endproc
 
