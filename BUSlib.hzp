@@ -20,9 +20,11 @@
       <file file_name="DMA.h"/>
       <file file_name="async.c"/>
       <file file_name="error_str.c"/>
-      <file file_name="crt0.asm"/>
       <file file_name="error_tracking.c"/>
       <file file_name="Magic.h"/>
+    </folder>
+    <folder Name="Startup Code">
+      <file file_name="crt0.asm"/>
     </folder>
   </project>
   <configuration Name="MSP430 Debug" Target="MSP430F2618" build_use_hardware_multiplier="16-Bit Multiplier" inherited_configurations="MSP430;Debug" link_use_multi_threaded_libraries="Yes" linker_memory_map_file="$(PackagesDir)/targets/msp430/MSP430F2618.xml" linker_section_placement_file="$(StudioDir)/targets/section_placement_info_abcd_iv32.xml" msp430_debug_interface="JTAG" msp430_identify_string="MSP430F2618" msp430_insn_set="MSP430X"/>

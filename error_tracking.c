@@ -12,7 +12,7 @@
     unsigned char level;
   }RESET_ERROR;
 
-RESET_ERROR saved_error __at ".non_init";
+RESET_ERROR saved_error;
 
 void reset(unsigned char level,unsigned short source,int err, unsigned short argument){
   //disable interrupts
