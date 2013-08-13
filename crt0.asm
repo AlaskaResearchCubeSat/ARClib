@@ -26,6 +26,7 @@
 #endif
 
 #include <msp430.h>
+#include "Magic.h"
 
 ; Create sections
         .data
