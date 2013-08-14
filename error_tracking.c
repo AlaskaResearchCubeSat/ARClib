@@ -33,6 +33,7 @@ void main_return(void){
 void startup_error_check(void){
   unsigned char flags=IFG1;
   IFG1=0;
+  //check for watchdog reset
   if(flags&WDTIFG){
     saved_error.level=ERR_LEV_CRITICAL;
     saved_error.source=BUS_ERR_SRC_STARTUP;
@@ -42,6 +43,7 @@ void startup_error_check(void){
     saved_error.magic=RESET_MAGIC_POST;
     return;
   }
+  //check for power on reset
   if(flags&PORIFG){
     saved_error.level=ERR_LEV_DEBUG+3;
     saved_error.source=BUS_ERR_SRC_STARTUP;
@@ -51,6 +53,7 @@ void startup_error_check(void){
     saved_error.magic=RESET_MAGIC_POST;
     return;
   }
+  //check for reset pin
   if(flags&RSTIFG){
     saved_error.level=ERR_LEV_DEBUG+3;
     saved_error.source=BUS_ERR_SRC_STARTUP;

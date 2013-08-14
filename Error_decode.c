@@ -71,6 +71,12 @@ char *err_decode_arcbus(char buf[150], unsigned short source,int err, unsigned s
         case MAIN_LOOP_ERR_NACK_REC:
           sprintf(buf,"ARCbus Main Loop : NACK for command %s (%i), reason %i",cmdtostr(argument>>8),argument>>8,argument&0xFF);
         return buf;
+        case MAIN_LOOP_ERR_SPI_COMPLETE_FAIL:
+          sprintf(buf,"ARCbus Main Loop : Failed to send SPI complete command : %s",BUS_error_str(argument));
+        return buf;
+        case MAIN_LOOP_ERR_SPI_CLEAR_FAIL:
+          sprintf(buf,"ARCbus Main Loop : Failed to send SPI clear command : %s",BUS_error_str(argument));
+        return buf;
       }
     break; 
     case BUS_ERR_SRC_STARTUP:
@@ -85,6 +91,13 @@ char *err_decode_arcbus(char buf[150], unsigned short source,int err, unsigned s
           return "Startup Code : Reset Pin Reset";
       }
     break; 
+    case BUS_ERR_SRC_ASYNC:
+      switch(err){
+        case ASYNC_ERR_CLOSE_WRONG_ADDR:
+          sprintf(buf,"Async : Wrong closing address. recived 0x%02X expected 0x%02X",argument>>8,argument&0xFF);
+          return buf;
+      }
+    break;      
   }
   sprintf(buf,"source = %i, error = %i, argument = %i",source,err,argument);
   return buf;

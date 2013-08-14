@@ -232,7 +232,6 @@ static void ARC_bus_run(void *p) __toplevel{
             SPI_buf[arcBus_stat.spi_stat.len]=crc>>8;
             SPI_buf[arcBus_stat.spi_stat.len+1]=crc;
             //setup SPI structure
-            //TODO: make sure that buffer is not being used
             arcBus_stat.spi_stat.rx=SPI_buf;
             arcBus_stat.spi_stat.tx=SPI_buf;
             //Setup SPI bus to exchange data as master
@@ -288,9 +287,8 @@ static void ARC_bus_run(void *p) __toplevel{
               case ASYNC_CLOSE:
                 //check if sending address corosponds to async address
                 if(async_addr!=addr){
-                  //ERROR : not open
-                  //TODO: do something here
-                  //resp=
+                  //report error
+                  report_error(ERR_LEV_ERROR,BUS_ERR_SRC_ASYNC,ASYNC_ERR_CLOSE_WRONG_ADDR,(((unsigned short)addr)<<8)|async_addr);
                   break;
                 }
                 //tell helper thread to close connection
@@ -375,7 +373,8 @@ static void ARC_bus_helper(void *p) __toplevel{
       }
       //check if command sent successfully
       if(resp!=RET_SUCCESS){
-        //TODO: report error
+        //report error
+        report_error(ERR_LEV_ERROR,BUS_ERR_SRC_MAIN_LOOP,MAIN_LOOP_ERR_SPI_COMPLETE_FAIL,resp);
       }
     }
     if(e&BUS_HELPER_EV_SPI_CLEAR_CMD){
@@ -388,7 +387,8 @@ static void ARC_bus_helper(void *p) __toplevel{
       }
       //check if command sent successfully
       if(resp!=RET_SUCCESS){
-        //TODO: report error
+        //report error
+        report_error(ERR_LEV_ERROR,BUS_ERR_SRC_MAIN_LOOP,MAIN_LOOP_ERR_SPI_CLEAR_FAIL,resp);
       }
     }
     if(e&BUS_HELPER_EV_ASYNC_CLOSE){      
