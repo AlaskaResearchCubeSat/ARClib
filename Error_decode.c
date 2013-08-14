@@ -65,6 +65,12 @@ char *err_decode_arcbus(char buf[150], unsigned short source,int err, unsigned s
         case MAIN_LOOP_ERR_CMD_CRC:
           sprintf(buf,"ARCbus Main Loop : bad CRC for command %s (%i)",cmdtostr(argument),argument);
         return buf;
+        case MAIN_LOOP_ERR_BAD_CMD:
+          sprintf(buf,"ARCbus Main Loop : Bad Command for command %s (%i), resp %i",cmdtostr(argument&0xFF),argument&0xFF,argument>>8);
+        return buf;
+        case MAIN_LOOP_ERR_NACK_REC:
+          sprintf(buf,"ARCbus Main Loop : NACK for command %s (%i), reason %i",cmdtostr(argument>>8),argument>>8,argument&0xFF);
+        return buf;
       }
     break; 
     case BUS_ERR_SRC_STARTUP:

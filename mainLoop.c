@@ -310,6 +310,8 @@ static void ARC_bus_run(void *p) __toplevel{
               //TESTING: print message
               printf("\r\nNACK recived for command %i with reason %i\r\n",ptr[0],ptr[1]);
             #endif
+            //report error
+            report_error(ERR_LEV_ERROR,BUS_ERR_SRC_MAIN_LOOP,MAIN_LOOP_ERR_NACK_REC,(((unsigned short)ptr[0])<<8)|((unsigned short)ptr[1]));
           break;
           default:
             //check for subsystem command
@@ -321,6 +323,7 @@ static void ARC_bus_run(void *p) __toplevel{
           #ifdef PRINT_DEBUG
             printf("Error : resp %i\r\n",(char)resp);
           #endif
+          report_error(ERR_LEV_ERROR,BUS_ERR_SRC_MAIN_LOOP,MAIN_LOOP_ERR_BAD_CMD,(((unsigned short)resp)<<8)|((unsigned short)cmd));
           //setup command
           ptr=BUS_cmd_init(pk,CMD_NACK);
           //send NACK reason
