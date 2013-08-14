@@ -63,16 +63,13 @@ static void ARC_bus_run(void *p) __toplevel{
       //check for success
       if(resp!=RET_SUCCESS){
         //Failed
-        #ifdef PRINT_DEBUG
-          puts("Failed to detect CDH board\r");
-        #endif
+        report_error(ERR_LEV_ERROR,BUS_ERR_SRC_MAIN_LOOP,MAIN_LOOP_ERR_CDH_NOT_FOUND,resp);
+        
       }
     }*/
   #else     //CDH board, check for other CDH board
     if(resp==RET_SUCCESS){
-      #ifdef PRINT_DEBUG
-        puts("Other CDH board detected.\r");
-      #endif
+      report_error(ERR_LEV_ERROR+30,BUS_ERR_SRC_MAIN_LOOP,MAIN_LOOP_ERR_MUTIPLE_CDH,0);
       //TODO : this is bad. perhaps do something here to recover
     }
   #endif
@@ -304,10 +301,6 @@ static void ARC_bus_run(void *p) __toplevel{
             //TODO: handle this better somehow?
             //set event 
             ctl_events_set_clear(&arcBus_stat.events,BUS_EV_CMD_NACK,0);
-            #ifdef PRINT_DEBUG
-              //TESTING: print message
-              printf("\r\nNACK recived for command %i with reason %i\r\n",ptr[0],ptr[1]);
-            #endif
             //report error
             report_error(ERR_LEV_ERROR,BUS_ERR_SRC_MAIN_LOOP,MAIN_LOOP_ERR_NACK_REC,(((unsigned short)ptr[0])<<8)|((unsigned short)ptr[1]));
           break;
@@ -318,9 +311,6 @@ static void ARC_bus_run(void *p) __toplevel{
         }
         //malformed command, send nack if requested
         if(resp!=0 && i2c_buf[0]&CMD_TX_NACK){
-          #ifdef PRINT_DEBUG
-            printf("Error : resp %i\r\n",(char)resp);
-          #endif
           report_error(ERR_LEV_ERROR,BUS_ERR_SRC_MAIN_LOOP,MAIN_LOOP_ERR_BAD_CMD,(((unsigned short)resp)<<8)|((unsigned short)cmd));
           //setup command
           ptr=BUS_cmd_init(pk,CMD_NACK);
@@ -331,13 +321,6 @@ static void ARC_bus_run(void *p) __toplevel{
         }
       }else if(cmd!=CMD_NACK){
         //CRC check failed, send NACK
-        #ifdef PRINT_DEBUG
-          printf("Error : bad CRC Command %i\r\nRecived CRC 0x%02X calculated CRC 0x%02X\r\n",cmd,ptr[len],crc);
-          //print out packet
-          for(i=0;i<len;i++){
-            printf("0x%02X ",ptr[i]);
-          }
-        #endif
         report_error(ERR_LEV_ERROR,BUS_ERR_SRC_MAIN_LOOP,MAIN_LOOP_ERR_CMD_CRC,cmd);
         //setup command
         ptr=BUS_cmd_init(pk,CMD_NACK);

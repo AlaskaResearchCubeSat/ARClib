@@ -77,6 +77,12 @@ char *err_decode_arcbus(char buf[150], unsigned short source,int err, unsigned s
         case MAIN_LOOP_ERR_SPI_CLEAR_FAIL:
           sprintf(buf,"ARCbus Main Loop : Failed to send SPI clear command : %s",BUS_error_str(argument));
         return buf;
+        case MAIN_LOOP_ERR_MUTIPLE_CDH:
+          return "ARCbus Main Loop : Mutiple CDH boards detected!";
+        case MAIN_LOOP_ERR_CDH_NOT_FOUND:
+          sprintf(buf,"ARCbus Main Loop : CDH board not found : %s",BUS_error_str(argument));
+        return buf;
+          
       }
     break; 
     case BUS_ERR_SRC_STARTUP:
