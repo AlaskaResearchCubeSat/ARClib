@@ -6,6 +6,8 @@
   
   #include "ARCbus.h"
   
+  
+  
   //ARCbus error sources
   enum{BUS_ERR_SRC_CTL=ERR_SRC_ARCBUS,BUS_ERR_SRC_MAIN_LOOP,BUS_ERR_SRC_STARTUP,BUS_ERR_SRC_ASYNC};
   
@@ -20,7 +22,9 @@
   enum{STARTUP_ERR_MAIN_RETURN,STARTUP_ERR_WDT_RESET,STARTUP_ERR_POR,STARTUP_ERR_RESET_PIN};
         
   //error codes for async
-  enum{ASYNC_ERR_CLOSE_WRONG_ADDR};
+  enum{ASYNC_ERR_CLOSE_WRONG_ADDR,ASYNC_ERR_OPEN_ADDR,ASYNC_ERR_OPEN_BUSY,ASYNC_ERR_CLOSE_FAIL,ASYNC_ERR_DATA_FAIL};
+  
+  
   
   //flags for internal BUS events
   enum{BUS_INT_EV_I2C_CMD_RX=(1<<0),BUS_INT_EV_SPI_COMPLETE=(1<<1),BUS_INT_EV_BUFF_UNLOCK=(1<<2),BUS_INT_EV_RELEASE_MUTEX=(1<<3)};
@@ -88,7 +92,7 @@
   //close current connection
   int async_close_remote(void);
   //Open asynchronous when asked to by a board
-  int async_open_remote(unsigned char addr);
+  void async_open_remote(unsigned char addr);
   
   void BUS_I2C_release(void);
 

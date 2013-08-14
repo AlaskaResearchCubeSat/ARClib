@@ -102,6 +102,18 @@ char *err_decode_arcbus(char buf[150], unsigned short source,int err, unsigned s
         case ASYNC_ERR_CLOSE_WRONG_ADDR:
           sprintf(buf,"Async : Wrong closing address. recived 0x%02X expected 0x%02X",argument>>8,argument&0xFF);
           return buf;
+        case ASYNC_ERR_OPEN_ADDR:
+          sprintf(buf,"Async : can't open addr 0x%02X",argument);
+          return buf;
+        case ASYNC_ERR_OPEN_BUSY:
+          sprintf(buf,"Async : can't open async from addr 0x%02X already connected to 0x%02X",argument>>8,argument&0xFF);
+          return buf;
+        case ASYNC_ERR_CLOSE_FAIL:
+          sprintf(buf,"Async : Failed to send closing command : %s",BUS_error_str(argument));
+        return buf;
+        case ASYNC_ERR_DATA_FAIL:
+          sprintf(buf,"Async : Failed to send data : %s",BUS_error_str(argument));
+        return buf;
       }
     break;      
   }

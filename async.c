@@ -61,20 +61,23 @@ int async_open(unsigned char addr){
 }
 
 //Open asynchronous when asked to by a board
-int async_open_remote(unsigned char addr){
+void async_open_remote(unsigned char addr){
   //check for general call address
   if(addr==BUS_ADDR_GC){
     //Error : can't open communication with GC address
-    return ERR_BAD_ADDR;
+    report_error(ERR_LEV_ERROR,BUS_ERR_SRC_ASYNC,ASYNC_ERR_OPEN_ADDR,addr);
+    return;
   }
   //check for own address
   if(addr==((~UCGCEN)&UCB0I2COA)){
     //Error : can't open communication with own address
-    return ERR_BAD_ADDR;
+    report_error(ERR_LEV_ERROR,BUS_ERR_SRC_ASYNC,ASYNC_ERR_OPEN_ADDR,addr);
+    return;
   }
   if(async_isOpen()){
     //Error: async is already open
-    return ERR_BUSY;
+    report_error(ERR_LEV_ERROR,BUS_ERR_SRC_ASYNC,ASYNC_ERR_OPEN_BUSY,(((unsigned short)addr)<<8)|async_addr);
+    return;
   }
   //set address
   async_addr=addr;
@@ -83,8 +86,6 @@ int async_open_remote(unsigned char addr){
   ctl_byte_queue_init(&async_rxQ,rxbuf,sizeof(rxbuf));
   //send open event
   ctl_events_set_clear(&SUB_events,SUB_EV_ASYNC_OPEN,0);
-  //return success
-  return RET_SUCCESS;
 }
 
 //close current connection
@@ -114,6 +115,9 @@ int async_close(void){
         ctl_events_set_clear(closed_event,closed_flag,0);
       }
       return resp;
+    }else{
+      //sending close command failed, report error
+      report_error(ERR_LEV_ERROR,BUS_ERR_SRC_ASYNC,ASYNC_ERR_CLOSE_FAIL,resp);
     }
   }
   return resp;
@@ -143,6 +147,7 @@ int async_send_data(void){
   unsigned char buff[BUS_I2C_HDR_LEN+ASYNC_MAX_SIZE+BUS_I2C_CRC_LEN];
   unsigned char *ptr;
   unsigned short len;
+  int resp;
   //stop timer
   async_timer=0;
   //setup packet 
@@ -154,7 +159,13 @@ int async_send_data(void){
     return RET_SUCCESS;
   }
   //send data
-  return BUS_cmd_tx(async_addr,buff,len,0,BUS_I2C_SEND_FOREGROUND);
+  resp=BUS_cmd_tx(async_addr,buff,len,0,BUS_I2C_SEND_FOREGROUND);
+  if(resp!=RET_SUCCESS){
+    //sending data failed, report error
+    report_error(ERR_LEV_ERROR,BUS_ERR_SRC_ASYNC,ASYNC_ERR_DATA_FAIL,resp);
+  }
+  //return result
+  return resp;
 }
 
 //transmit a charecter
