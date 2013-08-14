@@ -13,13 +13,16 @@
   #endif
   
   //ARCbus error sources
-  enum{BUS_ERR_SRC_CTL=ERR_SRC_ARCBUS,BUS_ERR_SRC_MAIN_LOOP};
+  enum{BUS_ERR_SRC_CTL=ERR_SRC_ARCBUS,BUS_ERR_SRC_MAIN_LOOP,BUS_ERR_SRC_STARTUP};
   
   //error codes for CTL
   enum{CTL_ERR_HANDLER};
     
   //error codes for main loop
   enum{MAIN_LOOP_ERR_RESET,MAIN_LOOP_ERR_CMD_CRC};
+      
+  //error codes for startup code
+  enum{STARTUP_ERR_MAIN_RETURN,STARTUP_ERR_WDT_RESET,STARTUP_ERR_POR,STARTUP_ERR_RESET_PIN};
   
   //flags for internal BUS events
   enum{BUS_INT_EV_I2C_CMD_RX=(1<<0),BUS_INT_EV_SPI_COMPLETE=(1<<1),BUS_INT_EV_BUFF_UNLOCK=(1<<2),BUS_INT_EV_RELEASE_MUTEX=(1<<3)};

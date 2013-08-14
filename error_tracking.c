@@ -19,3 +19,47 @@ void reset(unsigned char level,unsigned short source,int err, unsigned short arg
   WDTCTL=0;
   //TODO: code should never get here, report an error if it does
 }
+
+//this function is called from startup code to set the structure values after main returns
+//This is done 
+void main_return(void){
+  saved_error.level=ERR_LEV_CRITICAL;
+  saved_error.source=BUS_ERR_SRC_STARTUP;
+  saved_error.err=STARTUP_ERR_MAIN_RETURN;
+  saved_error.argument=0;
+}
+
+//called from startup code to check SFR for the reason for the reset
+void startup_error_check(void){
+  unsigned char flags=IFG1;
+  IFG1=0;
+  if(flags&WDTIFG){
+    saved_error.level=ERR_LEV_CRITICAL;
+    saved_error.source=BUS_ERR_SRC_STARTUP;
+    saved_error.err=STARTUP_ERR_WDT_RESET;
+    saved_error.argument=0;
+    //set magic value
+    saved_error.magic=RESET_MAGIC_POST;
+    return;
+  }
+  if(flags&PORIFG){
+    saved_error.level=ERR_LEV_DEBUG+3;
+    saved_error.source=BUS_ERR_SRC_STARTUP;
+    saved_error.err=STARTUP_ERR_POR;
+    saved_error.argument=0;
+    //set magic value
+    saved_error.magic=RESET_MAGIC_POST;
+    return;
+  }
+  if(flags&RSTIFG){
+    saved_error.level=ERR_LEV_DEBUG+3;
+    saved_error.source=BUS_ERR_SRC_STARTUP;
+    saved_error.err=STARTUP_ERR_RESET_PIN;
+    saved_error.argument=0;
+    //set magic value
+    saved_error.magic=RESET_MAGIC_POST;
+    return;
+  }  
+  //set magic value
+  saved_error.magic=RESET_MAGIC_EMPTY;
+}

@@ -39,30 +39,29 @@
 ; Executed upon reset
 __reset proc
 
-; Turn off watchdog.  You can enable it in main() if required.
-        ;mov.w #WDTPW+WDTHOLD, &WDTCTL
 ; Kick Watchdog
-        mov.w #WDTPW+WDTCNTCL+WDTSSEL, &WDTCTL
+        mov.w   #WDTPW+WDTCNTCL+WDTSSEL, &WDTCTL
 
 ; Set up stack.
         mov.w   #___RAM_Address+___RAM_Size, sp
 
 ;check saved error magic number
-        cmp #RESET_MAGIC_PRE,&_saved_error
-        jne other_reset
-        mov.w #RESET_MAGIC_POST,&_saved_error
-        jmp saved_error_end
+        cmp     #RESET_MAGIC_PRE,&_saved_error
+        jne     other_reset
+        mov.w   #RESET_MAGIC_POST,&_saved_error
+        jmp     saved_error_end
 other_reset:
-        mov.w #RESET_MAGIC_POST,&_saved_error
+        mov.w   #RESET_MAGIC_EMPTY,&_saved_error
+        callx   #_startup_error_check
 saved_error_end:
 
 ;Save contents of saved_error so that they can be restored after initialization
-        mov.w #5,r15
-        mov.w #_saved_error,r14
+        mov.w   #5,r15
+        mov.w   #_saved_error,r14
 save_lp:
-        push.w @r14+
-        sub.w #1,r15
-        jne save_lp
+        push.w  @r14+
+        sub.w   #1,r15
+        jne     save_lp
 
 ; Copy from initialised data section to data section.
         LINKIF  SIZEOF(IDATA0)
@@ -108,16 +107,12 @@ restore_lp:
 #endif
 ; Call user entry point void main(void).
         callx   #_main
-#ifdef FULL_LIBRARY
-        endproc
-_exit   proc
-        mov     r15, r5
-        callx   #__execute_at_exit_fns
-        mov     r5, r15
-        callx   #_debug_exit
-#endif
-; If main() returns, kick off again.
-;TODO : save error status
+; For some reason Main Returned
+
+; save error status
+        callx   #_main_return
+        mov.w   #RESET_MAGIC_PRE,&_saved_error
+; kick off again.
         jmp     __reset
         endproc
 

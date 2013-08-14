@@ -67,6 +67,18 @@ char *err_decode_arcbus(char buf[150], unsigned short source,int err, unsigned s
         return buf;
       }
     break; 
+    case BUS_ERR_SRC_STARTUP:
+      switch(err){
+        case STARTUP_ERR_MAIN_RETURN:
+          return "Startup Code : Main Returned";
+        case STARTUP_ERR_WDT_RESET:
+          return "Startup Code : Watch Dog reset";
+        case STARTUP_ERR_POR:
+          return "Startup Code : Power On Reset";
+        case STARTUP_ERR_RESET_PIN:
+          return "Startup Code : Reset Pin Reset";
+      }
+    break; 
   }
   sprintf(buf,"source = %i, error = %i, argument = %i",source,err,argument);
   return buf;
