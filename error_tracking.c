@@ -3,15 +3,6 @@
 #include <msp430.h>
 #include "Magic.h"
 
-  //type for keeping track of errors
-  typedef struct{
-    int magic;
-    unsigned short source;
-    int err;
-    unsigned short argument;
-    unsigned char level;
-  }RESET_ERROR;
-
 RESET_ERROR saved_error;
 
 void reset(unsigned char level,unsigned short source,int err, unsigned short argument){

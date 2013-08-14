@@ -2,6 +2,9 @@
 #define __ARC_BUS_INTERNAL_H
   #include <stddef.h>
   #include <Error.h>
+  #include <ctl.h>
+  
+  #include "ARCbus.h"
   //#define PRINT_DEBUG
 
   #ifdef PRINT_DEBUG
@@ -16,7 +19,7 @@
   enum{CTL_ERR_HANDLER};
     
   //error codes for main loop
-  enum{MAIN_LOOP_ERR_RESET};
+  enum{MAIN_LOOP_ERR_RESET,MAIN_LOOP_ERR_CMD_CRC};
   
   //flags for internal BUS events
   enum{BUS_INT_EV_I2C_CMD_RX=(1<<0),BUS_INT_EV_SPI_COMPLETE=(1<<1),BUS_INT_EV_BUFF_UNLOCK=(1<<2),BUS_INT_EV_RELEASE_MUTEX=(1<<3)};
@@ -40,6 +43,17 @@
   short BUS_i2c_tx(unsigned short addr,const unsigned char *dat,unsigned short len);
   //become master on the I2C bus and transmit txLen bytes then recive rxlen bytes
   short BUS_i2c_txrx(unsigned short addr,const unsigned char *tx,unsigned short txLen,unsigned char *rx,unsigned short rxLen);
+  
+    //type for keeping track of errors
+  typedef struct{
+    int magic;
+    unsigned short source;
+    int err;
+    unsigned short argument;
+    unsigned char level;
+  }RESET_ERROR;
+
+  extern RESET_ERROR saved_error;
   
   //stack for ARC bus task
   extern unsigned BUS_stack[256];
