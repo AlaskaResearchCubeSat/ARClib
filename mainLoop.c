@@ -5,6 +5,7 @@
 #include "ARCbus.h"
 #include "crc.h"
 #include "spi.h"
+#include "Magic.h"
 
 #include "ARCbus_internal.h"
 
@@ -40,6 +41,12 @@ static void ARC_bus_run(void *p) __toplevel{
   ticker nt;
   int snd,i;
   SPI_addr=0;
+  //check for reset error to print
+  if(saved_error.magic==RESET_MAGIC_POST){
+    report_error(saved_error.level,saved_error.source,saved_error.err,saved_error.argument);
+    //clear magic so we are not confused in the future
+    saved_error.magic=RESET_MAGIC_EMPTY;
+  }
   //first send "I'm on" command
   //BUS_cmd_init(pk,CMD_SUB_POWERUP);//setup command
   //send command
@@ -56,16 +63,13 @@ static void ARC_bus_run(void *p) __toplevel{
       //check for success
       if(resp!=RET_SUCCESS){
         //Failed
-        #ifdef PRINT_DEBUG
-          puts("Failed to detect CDH board\r");
-        #endif
+        report_error(ERR_LEV_ERROR,BUS_ERR_SRC_MAIN_LOOP,MAIN_LOOP_ERR_CDH_NOT_FOUND,resp);
+        
       }
     }*/
   #else     //CDH board, check for other CDH board
     if(resp==RET_SUCCESS){
-      #ifdef PRINT_DEBUG
-        puts("Other CDH board detected.\r");
-      #endif
+      report_error(ERR_LEV_ERROR+30,BUS_ERR_SRC_MAIN_LOOP,MAIN_LOOP_ERR_MUTIPLE_CDH,0);
       //TODO : this is bad. perhaps do something here to recover
     }
   #endif
@@ -181,8 +185,8 @@ static void ARC_bus_run(void *p) __toplevel{
             if(len!=0){
               resp=ERR_PK_LEN;
             }
-            //cause a PUC by writing the wrong password to the watchdog
-            WDT_RESET();
+            //reset msp430
+            reset(ERR_LEV_INFO,BUS_ERR_SRC_MAIN_LOOP,MAIN_LOOP_ERR_RESET,0);
             //TODO: code should never get here, handle this if it does happen
             break;
           case CMD_SPI_RDY:
@@ -225,7 +229,6 @@ static void ARC_bus_run(void *p) __toplevel{
             SPI_buf[arcBus_stat.spi_stat.len]=crc>>8;
             SPI_buf[arcBus_stat.spi_stat.len+1]=crc;
             //setup SPI structure
-            //TODO: make sure that buffer is not being used
             arcBus_stat.spi_stat.rx=SPI_buf;
             arcBus_stat.spi_stat.tx=SPI_buf;
             //Setup SPI bus to exchange data as master
@@ -281,9 +284,8 @@ static void ARC_bus_run(void *p) __toplevel{
               case ASYNC_CLOSE:
                 //check if sending address corosponds to async address
                 if(async_addr!=addr){
-                  //ERROR : not open
-                  //TODO: do something here
-                  //resp=
+                  //report error
+                  report_error(ERR_LEV_ERROR,BUS_ERR_SRC_ASYNC,ASYNC_ERR_CLOSE_WRONG_ADDR,(((unsigned short)addr)<<8)|async_addr);
                   break;
                 }
                 //tell helper thread to close connection
@@ -340,10 +342,8 @@ static void ARC_bus_run(void *p) __toplevel{
             //TODO: handle this better somehow?
             //set event 
             ctl_events_set_clear(&arcBus_stat.events,BUS_EV_CMD_NACK,0);
-            #ifdef PRINT_DEBUG
-              //TESTING: print message
-              printf("\r\nNACK recived for command %i with reason %i\r\n",ptr[0],ptr[1]);
-            #endif
+            //report error
+            report_error(ERR_LEV_ERROR,BUS_ERR_SRC_MAIN_LOOP,MAIN_LOOP_ERR_NACK_REC,(((unsigned short)ptr[0])<<8)|((unsigned short)ptr[1]));
           break;
           default:
             //check for subsystem command
@@ -352,9 +352,7 @@ static void ARC_bus_run(void *p) __toplevel{
         }
         //malformed command, send nack if requested
         if(resp!=0 && i2c_buf[0]&CMD_TX_NACK){
-          #ifdef PRINT_DEBUG
-            printf("Error : resp %i\r\n",(char)resp);
-          #endif
+          report_error(ERR_LEV_ERROR,BUS_ERR_SRC_MAIN_LOOP,MAIN_LOOP_ERR_BAD_CMD,(((unsigned short)resp)<<8)|((unsigned short)cmd));
           //setup command
           ptr=BUS_cmd_init(pk,CMD_NACK);
           //send NACK reason
@@ -364,13 +362,7 @@ static void ARC_bus_run(void *p) __toplevel{
         }
       }else if(cmd!=CMD_NACK){
         //CRC check failed, send NACK
-        #ifdef PRINT_DEBUG
-          printf("Error : bad CRC Command %i\r\nRecived CRC 0x%02X calculated CRC 0x%02X\r\n",cmd,ptr[len],crc);
-          //print out packet
-          for(i=0;i<len;i++){
-            printf("0x%02X ",ptr[i]);
-          }
-        #endif
+        report_error(ERR_LEV_ERROR,BUS_ERR_SRC_MAIN_LOOP,MAIN_LOOP_ERR_CMD_CRC,cmd);
         //setup command
         ptr=BUS_cmd_init(pk,CMD_NACK);
         //send NACK reason
@@ -401,7 +393,8 @@ static void ARC_bus_helper(void *p) __toplevel{
       }
       //check if command sent successfully
       if(resp!=RET_SUCCESS){
-        //TODO: report error
+        //report error
+        report_error(ERR_LEV_ERROR,BUS_ERR_SRC_MAIN_LOOP,MAIN_LOOP_ERR_SPI_COMPLETE_FAIL,resp);
       }
     }
     if(e&BUS_HELPER_EV_SPI_CLEAR_CMD){
@@ -414,7 +407,8 @@ static void ARC_bus_helper(void *p) __toplevel{
       }
       //check if command sent successfully
       if(resp!=RET_SUCCESS){
-        //TODO: report error
+        //report error
+        report_error(ERR_LEV_ERROR,BUS_ERR_SRC_MAIN_LOOP,MAIN_LOOP_ERR_SPI_CLEAR_FAIL,resp);
       }
     }
     if(e&BUS_HELPER_EV_ASYNC_CLOSE){      
