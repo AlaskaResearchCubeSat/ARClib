@@ -101,6 +101,8 @@ char *err_decode_arcbus(char buf[150], unsigned short source,int err, unsigned s
           return "Startup Code : Reset Pin Reset";
         case STARTUP_ERR_RESET_FLASH_KEYV:
           return "Startup Code : Flash Security Key Violation";
+        case STARTUP_ERR_RESET_UNKNOWN:
+          return "Startup Code : Unknown Reset Cause";
       }
     break; 
     case BUS_ERR_SRC_ASYNC:

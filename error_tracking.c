@@ -75,6 +75,11 @@ void startup_error_check(void){
     FCTL3=FWKEY|LOCK;
     return;
   }
+  //Unknown error encountered
+  saved_error.level=ERR_LEV_CRITICAL;
+  saved_error.source=BUS_ERR_SRC_STARTUP;
+  saved_error.err=STARTUP_ERR_RESET_UNKNOWN;
+  saved_error.argument=0;
   //set magic value
-  saved_error.magic=RESET_MAGIC_EMPTY;
+  saved_error.magic=RESET_MAGIC_POST;
 }
