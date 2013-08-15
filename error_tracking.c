@@ -45,7 +45,7 @@ void startup_error_check(void){
   }
   //check for power on reset
   if(flags&PORIFG){
-    saved_error.level=ERR_LEV_DEBUG+3;
+    saved_error.level=BUS_ERR_LEV_ROUTINE_RST;
     saved_error.source=BUS_ERR_SRC_STARTUP;
     saved_error.err=STARTUP_ERR_POR;
     saved_error.argument=0;
@@ -55,7 +55,7 @@ void startup_error_check(void){
   }
   //check for reset pin
   if(flags&RSTIFG){
-    saved_error.level=ERR_LEV_DEBUG+3;
+    saved_error.level=BUS_ERR_LEV_ROUTINE_RST;
     saved_error.source=BUS_ERR_SRC_STARTUP;
     saved_error.err=STARTUP_ERR_RESET_PIN;
     saved_error.argument=0;
@@ -77,7 +77,7 @@ void startup_error_check(void){
   }
   //check for SVS reset
   if(SVSCTL&(SVSFG|PORON) && SVSCTL&(VLD0|VLD1|VLD2|VLD3)){
-    saved_error.level=ERR_LEV_DEBUG+3;
+    saved_error.level=BUS_ERR_LEV_ROUTINE_RST;
     saved_error.source=BUS_ERR_SRC_STARTUP;
     saved_error.err=STARTUP_ERR_RESET_SVS;
     saved_error.argument=SVSCTL;
