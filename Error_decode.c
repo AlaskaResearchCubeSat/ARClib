@@ -103,6 +103,8 @@ char *err_decode_arcbus(char buf[150], unsigned short source,int err, unsigned s
           return "Startup Code : Flash Security Key Violation";
         case STARTUP_ERR_RESET_UNKNOWN:
           return "Startup Code : Unknown Reset Cause";
+        case STARTUP_ERR_RESET_SVS:
+          return "Startup Code : Supply Voltage Supervisor Reset";
       }
     break; 
     case BUS_ERR_SRC_ASYNC:
