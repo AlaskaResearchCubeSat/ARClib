@@ -45,17 +45,21 @@ char *err_decode_arcbus(char buf[150], unsigned short source,int err, unsigned s
   switch(source){
     case BUS_ERR_SRC_CTL:
       switch(err){
-         case CTL_ERROR_NO_TASKS_TO_RUN: 
-          return "CTL : No Tasks To Run";
-        case CTL_UNSUPPORTED_CALL_FROM_ISR: 
-          return "CTL : Unsupported Call From ISR";
-        case CTL_UNSPECIFIED_ERROR:
-          return "CTL : Unspecified Error";
-        case CTL_MUTEX_UNLOCK_CALL_ERROR:
-          return "CTL : Mutex Unlock Call Error";
-        default:
-          sprintf(buf,"CTL : unknown Error = %i, argument = %i",err,argument);
-        return buf;
+         case CTL_ERR_HANDLER:
+           switch(argument){
+             case CTL_ERROR_NO_TASKS_TO_RUN: 
+              return "CTL : Error Handler : No Tasks To Run";
+            case CTL_UNSUPPORTED_CALL_FROM_ISR: 
+              return "CTL : Error Handler : Unsupported Call From ISR";
+            case CTL_UNSPECIFIED_ERROR:
+              return "CTL : Error Handler : Unspecified Error";
+            case CTL_MUTEX_UNLOCK_CALL_ERROR:
+              return "CTL : Error Handler : Mutex Unlock Call Error";
+            default:
+              sprintf(buf,"CTL : Error Handler : unknown error = %i",argument);
+            return buf;
+          }
+         break;
       }
     break;
     case BUS_ERR_SRC_MAIN_LOOP:
