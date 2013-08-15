@@ -48,7 +48,10 @@ __reset proc
 ;check saved error magic number
         cmp     #RESET_MAGIC_PRE,&_saved_error
         jne     other_reset
+;update magic number
         mov.w   #RESET_MAGIC_POST,&_saved_error
+;clear IFG1 of errors
+        mov.w   #0,&IFG1_
         jmp     saved_error_end
 other_reset:
         mov.w   #RESET_MAGIC_EMPTY,&_saved_error
