@@ -112,6 +112,8 @@ restore_lp:
         callx   #_main
 ; For some reason Main Returned
 
+; disable interrupts
+        dint
 ; save error status
         callx   #_main_return
         mov.w   #RESET_MAGIC_PRE,&_saved_error
