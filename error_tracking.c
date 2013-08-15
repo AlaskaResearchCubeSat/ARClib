@@ -63,6 +63,18 @@ void startup_error_check(void){
     saved_error.magic=RESET_MAGIC_POST;
     return;
   }  
+  //check for flash key violation
+  if(FCTL3&KEYV){
+    saved_error.level=ERR_LEV_CRITICAL;
+    saved_error.source=BUS_ERR_SRC_STARTUP;
+    saved_error.err=STARTUP_ERR_RESET_FLASH_KEYV;
+    saved_error.argument=0;
+    //set magic value
+    saved_error.magic=RESET_MAGIC_POST;
+    //clear KEYV flag
+    FCTL3=FWKEY|LOCK;
+    return;
+  }
   //set magic value
   saved_error.magic=RESET_MAGIC_EMPTY;
 }

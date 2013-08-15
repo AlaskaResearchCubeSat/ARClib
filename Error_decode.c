@@ -99,6 +99,8 @@ char *err_decode_arcbus(char buf[150], unsigned short source,int err, unsigned s
           return "Startup Code : Power On Reset";
         case STARTUP_ERR_RESET_PIN:
           return "Startup Code : Reset Pin Reset";
+        case STARTUP_ERR_RESET_FLASH_KEYV:
+          return "Startup Code : Flash Security Key Violation";
       }
     break; 
     case BUS_ERR_SRC_ASYNC:
