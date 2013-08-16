@@ -21,7 +21,7 @@ void reset(unsigned char level,unsigned short source,int err, unsigned short arg
 }
 
 //this function is called from startup code to set the structure values after main returns
-//This is done 
+//This is done to use symbolic values rather then hardcode values in asm
 void main_return(void){
   saved_error.level=ERR_LEV_CRITICAL;
   saved_error.source=BUS_ERR_SRC_STARTUP;
