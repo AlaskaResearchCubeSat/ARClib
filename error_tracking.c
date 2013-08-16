@@ -7,7 +7,7 @@ RESET_ERROR saved_error;
 
 void reset(unsigned char level,unsigned short source,int err, unsigned short argument){
   //disable interrupts
-  ctl_global_interrupts_set(0);
+  __disable_interrupt();
   //set values in error struct
   saved_error.level=level;
   saved_error.source=source;
