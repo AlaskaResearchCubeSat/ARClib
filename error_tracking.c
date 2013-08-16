@@ -76,7 +76,7 @@ void startup_error_check(void){
     return;
   }
   //check for SVS reset
-  if(SVSCTL&(SVSFG|PORON) && SVSCTL&(VLD0|VLD1|VLD2|VLD3)){
+  if((SVSCTL&(SVSFG|PORON))==(SVSFG|PORON) && SVSCTL&(VLD0|VLD1|VLD2|VLD3)){
     saved_error.level=BUS_ERR_LEV_ROUTINE_RST;
     saved_error.source=BUS_ERR_SRC_STARTUP;
     saved_error.err=STARTUP_ERR_RESET_SVS;
