@@ -169,7 +169,7 @@ int async_send_data(void){
   }
   //send data
   resp=BUS_cmd_tx(async_addr,buff,len,0,BUS_I2C_SEND_FOREGROUND);
-  if(resp==RET_SUCCESS){
+  if(resp!=RET_SUCCESS){
     //sending data failed, report error
     report_error(ERR_LEV_ERROR,BUS_ERR_SRC_ASYNC,ASYNC_ERR_DATA_FAIL,resp);
   }
