@@ -16,7 +16,7 @@ CTL_EVENT_SET_t BUS_INT_events,BUS_helper_events;
 CTL_TASK_t idle_task,ARC_bus_task,ARC_bus_helper_task;
 
 //stack for ARC bus task
-unsigned BUS_stack[256],helper_stack[100];
+unsigned BUS_stack[256],helper_stack[250];
 
 BUS_STAT arcBus_stat;
 
