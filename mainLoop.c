@@ -9,6 +9,9 @@
 
 #include "ARCbus_internal.h"
 
+//record error function, used to save an error without it cluttering up the terminal
+void record_error(unsigned char level,unsigned short source,int err, unsigned short argument);
+
 //bus internal events
 CTL_EVENT_SET_t BUS_INT_events,BUS_helper_events;
 
@@ -33,7 +36,7 @@ static void ARC_bus_run(void *p) __toplevel{
   unsigned int e;
   unsigned char len;
   unsigned char addr,cmd;
-  char resp;
+  int resp;
   unsigned char pk[40];
   unsigned char *ptr;
   unsigned short crc;
@@ -43,21 +46,19 @@ static void ARC_bus_run(void *p) __toplevel{
   SPI_addr=0;
   //check for reset error to print
   if(saved_error.magic==RESET_MAGIC_POST){
-    report_error(saved_error.level,saved_error.source,saved_error.err,saved_error.argument);
+    record_error(saved_error.level,saved_error.source,saved_error.err,saved_error.argument);
     //clear magic so we are not confused in the future
     saved_error.magic=RESET_MAGIC_EMPTY;
   }
   //first send "I'm on" command
   BUS_cmd_init(pk,CMD_SUB_POWERUP);//setup command
   //send command
-  //TODO: this seems to be causing problems when the CDH is not present
-  //THIS NEEDS TO BE FIXED!!!!
   resp=BUS_cmd_tx(BUS_ADDR_CDH,pk,0,0,BUS_I2C_SEND_FOREGROUND);
   #ifndef CDH_LIB         //Subsystem board 
     //check for failed send
     if(resp!=RET_SUCCESS){
       //give a warning
-      report_error(ERR_LEV_WARNING,BUS_ERR_SRC_MAIN_LOOP,MAIN_LOOP_ERR_CDH_NOT_FOUND,resp);
+      record_error(ERR_LEV_WARNING,BUS_ERR_SRC_MAIN_LOOP,MAIN_LOOP_ERR_CDH_NOT_FOUND,resp);
       //wait a bit
       ctl_timeout_wait(ctl_get_current_time()+30);
       //resend
@@ -65,7 +66,7 @@ static void ARC_bus_run(void *p) __toplevel{
       //check for success
       if(resp!=RET_SUCCESS){
         //Failed
-        report_error(ERR_LEV_ERROR,BUS_ERR_SRC_MAIN_LOOP,MAIN_LOOP_ERR_CDH_NOT_FOUND,resp);     
+        record_error(ERR_LEV_ERROR,BUS_ERR_SRC_MAIN_LOOP,MAIN_LOOP_ERR_CDH_NOT_FOUND,resp);     
       }
     }
   #else     //CDH board, check for other CDH board
