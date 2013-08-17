@@ -8,8 +8,24 @@
 #include "DMA.h"
 #include "ARCbus_internal.h"
 
+//record error function, used to save an error without it cluttering up the terminal
+//use the unprotected version because we are in startup code
+void _record_error(unsigned char level,unsigned short source,int err, unsigned short argument);
 
 //=============[initialization commands]=============
+ 
+ //Check calibration data in segment A
+int checkSegA_cal_data(void){
+  unsigned short *ptr=(unsigned short*)(TLV_CHECKSUM_+2);
+  unsigned short check=0;
+  do{
+    check^=*ptr++;
+  }while(ptr<(unsigned short*)0x10FF);
+  //add checksum value
+  check+=TLV_CHECKSUM+1;
+  //return result
+  return check;
+}
  
  //initialize the MSP430 Clocks
 void initCLK(void){
@@ -22,11 +38,17 @@ void initCLK(void){
   WDT_KICK();
   //setup clocks
 
-  //set DCO to 16MHz from calibrated values in flash
-  //TODO: check to see that values are valid before using
-  DCOCTL=0;
-  BCSCTL1=CALBC1_16MHZ;
-  DCOCTL=CALDCO_16MHZ;
+  if(checkSegA_cal_data()==0 && TLV_DCO_30_TAG==TAG_DCO_30 && TLV_DCO_30_LEN==0x08){
+    //set DCO to 16MHz from calibrated values in flash
+    DCOCTL=0;
+    BCSCTL1=CALBC1_16MHZ;
+    DCOCTL=CALDCO_16MHZ;
+  }else{
+    _record_error(ERR_LEV_CRITICAL,BUS_ERR_SRC_SETUP,SETUP_ERR_DCO_MISSING_CAL,0);
+    //attempt to use a reasonable default value
+    //BCSCTL1=RSEL_14;
+    //DCOCTL=DCO_3|MOD_14;
+  }
 
   //Source Mclk and SMclk from DCO (default)
   BCSCTL2=SELM_0|DIVM_0|DIVS_0;
