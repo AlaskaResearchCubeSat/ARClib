@@ -33,11 +33,6 @@ void initCLK(void){
   
   //also initialize timing generator for flash memory
   FCTL2=FWKEY|FSSEL_2|33;
-
-  //TODO: change for production code
-  //set port 5 to output clocks
-  //P5DIR=BIT4|BIT5|BIT6;
-  //P5SEL=BIT4|BIT5|BIT6;
   
   //set time ticker to zero
   ticker_time=0;
