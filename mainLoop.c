@@ -48,25 +48,26 @@ static void ARC_bus_run(void *p) __toplevel{
     saved_error.magic=RESET_MAGIC_EMPTY;
   }
   //first send "I'm on" command
-  //BUS_cmd_init(pk,CMD_SUB_POWERUP);//setup command
+  BUS_cmd_init(pk,CMD_SUB_POWERUP);//setup command
   //send command
   //TODO: this seems to be causing problems when the CDH is not present
   //THIS NEEDS TO BE FIXED!!!!
-  //resp=BUS_cmd_tx(BUS_ADDR_CDH,pk,0,0,SEND_FOREGROUND);
+  resp=BUS_cmd_tx(BUS_ADDR_CDH,pk,0,0,BUS_I2C_SEND_FOREGROUND);
   #ifndef CDH_LIB         //Subsystem board 
     //check for failed send
-    /*if(resp!=RET_SUCCESS){
+    if(resp!=RET_SUCCESS){
+      //give a warning
+      report_error(ERR_LEV_WARNING,BUS_ERR_SRC_MAIN_LOOP,MAIN_LOOP_ERR_CDH_NOT_FOUND,resp);
       //wait a bit
       ctl_timeout_wait(ctl_get_current_time()+30);
       //resend
-      resp=BUS_cmd_tx(BUS_ADDR_CDH,pk,0,0,SEND_FOREGROUND);
+      resp=BUS_cmd_tx(BUS_ADDR_CDH,pk,0,0,BUS_I2C_SEND_FOREGROUND);
       //check for success
       if(resp!=RET_SUCCESS){
         //Failed
-        report_error(ERR_LEV_ERROR,BUS_ERR_SRC_MAIN_LOOP,MAIN_LOOP_ERR_CDH_NOT_FOUND,resp);
-        
+        report_error(ERR_LEV_ERROR,BUS_ERR_SRC_MAIN_LOOP,MAIN_LOOP_ERR_CDH_NOT_FOUND,resp);     
       }
-    }*/
+    }
   #else     //CDH board, check for other CDH board
     if(resp==RET_SUCCESS){
       report_error(ERR_LEV_ERROR+30,BUS_ERR_SRC_MAIN_LOOP,MAIN_LOOP_ERR_MUTIPLE_CDH,0);
