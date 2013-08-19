@@ -47,7 +47,9 @@ void initCLK(void){
     _record_error(ERR_LEV_CRITICAL,BUS_ERR_SRC_SETUP,SETUP_ERR_DCO_MISSING_CAL,0);
     //attempt to use a reasonable default value
     //BCSCTL1=RSEL_14;
+    BCSCTL1=RSEL1|RSEL2|RSEL3;
     //DCOCTL=DCO_3|MOD_14;
+    DCOCTL=DCO0|DCO1|MOD1|MOD2|MOD3;
   }
 
   //Source Mclk and SMclk from DCO (default)
