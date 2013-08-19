@@ -79,8 +79,20 @@ void start_timerA(void){
   TACTL|=MC_2;
 }
 
+void initSVS(void){
+  //clear SVS bits to trigger power up delay if VLD!=0
+  SVSCTL=0;
+  //setup SVS to trigger on 3.3V and generate a POR
+  SVSCTL=VLD3|VLD1|PORON;
+  //wait for SVS to power up
+  //TODO: perhaps count loops to make sure we don't get stuck here
+  while(!(SVSCTL&SVSON));
+}
+
 //low level setup code
 void ARC_setup(void){
+  //setup SVS
+  initSVS();
   //setup clocks
   initCLK();
   //setup timerA
