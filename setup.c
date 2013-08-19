@@ -22,7 +22,7 @@ int checkSegA_cal_data(void){
     check^=*ptr++;
   }while(ptr<(unsigned short*)0x10FF);
   //add checksum value
-  check+=TLV_CHECKSUM+1;
+  check+=TLV_CHECKSUM;
   //return result
   return check;
 }
