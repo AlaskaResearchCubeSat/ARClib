@@ -7,6 +7,8 @@
 #include "spi.h"
 #include "DMA.h"
 #include "ARCbus_internal.h"
+//needed to access reset error
+#include "Magic.h"
 
 //record error function, used to save an error without it cluttering up the terminal
 //use the unprotected version because we are in startup code
@@ -91,6 +93,15 @@ void initSVS(void){
 
 //low level setup code
 void ARC_setup(void){
+  //setup error reporting library
+  error_init();
+  //record reset error first so that it appears first in error log
+  //check for reset error
+  if(saved_error.magic==RESET_MAGIC_POST){
+    _record_error(saved_error.level,saved_error.source,saved_error.err,saved_error.argument);
+    //clear magic so we are not confused in the future
+    saved_error.magic=RESET_MAGIC_EMPTY;
+  } 
   //setup SVS
   initSVS();
   //setup clocks
