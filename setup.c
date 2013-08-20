@@ -63,6 +63,28 @@ void initCLK(void){
   //TODO: Maybe wait for LFXT to startup?
 }
   
+//initialize the MSP430 Clocks for low voltage operation
+void initCLK_lv(void){
+  extern ticker ticker_time;
+  //set XT1 load caps, do this first so XT1 starts up sooner
+  BCSCTL3=XCAP_0;
+  //kick watchdog
+  WDT_KICK();
+  //setup clocks
+
+  //set DCO values to Defalut values ~1MHz
+  //TODO: decide what is best here for opperation down to 1.8V
+  DCOCTL=DCO0|DCO1;
+  BCSCTL1=XT2OFF|RSEL2|RSEL1|RSEL0;
+
+  //Source Mclk and SMclk from DCO (default)
+  BCSCTL2=SELM_0|DIVM_0|DIVS_0;
+  
+  //set time ticker to zero
+  ticker_time=0;
+  //TODO: Maybe wait for LFXT to startup?
+}
+  
 
 //setup timer A to run off 32.768kHz xtal
 void init_timerA(void){
@@ -95,6 +117,25 @@ void ARC_setup(void){
   initSVS();
   //setup clocks
   initCLK();
+  //setup timerA
+  init_timerA();
+  //set timer to increment by 1
+  ctl_time_increment=1;  
+  
+
+  //init buffer
+  BUS_init_buffer();
+
+  //TODO: determine if ctl_timeslice_period should be set to allow preemptive rescheduling
+  
+  //kick watchdog
+  WDT_KICK();
+}
+
+//low level setup code
+void ARC_setup_lv(void){
+  //setup clocks
+  initCLK_lv();
   //setup timerA
   init_timerA();
   //set timer to increment by 1
