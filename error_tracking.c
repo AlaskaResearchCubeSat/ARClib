@@ -75,18 +75,6 @@ void startup_error_check(void){
     FCTL3=FWKEY|LOCK;
     return;
   }
-  //check for SVS reset
-  if((SVSCTL&(SVSFG|PORON))==(SVSFG|PORON) && SVSCTL&(VLD0|VLD1|VLD2|VLD3)){
-    saved_error.level=BUS_ERR_LEV_ROUTINE_RST;
-    saved_error.source=BUS_ERR_SRC_STARTUP;
-    saved_error.err=STARTUP_ERR_RESET_SVS;
-    saved_error.argument=SVSCTL;
-    //set magic value
-    saved_error.magic=RESET_MAGIC_POST;
-    //clear SVSFG flag
-    SVSCTL&=~SVSFG;
-    return;
-  }
   //Unknown error encountered
   saved_error.level=ERR_LEV_CRITICAL;
   saved_error.source=BUS_ERR_SRC_STARTUP;
