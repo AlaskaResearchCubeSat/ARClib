@@ -5,7 +5,7 @@
 #include "ARCbus.h"
 #include "crc.h"
 #include "spi.h"
-
+#include <Error.h>
 #include "ARCbus_internal.h"
 
 //record error function, used to save an error without it cluttering up the terminal
@@ -44,6 +44,7 @@ static void ARC_bus_run(void *p) __toplevel{
   int snd,i;
   SPI_addr=0;
   //TODO: add setup function for errorlib that will print startup errors for printf version and save them for SD card version
+  error_recording_start();
   //replay error log to show startup errors
   error_log_replay();
   //first send "I'm on" command
