@@ -43,7 +43,7 @@ static void ARC_bus_run(void *p) __toplevel{
   ticker nt;
   int snd,i;
   SPI_addr=0;
-  //TODO: add setup function for errorlib that will print startup errors for printf version and save them for SD card version
+  //Initialize ErrorLib
   error_recording_start();
   //replay error log to show startup errors
   error_log_replay();
