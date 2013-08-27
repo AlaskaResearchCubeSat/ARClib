@@ -7,9 +7,28 @@
 #include "spi.h"
 #include "DMA.h"
 #include "ARCbus_internal.h"
+//needed to access reset error
+#include "Magic.h"
 
+//record error function, used to save an error without it cluttering up the terminal
+//use the unprotected version because we are in startup code
+//time ticker is not running and does not mean much at this point anyway so use a fixed zero to indicate startup errors
+void _record_error(unsigned char level,unsigned short source,int err, unsigned short argument,ticker time);
 
 //=============[initialization commands]=============
+ 
+ //Check calibration data in segment A
+int checkSegA_cal_data(void){
+  unsigned short *ptr=(unsigned short*)(TLV_CHECKSUM_+2);
+  unsigned short check=0;
+  do{
+    check^=*ptr++;
+  }while(ptr<(unsigned short*)0x10FF);
+  //add checksum value
+  check+=TLV_CHECKSUM;
+  //return result
+  return check;
+}
  
  //initialize the MSP430 Clocks
 void initCLK(void){
@@ -22,22 +41,25 @@ void initCLK(void){
   WDT_KICK();
   //setup clocks
 
-  //set DCO to 16MHz from calibrated values in flash
-  //TODO: check to see that values are valid before using
-  DCOCTL=0;
-  BCSCTL1=CALBC1_16MHZ;
-  DCOCTL=CALDCO_16MHZ;
+  if(checkSegA_cal_data()==0 && TLV_DCO_30_TAG==TAG_DCO_30 && TLV_DCO_30_LEN==0x08){
+    //set DCO to 16MHz from calibrated values in flash
+    DCOCTL=0;
+    BCSCTL1=CALBC1_16MHZ;
+    DCOCTL=CALDCO_16MHZ;
+  }else{
+    _record_error(ERR_LEV_CRITICAL,BUS_ERR_SRC_SETUP,SETUP_ERR_DCO_MISSING_CAL,0,0);
+    //attempt to use a reasonable default value
+    //BCSCTL1=XT2OFF|RSEL_14;
+    BCSCTL1=XT2OFF|RSEL1|RSEL2|RSEL3;
+    //DCOCTL=DCO_3|MOD_14;
+    DCOCTL=DCO0|DCO1|MOD1|MOD2|MOD3;
+  }
 
   //Source Mclk and SMclk from DCO (default)
   BCSCTL2=SELM_0|DIVM_0|DIVS_0;
   
   //also initialize timing generator for flash memory
   FCTL2=FWKEY|FSSEL_2|33;
-
-  //TODO: change for production code
-  //set port 5 to output clocks
-  //P5DIR=BIT4|BIT5|BIT6;
-  //P5SEL=BIT4|BIT5|BIT6;
   
   //set time ticker to zero
   ticker_time=0;
@@ -60,8 +82,29 @@ void start_timerA(void){
   TACTL|=MC_2;
 }
 
+void initSVS(void){
+  //clear SVS bits to trigger power up delay if VLD!=0
+  SVSCTL=0;
+  //setup SVS to trigger on 3.3V and generate a POR
+  SVSCTL=VLD3|VLD1|PORON;
+  //wait for SVS to power up
+  //TODO: perhaps count loops to make sure we don't get stuck here
+  while(!(SVSCTL&SVSON));
+}
+
 //low level setup code
 void ARC_setup(void){
+  //setup error reporting library
+  error_init();
+  //record reset error first so that it appears first in error log
+  //check for reset error
+  if(saved_error.magic==RESET_MAGIC_POST){
+    _record_error(saved_error.level,saved_error.source,saved_error.err,saved_error.argument,0);
+    //clear magic so we are not confused in the future
+    saved_error.magic=RESET_MAGIC_EMPTY;
+  } 
+  //setup SVS
+  initSVS();
   //setup clocks
   initCLK();
   //setup timerA

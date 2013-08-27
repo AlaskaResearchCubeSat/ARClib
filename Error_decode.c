@@ -125,7 +125,13 @@ char *err_decode_arcbus(char buf[150], unsigned short source,int err, unsigned s
           sprintf(buf,"Async : Failed to send data : %s",BUS_error_str(argument));
         return buf;
       }
-    break;      
+    break; 
+    case BUS_ERR_SRC_SETUP:     
+      switch(err){
+        case SETUP_ERR_DCO_MISSING_CAL:
+          return "ARClib Setup : Missing DCO Calibration Data";
+      }
+    break;
   }
   sprintf(buf,"source = %i, error = %i, argument = %i",source,err,argument);
   return buf;
