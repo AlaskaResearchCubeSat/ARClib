@@ -146,6 +146,15 @@ void ARC_setup(void){
 
 //low level setup code
 void ARC_setup_lv(void){
+  //setup error reporting library
+  error_init();
+  //record reset error first so that it appears first in error log
+  //check for reset error
+  if(saved_error.magic==RESET_MAGIC_POST){
+    _record_error(saved_error.level,saved_error.source,saved_error.err,saved_error.argument,0);
+    //clear magic so we are not confused in the future
+    saved_error.magic=RESET_MAGIC_EMPTY;
+  } 
   //setup clocks
   initCLK_lv();
   //setup timerA
