@@ -45,8 +45,6 @@ static void ARC_bus_run(void *p) __toplevel{
   SPI_addr=0;
   //Initialize ErrorLib
   error_recording_start();
-  //replay error log to show startup errors
-  error_log_replay();
   //first send "I'm on" command
   BUS_cmd_init(pk,CMD_SUB_POWERUP);//setup command
   //send command
