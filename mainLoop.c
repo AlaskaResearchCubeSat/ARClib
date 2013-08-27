@@ -5,12 +5,11 @@
 #include "ARCbus.h"
 #include "crc.h"
 #include "spi.h"
-#include "Magic.h"
-
+#include <Error.h>
 #include "ARCbus_internal.h"
 
 //record error function, used to save an error without it cluttering up the terminal
-void record_error(unsigned char level,unsigned short source,int err, unsigned short argument);
+void record_error(unsigned char level,unsigned short source,int err, unsigned short argument,ticker time);
 
 //bus internal events
 CTL_EVENT_SET_t BUS_INT_events,BUS_helper_events;
@@ -44,12 +43,8 @@ static void ARC_bus_run(void *p) __toplevel{
   ticker nt;
   int snd,i;
   SPI_addr=0;
-  //check for reset error to print
-  if(saved_error.magic==RESET_MAGIC_POST){
-    record_error(saved_error.level,saved_error.source,saved_error.err,saved_error.argument);
-    //clear magic so we are not confused in the future
-    saved_error.magic=RESET_MAGIC_EMPTY;
-  }
+  //Initialize ErrorLib
+  error_recording_start();
   //first send "I'm on" command
   BUS_cmd_init(pk,CMD_SUB_POWERUP);//setup command
   //send command
@@ -58,7 +53,7 @@ static void ARC_bus_run(void *p) __toplevel{
     //check for failed send
     if(resp!=RET_SUCCESS){
       //give a warning
-      record_error(ERR_LEV_WARNING,BUS_ERR_SRC_MAIN_LOOP,MAIN_LOOP_ERR_CDH_NOT_FOUND,resp);
+      report_error(ERR_LEV_WARNING,BUS_ERR_SRC_MAIN_LOOP,MAIN_LOOP_ERR_CDH_NOT_FOUND,resp);
       //wait a bit
       ctl_timeout_wait(ctl_get_current_time()+30);
       //resend
@@ -66,7 +61,7 @@ static void ARC_bus_run(void *p) __toplevel{
       //check for success
       if(resp!=RET_SUCCESS){
         //Failed
-        record_error(ERR_LEV_ERROR,BUS_ERR_SRC_MAIN_LOOP,MAIN_LOOP_ERR_CDH_NOT_FOUND,resp);     
+        report_error(ERR_LEV_ERROR,BUS_ERR_SRC_MAIN_LOOP,MAIN_LOOP_ERR_CDH_NOT_FOUND,resp);     
       }
     }
   #else     //CDH board, check for other CDH board
