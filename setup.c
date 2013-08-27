@@ -12,7 +12,8 @@
 
 //record error function, used to save an error without it cluttering up the terminal
 //use the unprotected version because we are in startup code
-void _record_error(unsigned char level,unsigned short source,int err, unsigned short argument);
+//time ticker is not running and does not mean much at this point anyway so use a fixed zero to indicate startup errors
+void _record_error(unsigned char level,unsigned short source,int err, unsigned short argument,ticker time);
 
 //=============[initialization commands]=============
  
@@ -46,7 +47,7 @@ void initCLK(void){
     BCSCTL1=CALBC1_16MHZ;
     DCOCTL=CALDCO_16MHZ;
   }else{
-    _record_error(ERR_LEV_CRITICAL,BUS_ERR_SRC_SETUP,SETUP_ERR_DCO_MISSING_CAL,0);
+    _record_error(ERR_LEV_CRITICAL,BUS_ERR_SRC_SETUP,SETUP_ERR_DCO_MISSING_CAL,0,0);
     //attempt to use a reasonable default value
     //BCSCTL1=XT2OFF|RSEL_14;
     BCSCTL1=XT2OFF|RSEL1|RSEL2|RSEL3;
@@ -98,7 +99,7 @@ void ARC_setup(void){
   //record reset error first so that it appears first in error log
   //check for reset error
   if(saved_error.magic==RESET_MAGIC_POST){
-    _record_error(saved_error.level,saved_error.source,saved_error.err,saved_error.argument);
+    _record_error(saved_error.level,saved_error.source,saved_error.err,saved_error.argument,0);
     //clear magic so we are not confused in the future
     saved_error.magic=RESET_MAGIC_EMPTY;
   } 

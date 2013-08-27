@@ -9,7 +9,7 @@
 #include "ARCbus_internal.h"
 
 //record error function, used to save an error without it cluttering up the terminal
-void record_error(unsigned char level,unsigned short source,int err, unsigned short argument);
+void record_error(unsigned char level,unsigned short source,int err, unsigned short argument,ticker time);
 
 //bus internal events
 CTL_EVENT_SET_t BUS_INT_events,BUS_helper_events;
