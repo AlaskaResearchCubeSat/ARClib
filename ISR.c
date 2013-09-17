@@ -122,6 +122,8 @@ void UC0_rx(void) __ctl_interrupt[USCIAB0RX_VECTOR]{
   if(UCB0STAT&UCSTPIFG){
     //check if transaction was a command
     if(arcBus_stat.i2c_stat.mode==BUS_I2C_RX){
+      //set buffer status to complete
+      I2C_rx_buf.stat=I2C_PACKET_STAT_COMPETE;
       //set flag to notify 
       ctl_events_set_clear(&BUS_INT_events,BUS_INT_EV_I2C_CMD_RX,0);
     }
@@ -173,6 +175,8 @@ void UC0_rx(void) __ctl_interrupt[USCIAB0RX_VECTOR]{
         arcBus_stat.i2c_stat.rx.idx=0;
         //set mode to Rx
         arcBus_stat.i2c_stat.mode=BUS_I2C_RX;
+        //set buffer status
+        I2C_rx_buf.stat=I2C_PACKET_STAT_IN_PROGRESS;
       }
     }
     //enable stop interrupt
@@ -186,6 +190,10 @@ void UC0_rx(void) __ctl_interrupt[USCIAB0RX_VECTOR]{
     UCB0STAT&=~UCALIFG;
     //set status to idle
     arcBus_stat.i2c_stat.mode=BUS_I2C_IDLE;
+    //reset rx buffer status if in progress
+    if(I2C_rx_buf.stat==I2C_PACKET_STAT_IN_PROGRESS){
+      I2C_rx_buf.stat=I2C_PACKET_STAT_EMPTY;
+    }
     //set flag to indicate condition
     ctl_events_set_clear(&BUS_INT_events,BUS_INT_EV_I2C_ARB_LOST,0);
   }
