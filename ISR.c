@@ -9,7 +9,7 @@
 #include "ARCbus_internal.h"
 
 //buffer for ISR command receive
-unsigned char i2c_buf[40];
+I2C_PACKET I2C_rx_buf;
 
 //DMA events
 CTL_EVENT_SET_t DMA_events;
@@ -29,7 +29,7 @@ void UC0_TX(void) __ctl_interrupt[USCIAB0TX_VECTOR]{
     //check mode
     if(!(UCB0CTL0&UCMST)){//slave mode
       //check buffer size
-      if(arcBus_stat.i2c_stat.rx.idx>=sizeof(i2c_buf)){
+      if(arcBus_stat.i2c_stat.rx.idx>=sizeof(I2C_rx_buf.dat)){
         //receive buffer is full, send NACK
         UCB0CTL1|=UCTXNACK;
       }
@@ -160,12 +160,20 @@ void UC0_rx(void) __ctl_interrupt[USCIAB0RX_VECTOR]{
     }else{
       //enable I2C Rx Interrupt
       UC0IE|=UCB0RXIE;
-      //setup receive status
-      arcBus_stat.i2c_stat.rx.ptr=i2c_buf;
-      arcBus_stat.i2c_stat.rx.len=sizeof(i2c_buf);
-      arcBus_stat.i2c_stat.rx.idx=0;
-      //set mode to Rx
-      arcBus_stat.i2c_stat.mode=BUS_I2C_RX;
+      //check buffer status
+      if(I2C_rx_buf.stat!=I2C_PACKET_STAT_EMPTY){
+        //buffer is in-use transmit NACK
+        UCB0CTL1|=UCTXNACK;
+        //set flag to indicate an error
+        ctl_events_set_clear(&BUS_INT_events,BUS_INT_EV_I2C_RX_BUSY,0);
+      }else{
+        //setup receive status
+        arcBus_stat.i2c_stat.rx.ptr=I2C_rx_buf.dat;
+        arcBus_stat.i2c_stat.rx.len=sizeof(I2C_rx_buf.dat);
+        arcBus_stat.i2c_stat.rx.idx=0;
+        //set mode to Rx
+        arcBus_stat.i2c_stat.mode=BUS_I2C_RX;
+      }
     }
     //enable stop interrupt
     UCB0I2CIE|=UCSTPIE;
@@ -178,6 +186,8 @@ void UC0_rx(void) __ctl_interrupt[USCIAB0RX_VECTOR]{
     UCB0STAT&=~UCALIFG;
     //set status to idle
     arcBus_stat.i2c_stat.mode=BUS_I2C_IDLE;
+    //set flag to indicate condition
+    ctl_events_set_clear(&BUS_INT_events,BUS_INT_EV_I2C_ARB_LOST,0);
   }
 }
 
