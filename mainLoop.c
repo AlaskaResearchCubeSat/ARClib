@@ -296,8 +296,8 @@ static void ARC_bus_run(void *p) __toplevel{
                 }
                 //stop async from sending
                 txFlow=ASYNC_FLOW_STOPPED;
-                //TESTING: set LED
-                P7OUT|=BIT1;
+                //give info message
+                report_error(ERR_LEV_INFO,BUS_ERR_SRC_ASYNC,ASYNC_ERR_TX_FLOWCTL,txFlow);
               break;
               case ASYNC_RESTART:
                 //check that async address is sender address
@@ -307,8 +307,8 @@ static void ARC_bus_run(void *p) __toplevel{
                 }
                 //restart async sending
                 txFlow=ASYNC_FLOW_RUNNING;
-                //TESTING: set LED
-                P7OUT&=~BIT1;
+                //give info message
+                report_error(ERR_LEV_INFO,BUS_ERR_SRC_ASYNC,ASYNC_ERR_TX_FLOWCTL,txFlow);
                 //tell helper to send data
                 ctl_events_set_clear(&BUS_helper_events,BUS_HELPER_EV_ASYNC_SEND,0);
               break;
@@ -322,12 +322,12 @@ static void ARC_bus_run(void *p) __toplevel{
             //TODO: check sender address
             //post bytes to queue
             ctl_byte_queue_post_multi_nb(&async_rxQ,len,ptr);
-            //TESTING: toggle LED
-            P7OUT^=BIT3;
             //check if restarting
             if(rxFlow==ASYNC_FLOW_RESTARTING){
               //flow is running, packet recieved
               rxFlow=ASYNC_FLOW_RUNNING;
+              //give info message
+              report_error(ERR_LEV_INFO,BUS_ERR_SRC_ASYNC,ASYNC_ERR_RX_FLOWCTL,rxFlow);
             }
             //check free bytes in queue
             if(rxFlow!=ASYNC_FLOW_OFF && ctl_byte_queue_num_free(&async_rxQ)<=ASYNC_FLOW_STOP_THRESHOLD){              
@@ -355,7 +355,7 @@ static void ARC_bus_run(void *p) __toplevel{
           //send NACK reason
           ptr[0]=resp;
           //send packet
-          BUS_cmd_tx(addr,pk,1,0,BUS_I2C_SEND_BGND);
+          //BUS_cmd_tx(addr,pk,1,0,BUS_I2C_SEND_BGND);
         }
       }else if(cmd!=CMD_NACK){
         //CRC check failed, send NACK
@@ -365,7 +365,7 @@ static void ARC_bus_run(void *p) __toplevel{
         //send NACK reason
         ptr[0]=ERR_BAD_CRC;
         //send packet
-        BUS_cmd_tx(addr,pk,1,0,BUS_I2C_SEND_BGND);
+        //BUS_cmd_tx(addr,pk,1,0,BUS_I2C_SEND_BGND);
       }
     }
   }
@@ -421,9 +421,9 @@ static void ARC_bus_helper(void *p) __toplevel{
       BUS_cmd_tx(async_addr,pk,1,0,BUS_I2C_SEND_FOREGROUND);
       if(resp==RET_SUCCESS){
         //command sent, track status
-        rxFlow=ASYNC_FLOW_STOPPED;  
-        //TESTING: set LED
-        P7OUT|=BIT2;
+        rxFlow=ASYNC_FLOW_STOPPED;
+        //give info message
+        report_error(ERR_LEV_INFO,BUS_ERR_SRC_ASYNC,ASYNC_ERR_RX_FLOWCTL,rxFlow);
       }
     }
     //async timer timed out, send data
@@ -468,11 +468,6 @@ void mainLoop(void) __toplevel{
   for(;;){    
       //kick watchdog
       WDT_KICK();
-      #ifndef IDLE_DEBUG
-        //go to low power mode
-        LPM0;
-      #else
-        P7OUT^=BIT0+BIT1+BIT2+BIT3;
-      #endif
+      LPM0;
   }
 }

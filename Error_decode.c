@@ -124,6 +124,30 @@ char *err_decode_arcbus(char buf[150], unsigned short source,int err, unsigned s
         case ASYNC_ERR_DATA_FAIL:
           sprintf(buf,"Async : Failed to send data : %s",BUS_error_str(argument));
         return buf;
+        case ASYNC_ERR_TX_FLOWCTL:
+          switch(argument){
+            case ASYNC_FLOW_OFF:
+              return "Async : Tx Flow Control : off";
+            case ASYNC_FLOW_RUNNING:
+              return "Async : Tx Flow Control : running";
+            case ASYNC_FLOW_RESTARTING:
+              return "Async : Tx Flow Control : restarting";
+            case ASYNC_FLOW_STOPPED:  
+              return "Async : Tx Flow Control : stopped";
+          }
+        break;
+        case ASYNC_ERR_RX_FLOWCTL:
+          switch(argument){
+            case ASYNC_FLOW_OFF:
+              return "Async : Rx Flow Control : off";
+            case ASYNC_FLOW_RUNNING:
+              return "Async : Rx Flow Control : running";
+            case ASYNC_FLOW_RESTARTING:
+              return "Async : Rx Flow Control : restarting";
+            case ASYNC_FLOW_STOPPED:  
+              return "Async : Rx Flow Control : stopped";
+          }
+        break;
       }
     break; 
     case BUS_ERR_SRC_SETUP:     

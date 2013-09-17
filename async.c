@@ -78,9 +78,19 @@ void async_open_remote(unsigned char addr){
     return;
   }
   if(async_isOpen()){
-    //Error: async is already open
-    report_error(ERR_LEV_ERROR,BUS_ERR_SRC_ASYNC,ASYNC_ERR_OPEN_BUSY,(((unsigned short)addr)<<8)|async_addr);
-    return;
+    if(async_addr!=addr){
+      //Error: async is already open
+      report_error(ERR_LEV_ERROR,BUS_ERR_SRC_ASYNC,ASYNC_ERR_OPEN_BUSY,(((unsigned short)addr)<<8)|async_addr);
+      return;
+    }else{
+        //addresses are the same, give a warning and restart
+        report_error(ERR_LEV_WARNING,BUS_ERR_SRC_ASYNC,ASYNC_ERR_OPEN_BUSY,(((unsigned short)addr)<<8)|async_addr);
+        //check for closed event
+        if(closed_event){
+          //send closed event because we are reopening
+          ctl_events_set_clear(closed_event,closed_flag,0);
+        }
+    }
   }
   //set address
   async_addr=addr;
@@ -223,8 +233,8 @@ int async_Getc(void){
     if(resp==RET_SUCCESS){
       //flow control is restarting
       rxFlow=ASYNC_FLOW_RESTARTING;
-      //TESTING: set LED
-      P7OUT&=~BIT2;
+      //give info message
+      report_error(ERR_LEV_INFO,BUS_ERR_SRC_ASYNC,ASYNC_ERR_RX_FLOWCTL,rxFlow);
     }
     //if command was not successful command will be sent again next time async_Getc is called
   }
