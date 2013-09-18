@@ -337,7 +337,7 @@ static void ARC_bus_run(void *p) __toplevel{
       report_error(ERR_LEV_ERROR,BUS_ERR_SRC_MAIN_LOOP,MAIN_LOOP_ERR_I2C_RX_BUSY,0);
     }
     if(e&BUS_INT_EV_I2C_ARB_LOST){
-      report_error(ERR_LEV_INFO,BUS_ERR_SRC_MAIN_LOOP,MAIN_LOOP_ERR_I2C_ARB_LOST,0);
+      report_error(ERR_LEV_DEBUG,BUS_ERR_SRC_MAIN_LOOP,MAIN_LOOP_ERR_I2C_ARB_LOST,0);
     }
   }
 }
