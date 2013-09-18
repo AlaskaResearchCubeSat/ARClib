@@ -69,6 +69,10 @@ int BUS_cmd_tx(unsigned char addr,unsigned char *buff,unsigned short len,unsigne
     //return error if it occured
     return ret;
   }
+  //check packet length
+  if(len>BUS_I2C_MAX_PACKET_LEN){
+    return ERR_PACKET_TOO_LONG;
+  }
   //add standard header length
   len+=BUS_I2C_HDR_LEN;
   //add NACK flag if requested

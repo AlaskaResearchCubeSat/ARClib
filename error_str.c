@@ -24,6 +24,8 @@ const char *BUS_error_str(int error){
       return "ERROR DEVICE OR RESOURCE BUSY";
     case ERR_INVALID_ARGUMENT:
       return "ERROR INVALID ARGUMENT";
+    case ERR_PACKET_TOO_LONG:
+      return "ERROR PACKET TOO LONG";
     //Error was not found
     default:
       return "UNKNOWN ERROR";
