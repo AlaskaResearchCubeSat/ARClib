@@ -20,31 +20,34 @@ enum{BUS_PRI_EXTRA_LOW=20,BUS_PRI_LOW=50,BUS_PRI_NORMAL=80,BUS_PRI_HIGH=110,BUS_
 //Flags for events handled by BUS functions (ex BUS_cmd_tx)
 enum{BUS_EV_CMD_NACK=(1<<0),BUS_EV_I2C_COMPLETE=(1<<1),BUS_EV_I2C_NACK=(1<<2),BUS_EV_SPI_COMPLETE=(1<<3)};
 //all events for SPI master
-#define BUS_EV_SPI_MASTER (BUS_EV_SPI_COMPLETE)
+#define BUS_EV_SPI_MASTER           (BUS_EV_SPI_COMPLETE)
 //all events created by master transactions
-#define BUS_EV_I2C_MASTER (BUS_EV_I2C_COMPLETE|BUS_EV_I2C_NACK)
+#define BUS_EV_I2C_MASTER           (BUS_EV_I2C_COMPLETE|BUS_EV_I2C_NACK)
 
 //flags for events handled by the subsystem
 enum{SUB_EV_PWR_OFF=(1<<0),SUB_EV_PWR_ON=(1<<1),SUB_EV_SEND_STAT=(1<<2),SUB_EV_TIME_CHECK=(1<<3),SUB_EV_SPI_DAT=(1<<4),
      SUB_EV_SPI_ERR_CRC=(1<<5),SUB_EV_ASYNC_OPEN=(1<<6),SUB_EV_ASYNC_CLOSE=(1<<7)};
 //all subsystem events
-#define SUB_EV_ALL        (SUB_EV_PWR_OFF|SUB_EV_PWR_ON|SUB_EV_SEND_STAT|SUB_EV_TIME_CHECK|SUB_EV_SPI_DAT|SUB_EV_SPI_ERR_CRC)
+#define SUB_EV_ALL                  (SUB_EV_PWR_OFF|SUB_EV_PWR_ON|SUB_EV_SEND_STAT|SUB_EV_TIME_CHECK|SUB_EV_SPI_DAT|SUB_EV_SPI_ERR_CRC)
 
 //command table for ARCBUS commands
 enum{CMD_NACK=51,CMD_SPI_COMPLETE,CMD_SPI_RDY,CMD_SUB_ON,CMD_SUB_OFF,CMD_SUB_POWERUP,CMD_RESET,CMD_SUB_STAT,
      CMD_SPI_CLEAR,CMD_EPS_STAT,CMD_LEDL_STAT,CMD_ACDS_STAT,CMD_COMM_STAT,CMD_IMG_STAT,CMD_ASYNC_SETUP,CMD_ASYNC_DAT};
 
 //bit to allow NACK to be sent
-#define CMD_TX_NACK     (0x80)
+#define CMD_TX_NACK                 (0x80)
 //mask for address in command
-#define CMD_ADDR_MASK   (0x7F)
+#define CMD_ADDR_MASK               (0x7F)
 
 //length of SPI CRC
-#define BUS_SPI_CRC_LEN     (2)
+#define BUS_SPI_CRC_LEN             (2)
 //length of I2C CRC
-#define BUS_I2C_CRC_LEN     (1)
+#define BUS_I2C_CRC_LEN             (1)
 //length of I2C packet header
-#define BUS_I2C_HDR_LEN     (2)
+#define BUS_I2C_HDR_LEN             (2)
+
+//maximum packet length that can fit in the receive buffer
+#define BUS_I2C_MAX_PACKET_LEN      (30)
 
 //Return values from bus functions
 enum{RET_SUCCESS=0,ERR_BAD_LEN=-1,ERR_CMD_NACK=-2,ERR_I2C_NACK=-3,ERR_UNKNOWN=-4,ERR_BAD_ADDR=-5,ERR_BAD_CRC=-6,ERR_TIMEOUT=-7,ERR_BUSY=-8,ERR_INVALID_ARGUMENT=-9};
