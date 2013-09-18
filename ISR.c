@@ -122,6 +122,13 @@ void UC0_rx(void) __ctl_interrupt[USCIAB0RX_VECTOR]{
   if(UCB0STAT&UCSTPIFG){
     //check if transaction was a command
     if(arcBus_stat.i2c_stat.mode==BUS_I2C_RX){
+      //set packet length
+      I2C_rx_buf.len=arcBus_stat.i2c_stat.rx.idx;
+      //check for rx IFG
+      if(flags&UCB0RXIFG){
+        //read data
+        arcBus_stat.i2c_stat.rx.ptr[I2C_rx_buf.len++]=UCB0RXBUF;
+      }
       //set buffer status to complete
       I2C_rx_buf.stat=I2C_PACKET_STAT_COMPETE;
       //set flag to notify 
