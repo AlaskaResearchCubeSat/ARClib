@@ -121,21 +121,24 @@ static void ARC_bus_run(void *p) __toplevel{
     }
     //check if an I2C command has been received
     if(e&BUS_INT_EV_I2C_CMD_RX){
-      //=====================[I2C Command Received, Process command]===============================
+      //check if packet is complete
+      if(I2C_rx_buf.stat!=I2C_PACKET_STAT_COMPETE){
+        report_error(ERR_LEV_ERROR,BUS_ERR_SRC_MAIN_LOOP,MAIN_LOOP_ERR_RX_BUF_STAT,I2C_rx_buf.stat);
+      }
       //clear response
       resp=0;
       //get len
-      len=arcBus_stat.i2c_stat.rx.idx;
+      len=I2C_rx_buf.len;
       //compute crc
-      crc=crc8(i2c_buf,len-1);
+      crc=crc8(I2C_rx_buf.dat,len-1);
       //get length of payload
       len=len-BUS_I2C_CRC_LEN-BUS_I2C_HDR_LEN;
       //get sender address
-      addr=CMD_ADDR_MASK&i2c_buf[0];
+      addr=CMD_ADDR_MASK&I2C_rx_buf.dat[0];
       //get command type
-      cmd=i2c_buf[1];
+      cmd=I2C_rx_buf.dat[1];
       //point to the first payload byte
-      ptr=&i2c_buf[2];
+      ptr=&I2C_rx_buf.dat[2];
       //check crc for packet
       if(ptr[len]==crc){
         //handle command based on command type
@@ -348,7 +351,7 @@ static void ARC_bus_run(void *p) __toplevel{
           break;
         }
         //malformed command, send nack if requested
-        if(resp!=0 && i2c_buf[0]&CMD_TX_NACK){
+        if(resp!=0 && I2C_rx_buf.dat[0]&CMD_TX_NACK){
           report_error(ERR_LEV_ERROR,BUS_ERR_SRC_MAIN_LOOP,MAIN_LOOP_ERR_BAD_CMD,(((unsigned short)resp)<<8)|((unsigned short)cmd));
           //setup command
           ptr=BUS_cmd_init(pk,CMD_NACK);
@@ -367,6 +370,15 @@ static void ARC_bus_run(void *p) __toplevel{
         //send packet
         //BUS_cmd_tx(addr,pk,1,0,BUS_I2C_SEND_BGND);
       }
+      //done with packet set status
+      I2C_rx_buf.stat=I2C_PACKET_STAT_EMPTY;
+    }
+    //check for errors and report
+    if(e&BUS_INT_EV_I2C_RX_BUSY){
+      report_error(ERR_LEV_ERROR,BUS_ERR_SRC_MAIN_LOOP,MAIN_LOOP_ERR_I2C_RX_BUSY,0);
+    }
+    if(e&BUS_INT_EV_I2C_ARB_LOST){
+      report_error(ERR_LEV_DEBUG,BUS_ERR_SRC_MAIN_LOOP,MAIN_LOOP_ERR_I2C_ARB_LOST,0);
     }
   }
 }

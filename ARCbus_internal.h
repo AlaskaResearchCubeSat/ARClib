@@ -3,11 +3,11 @@
   #include <stddef.h>
   #include <Error.h>
   #include <ctl.h>
-  
+ 
   #include "ARCbus.h"
       
-  #define   ASYNC_TARGET_SIZE                     15
-  #define   ASYNC_MAX_SIZE                        35
+  #define   ASYNC_TARGET_SIZE   (BUS_I2C_MAX_PACKET_LEN/2)
+  #define   ASYNC_MAX_SIZE      (BUS_I2C_MAX_PACKET_LEN)
 
   #define   ASYNC_RXQ_SIZE                        300
   #define   ASYNC_TXQ_SIZE                        256
@@ -28,7 +28,7 @@
     
   //error codes for main loop
   enum{MAIN_LOOP_ERR_RESET,MAIN_LOOP_ERR_CMD_CRC,MAIN_LOOP_ERR_BAD_CMD,MAIN_LOOP_ERR_NACK_REC,MAIN_LOOP_ERR_SPI_COMPLETE_FAIL,
-      MAIN_LOOP_ERR_SPI_CLEAR_FAIL,MAIN_LOOP_ERR_MUTIPLE_CDH,MAIN_LOOP_ERR_CDH_NOT_FOUND};
+      MAIN_LOOP_ERR_SPI_CLEAR_FAIL,MAIN_LOOP_ERR_MUTIPLE_CDH,MAIN_LOOP_ERR_CDH_NOT_FOUND,MAIN_LOOP_ERR_RX_BUF_STAT,MAIN_LOOP_ERR_I2C_RX_BUSY,MAIN_LOOP_ERR_I2C_ARB_LOST};
       
   //error codes for startup code
   enum{STARTUP_ERR_RESET_UNKNOWN,STARTUP_ERR_MAIN_RETURN,STARTUP_ERR_WDT_RESET,STARTUP_ERR_POR,STARTUP_ERR_RESET_PIN,STARTUP_ERR_RESET_FLASH_KEYV,STARTUP_ERR_RESET_SVS};
@@ -43,7 +43,7 @@
 
   
   //flags for internal BUS events
-  enum{BUS_INT_EV_I2C_CMD_RX=(1<<0),BUS_INT_EV_SPI_COMPLETE=(1<<1),BUS_INT_EV_BUFF_UNLOCK=(1<<2),BUS_INT_EV_RELEASE_MUTEX=(1<<3)};
+  enum{BUS_INT_EV_I2C_CMD_RX=(1<<0),BUS_INT_EV_SPI_COMPLETE=(1<<1),BUS_INT_EV_BUFF_UNLOCK=(1<<2),BUS_INT_EV_RELEASE_MUTEX=(1<<3),BUS_INT_EV_I2C_RX_BUSY=(1<<4),BUS_INT_EV_I2C_ARB_LOST=(1<<5)};
 
   //all events for ARCBUS internal commands
   #define BUS_INT_EV_ALL    (BUS_INT_EV_I2C_CMD_RX|BUS_INT_EV_SPI_COMPLETE|BUS_INT_EV_BUFF_UNLOCK|BUS_INT_EV_RELEASE_MUTEX)
@@ -53,6 +53,9 @@
 
   //flags for bus helper events
   enum{BUS_HELPER_EV_ASYNC_SEND=1<<0,BUS_HELPER_EV_SPI_COMPLETE_CMD=1<<1,BUS_HELPER_EV_SPI_CLEAR_CMD=1<<2,BUS_HELPER_EV_ASYNC_CLOSE=1<<3,BUS_HELPER_EV_ASYNC_STOP=(1<<4)};
+  
+  //flags for I2C_PACKET structures
+  enum{I2C_PACKET_STAT_EMPTY,I2C_PACKET_STAT_IN_PROGRESS,I2C_PACKET_STAT_COMPETE};
 
   //all helper task events
   #define BUS_HELPER_EV_ALL (BUS_HELPER_EV_ASYNC_SEND|BUS_HELPER_EV_SPI_COMPLETE_CMD|BUS_HELPER_EV_SPI_CLEAR_CMD|BUS_HELPER_EV_ASYNC_CLOSE|BUS_HELPER_EV_ASYNC_STOP)
@@ -73,6 +76,13 @@
     unsigned short argument;
     unsigned char level;
   }RESET_ERROR;
+  
+  //structure for receiving I2C data
+  typedef struct{
+    unsigned char stat;
+    unsigned char len;
+    unsigned char dat[BUS_I2C_HDR_LEN+BUS_I2C_MAX_PACKET_LEN+BUS_I2C_CRC_LEN];
+  }I2C_PACKET;
 
   extern RESET_ERROR saved_error;
   
@@ -82,7 +92,7 @@
   extern BUS_STAT arcBus_stat;
   
   //buffer for ISR command receive
-  extern unsigned char i2c_buf[40];
+  extern I2C_PACKET I2C_rx_buf;
   
   //power status
   extern unsigned short powerState=SUB_PWR_OFF;
