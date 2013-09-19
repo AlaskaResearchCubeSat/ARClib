@@ -40,7 +40,6 @@ static void ARC_bus_run(void *p) __toplevel{
   unsigned char *ptr;
   unsigned short crc;
   unsigned char *SPI_buf=NULL;
-  int state;
   ticker nt;
   int snd,i;
   SPI_addr=0;
@@ -330,16 +329,12 @@ static void ARC_bus_run(void *p) __toplevel{
           //send packet
           BUS_cmd_tx(addr,pk,1,0,BUS_I2C_SEND_BGND);
         }
-        //disable interrupts to modify queue indexes
-        state=ctl_global_interrupts_set(0);
         //increment index
         I2C_rx_out++;
         //check for wraparound
         if(I2C_rx_out>=BUS_I2C_PACKET_QUEUE_LEN){
           I2C_rx_out=0;
         }
-        //restore interrupt status
-        ctl_global_interrupts_set(state);
         //done with packet set status
         I2C_rx_buf[I2C_rx_out].stat=I2C_PACKET_STAT_EMPTY;
       }
