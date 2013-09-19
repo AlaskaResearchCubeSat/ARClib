@@ -55,7 +55,10 @@
   enum{BUS_HELPER_EV_ASYNC_SEND=1<<0,BUS_HELPER_EV_SPI_COMPLETE_CMD=1<<1,BUS_HELPER_EV_SPI_CLEAR_CMD=1<<2,BUS_HELPER_EV_ASYNC_CLOSE=1<<3,BUS_HELPER_EV_ASYNC_STOP=(1<<4)};
   
   //flags for I2C_PACKET structures
-  enum{I2C_PACKET_STAT_EMPTY,I2C_PACKET_STAT_IN_PROGRESS,I2C_PACKET_STAT_COMPETE};
+  enum{I2C_PACKET_STAT_EMPTY,I2C_PACKET_STAT_IN_PROGRESS,I2C_PACKET_STAT_COMPLETE};
+  
+  //size of I2C packet queue
+  #define BUS_I2C_PACKET_QUEUE_LEN      5
 
   //all helper task events
   #define BUS_HELPER_EV_ALL (BUS_HELPER_EV_ASYNC_SEND|BUS_HELPER_EV_SPI_COMPLETE_CMD|BUS_HELPER_EV_SPI_CLEAR_CMD|BUS_HELPER_EV_ASYNC_CLOSE|BUS_HELPER_EV_ASYNC_STOP)
@@ -92,7 +95,9 @@
   extern BUS_STAT arcBus_stat;
   
   //buffer for ISR command receive
-  extern I2C_PACKET I2C_rx_buf;
+  extern I2C_PACKET I2C_rx_buf[BUS_I2C_PACKET_QUEUE_LEN];
+  //queue indexes
+  extern short I2C_rx_in,I2C_rx_out;
   
   //power status
   extern unsigned short powerState=SUB_PWR_OFF;

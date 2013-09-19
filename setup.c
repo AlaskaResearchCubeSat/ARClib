@@ -174,6 +174,7 @@ void I2C_reset(void){
 extern CTL_TASK_t idle_task;
 
 void initARCbus(unsigned char addr){
+  int i;
   //kick watchdog
   WDT_KICK();
   //===[initialize globals]===
@@ -186,8 +187,12 @@ void initARCbus(unsigned char addr){
   ctl_mutex_init(&arcBus_stat.i2c_stat.mutex);
   //set I2C to idle mode
   arcBus_stat.i2c_stat.mode=BUS_I2C_IDLE;
-  //setup I2C buffer
-  I2C_rx_buf.stat=I2C_PACKET_STAT_EMPTY;
+  //initialize I2C packet queue to empty state
+  for(i=0;i<BUS_I2C_PACKET_QUEUE_LEN;i++){
+    I2C_rx_buf[i].stat=I2C_PACKET_STAT_EMPTY;
+  }
+  //initialize I2C packet queue pointers
+  I2C_rx_in=I2C_rx_out=0;
   //set SPI to idle mode
   arcBus_stat.spi_stat.mode=BUS_SPI_IDLE;
   //startup with power off
