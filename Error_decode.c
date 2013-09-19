@@ -87,7 +87,8 @@ char *err_decode_arcbus(char buf[150], unsigned short source,int err, unsigned s
           sprintf(buf,"ARCbus Main Loop : CDH board not found : %s",BUS_error_str(argument));
         return buf;
         case MAIN_LOOP_ERR_RX_BUF_STAT:
-          return "ARCbus Main Loop : Incorrect I2C RX buffer status";
+          sprintf(buf,"ARCbus Main Loop : Incorrect I2C RX buffer status : %i",argument);
+          return buf;
         case MAIN_LOOP_ERR_I2C_RX_BUSY:
           return "ARCbus Main Loop : Rx Buffer busy, Packet Discarded";
         case MAIN_LOOP_ERR_I2C_ARB_LOST:
