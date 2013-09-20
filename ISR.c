@@ -154,6 +154,21 @@ void UC0_rx(void) __ctl_interrupt[USCIAB0RX_VECTOR]{
     //check status
     //This is to fix the issue where the start condition happens before the stop can be processed
     if(arcBus_stat.i2c_stat.mode==BUS_I2C_RX){
+      //set packet length
+      I2C_rx_buf[I2C_rx_in].len=arcBus_stat.i2c_stat.rx.idx;
+      //check for rx IFG
+      if(flags&UCB0RXIFG){
+        //read data
+        arcBus_stat.i2c_stat.rx.ptr[I2C_rx_buf[I2C_rx_in].len++]=UCB0RXBUF;
+      }
+      //set buffer status to complete
+      I2C_rx_buf[I2C_rx_in].stat=I2C_PACKET_STAT_COMPLETE;
+      //increment index
+      I2C_rx_in++;
+      //check for wraparound
+      if(I2C_rx_in>=BUS_I2C_PACKET_QUEUE_LEN){
+        I2C_rx_in=0;
+      }
       //set flag to notify 
       ctl_events_set_clear(&BUS_INT_events,BUS_INT_EV_I2C_CMD_RX,0);
       //set state to idle
