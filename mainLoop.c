@@ -124,6 +124,14 @@ static void ARC_bus_run(void *p) __toplevel{
         //check if packet is complete
         if(I2C_rx_buf[I2C_rx_out].stat!=I2C_PACKET_STAT_COMPLETE){
           report_error(ERR_LEV_ERROR,BUS_ERR_SRC_MAIN_LOOP,MAIN_LOOP_ERR_RX_BUF_STAT,I2C_rx_buf[I2C_rx_out].stat);
+          if(I2C_rx_buf[I2C_rx_out].stat==I2C_PACKET_STAT_EMPTY){
+            //increment index
+            I2C_rx_out++;
+            //check for wraparound
+            if(I2C_rx_out>=BUS_I2C_PACKET_QUEUE_LEN){
+              I2C_rx_out=0;
+            }
+          }
         }else{
         //clear response
         resp=0;
