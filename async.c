@@ -234,7 +234,7 @@ int async_Getc(void){
       //flow control is restarting
       rxFlow=ASYNC_FLOW_RESTARTING;
       //give info message
-      report_error(ERR_LEV_INFO,BUS_ERR_SRC_ASYNC,ASYNC_ERR_RX_FLOWCTL,rxFlow);
+      report_error(ERR_LEV_DEBUG,BUS_ERR_SRC_ASYNC,ASYNC_ERR_RX_FLOWCTL,rxFlow);
     }
     //if command was not successful command will be sent again next time async_Getc is called
   }

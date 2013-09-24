@@ -307,8 +307,8 @@ static void ARC_bus_run(void *p) __toplevel{
                 }
                 //stop async from sending
                 txFlow=ASYNC_FLOW_STOPPED;
-                //give info message
-                report_error(ERR_LEV_INFO,BUS_ERR_SRC_ASYNC,ASYNC_ERR_TX_FLOWCTL,txFlow);
+                //give debug message
+                report_error(ERR_LEV_DEBUG,BUS_ERR_SRC_ASYNC,ASYNC_ERR_TX_FLOWCTL,txFlow);
               break;
               case ASYNC_RESTART:
                 //check that async address is sender address
@@ -318,8 +318,8 @@ static void ARC_bus_run(void *p) __toplevel{
                 }
                 //restart async sending
                 txFlow=ASYNC_FLOW_RUNNING;
-                //give info message
-                report_error(ERR_LEV_INFO,BUS_ERR_SRC_ASYNC,ASYNC_ERR_TX_FLOWCTL,txFlow);
+                //give debug message
+                report_error(ERR_LEV_DEBUG,BUS_ERR_SRC_ASYNC,ASYNC_ERR_TX_FLOWCTL,txFlow);
                 //tell helper to send data
                 ctl_events_set_clear(&BUS_helper_events,BUS_HELPER_EV_ASYNC_SEND,0);
               break;
@@ -335,10 +335,10 @@ static void ARC_bus_run(void *p) __toplevel{
             ctl_byte_queue_post_multi_nb(&async_rxQ,len,ptr);
             //check if restarting
             if(rxFlow==ASYNC_FLOW_RESTARTING){
-              //flow is running, packet recieved
+              //flow is running, packet received
               rxFlow=ASYNC_FLOW_RUNNING;
-              //give info message
-              report_error(ERR_LEV_INFO,BUS_ERR_SRC_ASYNC,ASYNC_ERR_RX_FLOWCTL,rxFlow);
+              //give debug message
+              report_error(ERR_LEV_DEBUG,BUS_ERR_SRC_ASYNC,ASYNC_ERR_RX_FLOWCTL,rxFlow);
             }
             //check free bytes in queue
             if(rxFlow!=ASYNC_FLOW_OFF && ctl_byte_queue_num_free(&async_rxQ)<=ASYNC_FLOW_STOP_THRESHOLD){              
@@ -450,7 +450,7 @@ static void ARC_bus_helper(void *p) __toplevel{
         //command sent, track status
         rxFlow=ASYNC_FLOW_STOPPED;
         //give info message
-        report_error(ERR_LEV_INFO,BUS_ERR_SRC_ASYNC,ASYNC_ERR_RX_FLOWCTL,rxFlow);
+        report_error(ERR_LEV_DEBUG,BUS_ERR_SRC_ASYNC,ASYNC_ERR_RX_FLOWCTL,rxFlow);
       }
     }
     //async timer timed out, send data
@@ -465,7 +465,7 @@ static void ARC_bus_helper(void *p) __toplevel{
         //set threshold accordingly
         if(num>ASYNC_TARGET_SIZE){
           //set short timeout, chars in buffer
-          async_timer=2;
+          async_timer=20;
         }else if(num!=0 && async_timer==0){
           //there are a few chars left, reset timer
           async_timer=30;

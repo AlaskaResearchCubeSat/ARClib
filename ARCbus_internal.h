@@ -5,9 +5,9 @@
   #include <ctl.h>
  
   #include "ARCbus.h"
-      
-  #define   ASYNC_TARGET_SIZE   (BUS_I2C_MAX_PACKET_LEN/2)
-  #define   ASYNC_MAX_SIZE      (BUS_I2C_MAX_PACKET_LEN)
+
+  #define   ASYNC_MAX_SIZE                        (BUS_I2C_MAX_PACKET_LEN)      
+  #define   ASYNC_TARGET_SIZE                     (ASYNC_MAX_SIZE-8)
 
   #define   ASYNC_RXQ_SIZE                        300
   #define   ASYNC_TXQ_SIZE                        256
@@ -15,7 +15,7 @@
   //if the number of used bytes falls below this threshld then restart incoming data
   #define   ASYNC_FLOW_RESTART_THRESHOLD          15
   //if the number of free bytes falls below this threshold then stop incoming data
-  #define   ASYNC_FLOW_STOP_THRESHOLD             (ASYNC_MAX_SIZE+ASYNC_MAX_SIZE/2+5)
+  #define   ASYNC_FLOW_STOP_THRESHOLD             (ASYNC_RXQ_SIZE-2*ASYNC_MAX_SIZE+5)
       
   //values for async flow control
   enum{ASYNC_FLOW_OFF,ASYNC_FLOW_RUNNING,ASYNC_FLOW_RESTARTING,ASYNC_FLOW_STOPPED};  
@@ -49,7 +49,7 @@
   #define BUS_INT_EV_ALL    (BUS_INT_EV_I2C_CMD_RX|BUS_INT_EV_SPI_COMPLETE|BUS_INT_EV_BUFF_UNLOCK|BUS_INT_EV_RELEASE_MUTEX)
 
   //values for async setup command
-  enum{ASYNC_OPEN,ASYNC_CLOSE,ASYNC_STOP,ASYNC_RESTART};
+  enum{ASYNC_OPEN,ASYNC_CLOSE,ASYNC_STOP=0xAF,ASYNC_RESTART=0xFA};
 
   //flags for bus helper events
   enum{BUS_HELPER_EV_ASYNC_SEND=1<<0,BUS_HELPER_EV_SPI_COMPLETE_CMD=1<<1,BUS_HELPER_EV_SPI_CLEAR_CMD=1<<2,BUS_HELPER_EV_ASYNC_CLOSE=1<<3,BUS_HELPER_EV_ASYNC_STOP=(1<<4)};
@@ -58,7 +58,7 @@
   enum{I2C_PACKET_STAT_EMPTY,I2C_PACKET_STAT_IN_PROGRESS,I2C_PACKET_STAT_COMPLETE};
   
   //size of I2C packet queue
-  #define BUS_I2C_PACKET_QUEUE_LEN      5
+  #define BUS_I2C_PACKET_QUEUE_LEN      10
 
   //all helper task events
   #define BUS_HELPER_EV_ALL (BUS_HELPER_EV_ASYNC_SEND|BUS_HELPER_EV_SPI_COMPLETE_CMD|BUS_HELPER_EV_SPI_CLEAR_CMD|BUS_HELPER_EV_ASYNC_CLOSE|BUS_HELPER_EV_ASYNC_STOP)
