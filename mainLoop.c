@@ -309,25 +309,31 @@ static void ARC_bus_run(void *p) __toplevel{
               resp=SUB_parseCmd(addr,cmd,ptr,len);
             break;
           }
-          //malformed command, send nack if requested
-          if(resp!=0 && I2C_rx_buf[I2C_rx_out].dat[0]&CMD_TX_NACK){
+          //check if command was recognized
+          if(resp!=0){
             report_error(ERR_LEV_ERROR,BUS_ERR_SRC_MAIN_LOOP,MAIN_LOOP_ERR_BAD_CMD,(((unsigned short)resp)<<8)|((unsigned short)cmd));
+            //check packet to see if NACK should be sent
+            if(I2C_rx_buf[I2C_rx_out].dat[0]&CMD_TX_NACK){
+              //setup command
+              ptr=BUS_cmd_init(pk,CMD_NACK);
+              //send NACK reason
+              ptr[0]=resp;
+              //send packet
+              BUS_cmd_tx(addr,pk,1,0,BUS_I2C_SEND_BGND);
+            }
+          }
+        }else{
+          //CRC failed, report error
+          report_error(ERR_LEV_ERROR,BUS_ERR_SRC_MAIN_LOOP,MAIN_LOOP_ERR_CMD_CRC,cmd);
+          //if command was not a NACK command send NACK
+          if(cmd!=CMD_NACK){
             //setup command
             ptr=BUS_cmd_init(pk,CMD_NACK);
             //send NACK reason
-            ptr[0]=resp;
+            ptr[0]=ERR_BAD_CRC;
             //send packet
             BUS_cmd_tx(addr,pk,1,0,BUS_I2C_SEND_BGND);
           }
-        }else if(cmd!=CMD_NACK){
-          //CRC check failed, send NACK
-          report_error(ERR_LEV_ERROR,BUS_ERR_SRC_MAIN_LOOP,MAIN_LOOP_ERR_CMD_CRC,cmd);
-          //setup command
-          ptr=BUS_cmd_init(pk,CMD_NACK);
-          //send NACK reason
-          ptr[0]=ERR_BAD_CRC;
-          //send packet
-          BUS_cmd_tx(addr,pk,1,0,BUS_I2C_SEND_BGND);
         }
         //increment index
         I2C_rx_out++;
