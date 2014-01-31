@@ -54,7 +54,7 @@ int async_open(unsigned char addr){
   //send close command
   *ptr=ASYNC_OPEN;
   //send command
-  resp=BUS_cmd_tx(async_addr,buff,1,0,BUS_I2C_SEND_FOREGROUND);
+  resp=BUS_cmd_tx(addr,buff,1,0,BUS_I2C_SEND_FOREGROUND);
   //check for errors
   if(resp==RET_SUCCESS){
     //no errors, set address
