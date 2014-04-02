@@ -124,6 +124,13 @@ extern unsigned short powerState;
 
 //setup clocks and low tasking stuff for ARC
 void ARC_setup(void);
+//low voltage version
+void ARC_setup_lv(void);
+
+//setup clocks
+void initCLK(void);
+//setup clocks for low voltage
+void initCLK_lv(void);
 
 //setup the ARC bus
 void initARCbus(unsigned char addr);
