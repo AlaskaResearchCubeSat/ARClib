@@ -5,8 +5,8 @@
 
 #include "ARCbus_internal.h"
 
-#define   ASYNC_TARGET_SIZE   15
-#define   ASYNC_MAX_SIZE      35
+#define   ASYNC_TARGET_SIZE   (BUS_I2C_MAX_PACKET_LEN/2)
+#define   ASYNC_MAX_SIZE      (BUS_I2C_MAX_PACKET_LEN)
 
 unsigned char txbuf[256];
 unsigned char rxbuf[300];
@@ -51,7 +51,7 @@ int async_open(unsigned char addr){
   //send close command
   *ptr=ASYNC_OPEN;
   //send command
-  resp=BUS_cmd_tx(async_addr,buff,1,0,BUS_I2C_SEND_FOREGROUND);
+  resp=BUS_cmd_tx(addr,buff,1,0,BUS_I2C_SEND_FOREGROUND);
   //check for errors
   if(resp==RET_SUCCESS){
     //no errors, set address

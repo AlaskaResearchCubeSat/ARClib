@@ -40,6 +40,27 @@ const char* cmdtostr(unsigned char cmd){
   }
 }
 
+const char* cmd_resptostr(unsigned char resp){
+  switch(resp){
+    case RET_SUCCESS:
+      return "Success";
+    case ERR_PK_LEN:
+      return "Error Invalid Packet Length";
+    case ERR_UNKNOWN_CMD:
+      return "Error Unknown Command";
+    case ERR_SPI_LEN:
+      return "Error SPI Block Length";
+    case ERR_BAD_PK:
+      return "Error Bad Packet";
+    case ERR_SPI_BUSY:
+      return "Error SPI busy";
+    case ERR_BUFFER_BUSY:
+      return "Error Buffer Busy";
+    default:
+      return "Unknown";
+  }
+}
+
 //decode errors from ACDS system
 char *err_decode_arcbus(char buf[150], unsigned short source,int err, unsigned short argument){
   switch(source){
@@ -70,7 +91,7 @@ char *err_decode_arcbus(char buf[150], unsigned short source,int err, unsigned s
           sprintf(buf,"ARCbus Main Loop : bad CRC for command %s (%i)",cmdtostr(argument),argument);
         return buf;
         case MAIN_LOOP_ERR_BAD_CMD:
-          sprintf(buf,"ARCbus Main Loop : Bad Command for command %s (%i), resp %i",cmdtostr(argument&0xFF),argument&0xFF,argument>>8);
+          sprintf(buf,"ARCbus Main Loop : failed to parse command %s (%i), resp \"%s\" (%i)",cmdtostr(argument&0xFF),argument&0xFF,cmd_resptostr(argument>>8),argument>>8);
         return buf;
         case MAIN_LOOP_ERR_NACK_REC:
           sprintf(buf,"ARCbus Main Loop : NACK for command %s (%i), reason %i",cmdtostr(argument>>8),argument>>8,argument&0xFF);
@@ -86,7 +107,13 @@ char *err_decode_arcbus(char buf[150], unsigned short source,int err, unsigned s
         case MAIN_LOOP_ERR_CDH_NOT_FOUND:
           sprintf(buf,"ARCbus Main Loop : CDH board not found : %s",BUS_error_str(argument));
         return buf;
-          
+        case MAIN_LOOP_ERR_RX_BUF_STAT:
+          sprintf(buf,"ARCbus Main Loop : Incorrect I2C RX buffer status : %i",argument);
+          return buf;
+        case MAIN_LOOP_ERR_I2C_RX_BUSY:
+          return "ARCbus Main Loop : Rx Buffer busy, Packet Discarded";
+        case MAIN_LOOP_ERR_I2C_ARB_LOST:
+          return "ARCbus Main Loop : Arbitration Lost";
       }
     break; 
     case BUS_ERR_SRC_STARTUP:
