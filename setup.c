@@ -29,12 +29,54 @@ int checkSegA_cal_data(void){
   //return result
   return check;
 }
+
+
+//Turn off SVS
+//this saves power and prevents the SVS from resetting the MSP at low voltages
+void SVS_off(void){
+  //clear SVS bits to turn off the SVS
+  SVSCTL=0;
+}
+void SVS_on(void){
+  //clear SVS bits to trigger power up delay if VLD!=0
+  SVSCTL=0;
+  //setup SVS to trigger on 3.3V and generate a POR
+  SVSCTL=VLD3|VLD1|PORON;
+  //wait for SVS to power up
+  //TODO: perhaps count loops to make sure we don't get stuck here
+  while(!(SVSCTL&SVSON));
+}
+
+short SVS_ramp(unsigned short timeout){
+  int i;
+  //clear SVS bits to trigger power up delay if VLD!=0
+  SVSCTL=0;
+  //setup SVS to trigger on 3.3V and generate a POR
+  SVSCTL=VLD3|VLD1;
+  //wait for SVS to power up
+  //TODO: perhaps count loops to make sure we don't get stuck here
+  while(!(SVSCTL&SVSON));
+  //wait for SVS output to become high
+  for(i=0;!(SVSCTL&SVSOP);i++){
+    //check timeout
+    if(i>=timeout){
+      return 0;
+    }
+    //delay for ~1ms on ~1MHz clock
+    __delay_cycles(1000);
+  }
+  //make SVS generate a POR
+  SVSCTL|=PORON;
+  //return success
+  return 1;
+}
  
  //initialize the MSP430 Clocks
 void initCLK(void){
-  extern ticker ticker_time;
   //set XT1 load caps, do this first so XT1 starts up sooner
   BCSCTL3=XCAP_0;
+  //setup SVS
+  SVS_on();
   //stop watchdog
   //WDT_STOP();
   //kick watchdog
@@ -61,8 +103,6 @@ void initCLK(void){
   //also initialize timing generator for flash memory
   FCTL2=FWKEY|FSSEL_2|33;
   
-  //set time ticker to zero
-  ticker_time=0;
   //TODO: Maybe wait for LFXT to startup?
 }
   
@@ -75,7 +115,7 @@ void initCLK_lv(void){
   WDT_KICK();
   //setup clocks
 
-  //set DCO values to Defalut values ~1MHz
+  //set DCO values to Default values ~1MHz
   //TODO: decide what is best here for opperation down to 1.8V
   DCOCTL=DCO0|DCO1;
   BCSCTL1=XT2OFF|RSEL2|RSEL1|RSEL0;
@@ -83,8 +123,9 @@ void initCLK_lv(void){
   //Source Mclk and SMclk from DCO (default)
   BCSCTL2=SELM_0|DIVM_0|DIVS_0;
   
-  //set time ticker to zero
-  ticker_time=0;
+  //turn off SVS
+  SVS_off();
+  
   //TODO: Maybe wait for LFXT to startup?
 }
   
@@ -104,18 +145,10 @@ void start_timerA(void){
   TACTL|=MC_2;
 }
 
-void initSVS(void){
-  //clear SVS bits to trigger power up delay if VLD!=0
-  SVSCTL=0;
-  //setup SVS to trigger on 3.3V and generate a POR
-  SVSCTL=VLD3|VLD1|PORON;
-  //wait for SVS to power up
-  //TODO: perhaps count loops to make sure we don't get stuck here
-  while(!(SVSCTL&SVSON));
-}
 
 //low level setup code
 void ARC_setup(void){
+  extern ticker ticker_time;
   //setup error reporting library
   error_init();
   //record reset error first so that it appears first in error log
@@ -125,10 +158,10 @@ void ARC_setup(void){
     //clear magic so we are not confused in the future
     saved_error.magic=RESET_MAGIC_EMPTY;
   } 
-  //setup SVS
-  initSVS();
   //setup clocks
   initCLK();
+  //set time ticker to zero
+  ticker_time=0;
   //setup timerA
   init_timerA();
   //set timer to increment by 1
@@ -146,6 +179,7 @@ void ARC_setup(void){
 
 //low level setup code
 void ARC_setup_lv(void){
+  extern ticker ticker_time;
   //setup error reporting library
   error_init();
   //record reset error first so that it appears first in error log
@@ -157,6 +191,8 @@ void ARC_setup_lv(void){
   } 
   //setup clocks
   initCLK_lv();
+  //set time ticker to zero
+  ticker_time=0;
   //setup timerA
   init_timerA();
   //set timer to increment by 1
