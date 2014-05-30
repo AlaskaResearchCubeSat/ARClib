@@ -130,7 +130,7 @@ static void ARC_bus_run(void *p) __toplevel{
         //get len
         len=I2C_rx_buf[I2C_rx_out].len;
         //compute crc
-        crc=crc8(I2C_rx_buf[I2C_rx_out].dat,len-1);
+        crc=crc7(I2C_rx_buf[I2C_rx_out].dat,len-1);
         //get length of payload
         len=len-BUS_I2C_CRC_LEN-BUS_I2C_HDR_LEN;
         //get sender address
