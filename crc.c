@@ -20,7 +20,7 @@ static const unsigned char crc7_table[256] = {
     0x1c, 0x0e, 0x38, 0x2a, 0x54, 0x46, 0x70, 0x62, 0x8c, 0x9e, 0xa8, 0xba, 0xc4, 0xd6, 0xe0, 0xf2
 };
 
-unsigned char crc7(unsigned char *data,unsigned short len){
+unsigned char crc7(const unsigned char *data,unsigned short len){
     unsigned char crc=0;
     unsigned int tbl_idx;
     unsigned short i;
@@ -70,7 +70,7 @@ static const unsigned short crc16_table[256] = {
     0x6e17, 0x7e36, 0x4e55, 0x5e74, 0x2e93, 0x3eb2, 0x0ed1, 0x1ef0
 };
 
-unsigned short crc16(unsigned char *data,unsigned short len){
+unsigned short crc16(const unsigned char *data,unsigned short len){
     unsigned short crc=0;
     unsigned short i;
     unsigned int tbl_idx;
