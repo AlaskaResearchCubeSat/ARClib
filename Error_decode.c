@@ -35,6 +35,8 @@ const char* cmdtostr(unsigned char cmd){
       return "Async Setup";
     case CMD_ASYNC_DAT:
       return "Async Data";
+    case CMD_SPI_DATA_ACTION:
+      return "SPI Data Action";
     default:
       return "Unknown";
   }
