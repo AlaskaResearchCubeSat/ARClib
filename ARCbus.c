@@ -63,6 +63,7 @@ int BUS_cmd_tx(unsigned char addr,unsigned char *buff,unsigned short len,unsigne
   unsigned int e;
   short ret;
   int i;
+  int mutex_release;
   unsigned char resp[2];
   //check address
   if((ret=addr_chk(addr))!=RET_SUCCESS){
@@ -98,16 +99,18 @@ int BUS_cmd_tx(unsigned char addr,unsigned char *buff,unsigned short len,unsigne
       return ERR_INVALID_ARGUMENT;
     }
     //release mutex after complete
-    arcBus_stat.i2c_stat.mutex_release=1;
+    mutex_release=1;
   }else{
     //don't release mutex after complete
-    arcBus_stat.i2c_stat.mutex_release=0;
+    mutex_release=0;
   }
   //wait for the bus to become free
   if(BUS_I2C_lock()){
     //I2C bus is in use
     return ERR_TIMEOUT;
-  }    
+  }
+  //only change mutex_relase in arcBus structure after lock is obtained
+  arcBus_stat.i2c_stat.mutex_release=mutex_release;
   //make sure that we are not calling while running in the background
   if(ctl_task_executing!=&ARC_bus_task && arcBus_stat.i2c_stat.mutex.lock_count!=1){
     //only allow function to be entered once at a time
