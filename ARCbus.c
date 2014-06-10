@@ -157,7 +157,7 @@ int BUS_cmd_tx(unsigned char addr,unsigned char *buff,unsigned short len,unsigne
   //release I2C bus
   BUS_I2C_release();
   //check which event(s) happened
-  switch(e){
+  switch(e&BUS_EV_I2C_MASTER){
     case BUS_EV_I2C_COMPLETE:
       //no error
       return RET_SUCCESS;
