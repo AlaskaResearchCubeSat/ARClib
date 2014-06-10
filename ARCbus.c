@@ -270,13 +270,16 @@ int BUS_SPI_txrx(unsigned char addr,unsigned char *tx,unsigned char *rx,unsigned
   DMA1CTL&=~DMAEN; 
   //Check if SPI complete event received
   if(e&BUS_EV_SPI_COMPLETE){
-    //assemble CRC
-    crc=rx[arcBus_stat.spi_stat.len+1];//LSB
-    crc|=(((unsigned short)rx[arcBus_stat.spi_stat.len])<<8);//MSB
-    //check CRC
-    if(crc!=crc16(rx,arcBus_stat.spi_stat.len)){
-      //Bad CRC
-      return ERR_BAD_CRC;
+    //if RX is null then don't calculate CRC
+    if(rx!=NULL){
+        //assemble CRC
+        crc=rx[arcBus_stat.spi_stat.len+1];//LSB
+        crc|=(((unsigned short)rx[arcBus_stat.spi_stat.len])<<8);//MSB
+        //check CRC
+        if(crc!=crc16(rx,arcBus_stat.spi_stat.len)){
+          //Bad CRC
+          return ERR_BAD_CRC;
+        }
     }
     //Success!!
     return RET_SUCCESS;
