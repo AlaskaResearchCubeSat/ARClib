@@ -277,3 +277,21 @@ void initARCbus(unsigned char addr){
   start_timerA();
 
 }
+
+int BUS_stop_interrupts(void){
+    return ctl_global_interrupts_set(0);
+}
+
+void BUS_restart_interrupts(int int_stat){
+    //check if we should re-enable interrupts
+    if (int_stat){
+        //setup timer A to clear TAR value 
+        init_timerA();
+        //start timer A
+        start_timerA();
+        //kick the watchdog to get it running again
+        WDT_KICK();
+        //re-enable interrupts
+        ctl_global_interrupts_enable();
+    }
+}

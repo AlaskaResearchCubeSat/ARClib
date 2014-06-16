@@ -187,5 +187,11 @@ void reset(unsigned char level,unsigned short source,int err, unsigned short arg
 //get error string for bus errors
 const char *BUS_error_str(int error);
 
+//stop global interrupts from happening 
+int BUS_stop_interrupts(void);
+
+//gracefully restart global interrupts
+void BUS_restart_interrupts(int int_stat);
+
 #endif
   
