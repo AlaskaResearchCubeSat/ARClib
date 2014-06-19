@@ -1,5 +1,6 @@
 #include <msp430.h>
 #include "ARCbus.h"
+#include "ARCbus_internal.h"
 
 //==============[SPI mode switching commands]==============
 
@@ -10,7 +11,7 @@ void SPI_master_setup(void){
   //put UCA0 into master mode
   UCA0CTL0|=UCMST;
   //set pins for SPI usage
-  P3SEL|=BIT0|BIT4|BIT5;
+  P3SEL|=BUS_PINS_SPI;
   //bring UCA0 out of reset state
   UCA0CTL1&=~UCSWRST;
 }
@@ -22,7 +23,7 @@ void SPI_slave_setup(void){
   //put UCA0 into slave mode
   UCA0CTL0&=~UCMST;
   //set pins for SPI usage
-  P3SEL|=BIT0|BIT4|BIT5;
+  P3SEL|=BUS_PINS_SPI;
   //bring UCA0 out of reset state
   UCA0CTL1&=~UCSWRST;
 }
@@ -32,7 +33,7 @@ void SPI_deactivate(void){
   //put UCA0 into reset state
   UCA0CTL1|=UCSWRST;
   //set pins as inputs
-  P3SEL&=~(BIT0|BIT4|BIT5);
+  P3SEL&=~(BUS_PINS_SPI);
   //set mode
   arcBus_stat.spi_stat.mode=BUS_SPI_IDLE;
 }

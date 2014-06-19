@@ -6,7 +6,17 @@
  
   #include "ARCbus.h"
   
+  //define serial pins
+  #define BUS_PIN_SDA       BIT1
+  #define BUS_PIN_SCL       BIT2
   
+  #define BUS_PINS_I2C      (BUS_PIN_SDA|BUS_PIN_SCL)
+  
+  #define BUS_PIN_SOMI      BIT5
+  #define BUS_PIN_SIMO      BIT4
+  #define BUS_PIN_SCK       BIT0
+    
+  #define BUS_PINS_SPI      (BUS_PIN_SOMI|BUS_PIN_SIMO|BUS_PIN_SCK)
   
   //ARCbus error sources
   enum{BUS_ERR_SRC_CTL=ERR_SRC_ARCBUS,BUS_ERR_SRC_MAIN_LOOP,BUS_ERR_SRC_STARTUP,BUS_ERR_SRC_ASYNC,BUS_ERR_SRC_SETUP};
