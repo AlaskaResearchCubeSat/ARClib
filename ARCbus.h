@@ -83,9 +83,15 @@ enum{BUS_SPI_IDLE=0,BUS_SPI_SLAVE,BUS_SPI_MASTER};
     
 //SPI data actions
 enum{SPI_DAT_ACTION_INVALID=0,SPI_DAT_ACTION_SD_WRITE,SPI_DAT_ACTION_NULL,SPI_DAT_ACTION_PRINT};
+    
+//LP main loop low power modes
+enum{ML_LP_EXIT,ML_LPM0,ML_LPM1,ML_LPM2,ML_LPM3,ML_LPM4};
 
 //ticker for time keeping
 typedef unsigned long ticker;
+
+//low power mode setting in low power main loop
+extern char BUS_lp_mode;
 
 //struct for I2C status
 typedef struct{
@@ -146,6 +152,8 @@ void initARCbus_pd(unsigned char addr);
 
 //Enter the Idle loop. Start the ARCbus tasks and drop idle tasks to lowest priority
 void mainLoop(void);
+//enter low power main loop. allows the MSP to go into all low power modes
+void mainLoop_lp(void);
 
 //send packet over the bus
 int BUS_cmd_tx(unsigned char addr,unsigned char *buff,unsigned short len,unsigned short flags,short bgnd);

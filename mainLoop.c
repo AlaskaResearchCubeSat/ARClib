@@ -433,3 +433,65 @@ void mainLoop(void) __toplevel{
       #endif
   }
 }
+
+
+//=======================================================================================
+//                               [Low power Main Loop]
+//=======================================================================================
+
+char BUS_lp_mode;
+
+//main loop function, idle
+void mainLoop_lp(void){
+  //power down bus pins
+  BUS_pin_disable();
+  //kick WDT to give us some time
+  WDT_KICK();
+  // drop to lowest priority to start created tasks running.
+  ctl_task_set_priority(&idle_task,0); 
+  //set initial low power mode
+  BUS_lp_mode=ML_LPM0;
+  //main idle loop
+  //NOTE that this task should never wait to ensure that there is always a runnable task
+  while(BUS_lp_mode!=ML_LP_EXIT){    
+      switch(BUS_lp_mode){
+          case ML_LPM0:
+              //kick watchdog
+              WDT_KICK();
+              LPM0;
+          break;
+          case ML_LPM1:
+              //kick watchdog
+              WDT_KICK();
+              LPM1;
+          break;
+          case ML_LPM2:
+              //kick watchdog
+              WDT_KICK();
+              LPM2;
+          break;
+          case ML_LPM3:
+              //kick watchdog
+              WDT_KICK();
+              LPM3;
+          break;
+          case ML_LPM4:
+              //stop watchdog so we can go into LPM4
+              WDT_STOP();
+              //TODO: probably should disable timers or something here
+              //LPM4
+              LPM4;
+              //Kick watchdog as we come out  
+              WDT_KICK();
+          break;
+          default:
+            //TODO: do something here?
+            //default to LPM0
+            BUS_lp_mode=ML_LPM0;
+      }
+  }
+  // raise priority back to maximum
+  ctl_task_set_priority(&idle_task,255); 
+  //turn on bus pins
+  BUS_pin_enable();
+}
