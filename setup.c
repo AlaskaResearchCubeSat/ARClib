@@ -219,7 +219,7 @@ void initARCbus(unsigned char addr){
   //set own address
   UCB0I2COA=UCGCEN|addr;
   //configure ports
-  P3SEL|=BIT1|BIT2;
+  P3SEL|=BUS_PINS_I2C;
   //bring UCB0 out of reset state
   UCB0CTL1&=~UCSWRST;
   //enable state change interrupts
