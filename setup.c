@@ -333,16 +333,16 @@ void initARCbus(unsigned char addr){
   //======[setup pin interrupts]=======
 
   //rising edge
-  //P1IES=0x00;
+  P1IES=0x00;
   //falling edge
-  P1IES=0xFF;
+  //P1IES=0xFF;
   
   
   #ifdef CDH_LIB
     //pull down resistors
-    //P1OUT&=~(BIT0|BIT2|BIT3|BIT4|BIT5|BIT6|BIT7);
+    P1OUT=0;
     //pull up resistors
-    P1OUT=0xFF;
+    //P1OUT=0xFF;
     //enable pull resistors
     P1REN=0xFF;
   #else
@@ -353,7 +353,7 @@ void initARCbus(unsigned char addr){
   //clear flags
   P1IFG=0;
   //enable interrupts
-  P1IE|=(BIT0|BIT2|BIT3|BIT4|BIT5|BIT6|BIT7);
+  P1IE=0xFF;
 
    //create a main task with maximum priority so other tasks can be created without interruption
   //this should be called before other tasks are created
