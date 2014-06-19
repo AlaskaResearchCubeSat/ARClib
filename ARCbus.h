@@ -141,6 +141,8 @@ short SVS_ramp(unsigned short timeout);
 
 //setup the ARC bus
 void initARCbus(unsigned char addr);
+//setup the ARC bus for the case when all other systems are off
+void initARCbus_pd(unsigned char addr);
 
 //Enter the Idle loop. Start the ARCbus tasks and drop idle tasks to lowest priority
 void mainLoop(void);

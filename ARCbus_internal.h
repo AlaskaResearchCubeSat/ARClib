@@ -123,5 +123,8 @@
   void async_open_remote(unsigned char addr);
   
   void BUS_I2C_release(void);
+  
+  void BUS_pin_disable(void);
+  void BUS_pin_enable(void);
 
 #endif

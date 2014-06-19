@@ -364,6 +364,110 @@ void initARCbus(unsigned char addr){
 
 }
 
+void BUS_pin_disable(void){
+    //disable I2C state change interrupts
+    UCB0I2CIE&=~(UCNACKIE|UCSTTIE|UCALIE);
+    //put UCA0 into reset state
+    UCA0CTL1|=UCSWRST;
+    //set level
+    P3OUT|=BUS_PINS_SPI|BUS_PINS_I2C;
+    //enable pull
+    P3REN|=BUS_PINS_SPI|BUS_PINS_I2C;
+    //select GPIO function
+    P3SEL&=~(BUS_PINS_SPI|BUS_PINS_I2C);
+}
+
+void BUS_pin_enable(void){
+    //put UCA0 into reset state
+    UCA0CTL1|=UCSWRST;
+    //disable pull
+    P3REN&=~(BUS_PINS_SPI|BUS_PINS_I2C);
+    //select special function
+    P3SEL|=(BUS_PINS_SPI|BUS_PINS_I2C);
+    //enable I2C state change interrupts
+    UCB0I2CIE|=UCNACKIE|UCSTTIE|UCALIE;
+}
+
+void initARCbus_pd(unsigned char addr){
+  int i;
+  //kick watchdog
+  WDT_KICK();
+  //===[initialize globals]===
+  //init event sets
+  ctl_events_init(&arcBus_stat.events,0);     //bus events
+  ctl_events_init(&SUB_events,0);             //subsystem events
+  ctl_events_init(&arcBus_stat.PortEvents,0);
+  ctl_events_init(&DMA_events,0);
+  //I2C mutex init
+  ctl_mutex_init(&arcBus_stat.i2c_stat.mutex);
+  //set I2C to idle mode
+  arcBus_stat.i2c_stat.mode=BUS_I2C_IDLE;
+  //initialize I2C packet queue to empty state
+  for(i=0;i<BUS_I2C_PACKET_QUEUE_LEN;i++){
+    I2C_rx_buf[i].stat=I2C_PACKET_STAT_EMPTY;
+  }
+  //initialize I2C packet queue pointers
+  I2C_rx_in=I2C_rx_out=0;
+  //set SPI to idle mode
+  arcBus_stat.spi_stat.mode=BUS_SPI_IDLE;
+  //startup with power off
+  powerState=SUB_PWR_OFF;
+  //============[setup I2C]============ 
+  //put UCB0 into reset state
+  UCB0CTL1=UCSWRST;
+  //setup registers
+  //UCB0CTL0=UCMM|UCMODE_3|UCSYNC;
+  UCB0CTL0=UCMM|UCMST|UCMODE_3|UCSYNC;
+  UCB0CTL1|=UCSSEL_2;
+  //set baud rate to 50kB/s off of 16MHz SMCLK
+  UCB0BR0=0x40;
+  UCB0BR1=0x01;
+  //set own address
+  UCB0I2COA=UCGCEN|addr;
+  //============[setup SPI]============
+  //put UCA0 into reset state
+  UCA0CTL1=UCSWRST;
+  //set MSB first, 3 wire SPI mod, 8 bit words
+  UCA0CTL0=UCMSB|UCMODE_0|UCSYNC;
+  //clock UCA0 off of SMCLK
+  UCA0CTL1|=UCSSEL_2;
+  //set SPI clock to 3.2MHz
+  UCA0BR0=0x05;
+  UCA0BR1=0;
+  //leave UCA1 in reset state until it is used for communication
+  
+  //put pins into idle state
+  BUS_pin_disable();
+
+  //======[setup pin interrupts]=======
+
+  //rising edge
+  P1IES=0x00;
+  //falling edge
+  //P1IES=0xFF;
+
+  //it is expected that this is the only processor awake at this time, so pull lines down
+  //pull down resistors
+  P1OUT=0;
+  //pull up resistors
+  //P1OUT=0xFF;
+  //enable pull resistors
+  P1REN=0xFF;
+  
+  //clear flags
+  P1IFG=0;
+  //enable interrupts
+  P1IE=0xFF;
+
+   //create a main task with maximum priority so other tasks can be created without interruption
+  //this should be called before other tasks are created
+  ctl_task_init(&idle_task, 255, "idle");  
+
+  //start timerA
+  start_timerA();
+
+}
+
 int BUS_stop_interrupts(void){
     return ctl_global_interrupts_set(0);
 }
