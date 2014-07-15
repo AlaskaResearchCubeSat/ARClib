@@ -30,6 +30,9 @@ static unsigned char SPI_addr=0;
 
 static void ARC_bus_helper(void *p);
 
+//power state of subsystem
+unsigned short powerState=SUB_PWR_OFF;
+
 //ARC bus Task, do ARC bus stuff
 static void ARC_bus_run(void *p) __toplevel{
   unsigned int e;
@@ -157,7 +160,7 @@ static void ARC_bus_run(void *p) __toplevel{
               //check to make sure that the command is directed to this subsystem
               if(len==1 && ptr[0]==UCB0I2COA){
                 //set new power status
-                powerState=SUB_PWR_ON;
+                powerState=SUB_PWR_OFF;
                 //inform subsystem
                 ctl_events_set_clear(&SUB_events,SUB_EV_PWR_OFF,0);
               }else{
