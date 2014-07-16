@@ -97,7 +97,7 @@
   extern short I2C_rx_in,I2C_rx_out;
   
   //power status
-  extern unsigned short powerState=SUB_PWR_OFF;
+  extern unsigned short powerState;
   
   
   //task structures
