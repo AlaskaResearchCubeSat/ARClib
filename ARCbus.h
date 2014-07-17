@@ -87,6 +87,9 @@ enum{SPI_DAT_ACTION_INVALID=0,SPI_DAT_ACTION_SD_WRITE,SPI_DAT_ACTION_NULL,SPI_DA
 //LP main loop low power modes
 enum{ML_LP_EXIT,ML_LPM0,ML_LPM1,ML_LPM2,ML_LPM3,ML_LPM4};
 
+//SPI Data types
+enum{SPI_BEACON_DAT,SPI_IMG_DAT,SPI_LEDL_DAT};
+
 //ticker for time keeping
 typedef unsigned long ticker;
 
