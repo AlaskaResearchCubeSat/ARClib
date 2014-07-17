@@ -32,7 +32,8 @@ enum{SUB_EV_PWR_OFF=(1<<0),SUB_EV_PWR_ON=(1<<1),SUB_EV_SEND_STAT=(1<<2),SUB_EV_T
 
 //command table for ARCBUS commands
 enum{CMD_NACK=51,CMD_SPI_COMPLETE,CMD_SPI_RDY,CMD_SUB_ON,CMD_SUB_OFF,CMD_SUB_POWERUP,CMD_RESET,CMD_SUB_STAT,
-     CMD_SPI_CLEAR,CMD_EPS_STAT,CMD_LEDL_STAT,CMD_ACDS_STAT,CMD_COMM_STAT,CMD_IMG_STAT,CMD_ASYNC_SETUP,CMD_ASYNC_DAT};
+     CMD_SPI_CLEAR,CMD_EPS_STAT,CMD_LEDL_STAT,CMD_ACDS_STAT,CMD_COMM_STAT,CMD_IMG_STAT,CMD_ASYNC_SETUP,
+     CMD_ASYNC_DAT,CMD_SPI_DATA_ACTION,CMD_MAG_DATA,CMD_MAG_SAMPLE_CONFIG};
 
 //bit to allow NACK to be sent
 #define CMD_TX_NACK                 (0x80)
@@ -53,7 +54,7 @@ enum{CMD_NACK=51,CMD_SPI_COMPLETE,CMD_SPI_RDY,CMD_SUB_ON,CMD_SUB_OFF,CMD_SUB_POW
 enum{RET_SUCCESS=0,ERR_BAD_LEN=-1,ERR_CMD_NACK=-2,ERR_I2C_NACK=-3,ERR_UNKNOWN=-4,ERR_BAD_ADDR=-5,ERR_BAD_CRC=-6,ERR_TIMEOUT=-7,ERR_BUSY=-8,ERR_INVALID_ARGUMENT=-9,ERR_FLOW_CTL_STOPPED=-10,ERR_PACKET_TOO_LONG=-11};
 
 //Return values for SUB_parseCmd these will be send as part of the NACK packet
-enum{ERR_PK_LEN=-1,ERR_UNKNOWN_CMD=-2,ERR_SPI_LEN=-3,ERR_BAD_PK=-4,ERR_SPI_BUSY=-5,ERR_BUFFER_BUSY=-6};
+enum{ERR_PK_LEN=1,ERR_UNKNOWN_CMD=2,ERR_SPI_LEN=3,ERR_BAD_PK=4,ERR_SPI_BUSY=5,ERR_BUFFER_BUSY=6};
 
 //table of board addresses
 //BUS_ADDR_GC is general call address which every board will acknowledge for receiving
@@ -79,6 +80,12 @@ enum {BUS_I2C_IDLE=0,BUS_I2C_TX=1,BUS_I2C_RX};
 
 //SPI modes
 enum{BUS_SPI_IDLE=0,BUS_SPI_SLAVE,BUS_SPI_MASTER};
+    
+//SPI data actions
+enum{SPI_DAT_ACTION_INVALID=0,SPI_DAT_ACTION_SD_WRITE,SPI_DAT_ACTION_NULL,SPI_DAT_ACTION_PRINT};
+
+//SPI Data types
+enum{SPI_BEACON_DAT,SPI_IMG_DAT,SPI_LEDL_DAT};
 
 //ticker for time keeping
 typedef unsigned long ticker;
@@ -182,6 +189,12 @@ void reset(unsigned char level,unsigned short source,int err, unsigned short arg
 
 //get error string for bus errors
 const char *BUS_error_str(int error);
+
+//stop global interrupts from happening 
+int BUS_stop_interrupts(void);
+
+//gracefully restart global interrupts
+void BUS_restart_interrupts(int int_stat);
 
 #endif
   

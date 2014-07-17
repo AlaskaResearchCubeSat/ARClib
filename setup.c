@@ -219,7 +219,7 @@ void initARCbus(unsigned char addr){
   //set own address
   UCB0I2COA=UCGCEN|addr;
   //configure ports
-  P3SEL|=BIT1|BIT2;
+  P3SEL|=BUS_PINS_I2C;
   //bring UCB0 out of reset state
   UCB0CTL1&=~UCSWRST;
   //enable state change interrupts
@@ -247,16 +247,16 @@ void initARCbus(unsigned char addr){
   //======[setup pin interrupts]=======
 
   //rising edge
-  //P1IES=0x00;
+  P1IES=0x00;
   //falling edge
-  P1IES=0xFF;
+  //P1IES=0xFF;
   
   
   #ifdef CDH_LIB
     //pull down resistors
-    //P1OUT&=~(BIT0|BIT2|BIT3|BIT4|BIT5|BIT6|BIT7);
+    P1OUT=0;
     //pull up resistors
-    P1OUT=0xFF;
+    //P1OUT=0xFF;
     //enable pull resistors
     P1REN=0xFF;
   #else
@@ -267,7 +267,7 @@ void initARCbus(unsigned char addr){
   //clear flags
   P1IFG=0;
   //enable interrupts
-  P1IE|=(BIT0|BIT2|BIT3|BIT4|BIT5|BIT6|BIT7);
+  P1IE=0xFF;
 
    //create a main task with maximum priority so other tasks can be created without interruption
   //this should be called before other tasks are created
@@ -276,4 +276,22 @@ void initARCbus(unsigned char addr){
   //start timerA
   start_timerA();
 
+}
+
+int BUS_stop_interrupts(void){
+    return ctl_global_interrupts_set(0);
+}
+
+void BUS_restart_interrupts(int int_stat){
+    //check if we should re-enable interrupts
+    if (int_stat){
+        //setup timer A to clear TAR value 
+        init_timerA();
+        //start timer A
+        start_timerA();
+        //kick the watchdog to get it running again
+        WDT_KICK();
+        //re-enable interrupts
+        ctl_global_interrupts_enable();
+    }
 }

@@ -63,6 +63,7 @@ int BUS_cmd_tx(unsigned char addr,unsigned char *buff,unsigned short len,unsigne
   unsigned int e;
   short ret;
   int i;
+  int mutex_release;
   unsigned char resp[2];
   //check address
   if((ret=addr_chk(addr))!=RET_SUCCESS){
@@ -84,7 +85,7 @@ int BUS_cmd_tx(unsigned char addr,unsigned char *buff,unsigned short len,unsigne
     buff[0]&=~CMD_TX_NACK;
   }
   //calculate CRC
-  buff[len]=crc8(buff,len);
+  buff[len]=crc7(buff,len);
   //add a byte for the CRC
   len+=BUS_I2C_CRC_LEN;
   //check for zero length
@@ -98,16 +99,18 @@ int BUS_cmd_tx(unsigned char addr,unsigned char *buff,unsigned short len,unsigne
       return ERR_INVALID_ARGUMENT;
     }
     //release mutex after complete
-    arcBus_stat.i2c_stat.mutex_release=1;
+    mutex_release=1;
   }else{
     //don't release mutex after complete
-    arcBus_stat.i2c_stat.mutex_release=0;
+    mutex_release=0;
   }
   //wait for the bus to become free
   if(BUS_I2C_lock()){
     //I2C bus is in use
     return ERR_TIMEOUT;
-  }    
+  }
+  //only change mutex_relase in arcBus structure after lock is obtained
+  arcBus_stat.i2c_stat.mutex_release=mutex_release;
   //make sure that we are not calling while running in the background
   if(ctl_task_executing!=&ARC_bus_task && arcBus_stat.i2c_stat.mutex.lock_count!=1){
     //only allow function to be entered once at a time
@@ -154,7 +157,7 @@ int BUS_cmd_tx(unsigned char addr,unsigned char *buff,unsigned short len,unsigne
   //release I2C bus
   BUS_I2C_release();
   //check which event(s) happened
-  switch(e){
+  switch(e&BUS_EV_I2C_MASTER){
     case BUS_EV_I2C_COMPLETE:
       //no error
       return RET_SUCCESS;
@@ -267,13 +270,16 @@ int BUS_SPI_txrx(unsigned char addr,unsigned char *tx,unsigned char *rx,unsigned
   DMA1CTL&=~DMAEN; 
   //Check if SPI complete event received
   if(e&BUS_EV_SPI_COMPLETE){
-    //assemble CRC
-    crc=rx[arcBus_stat.spi_stat.len+1];//LSB
-    crc|=(((unsigned short)rx[arcBus_stat.spi_stat.len])<<8);//MSB
-    //check CRC
-    if(crc!=crc16(rx,arcBus_stat.spi_stat.len)){
-      //Bad CRC
-      return ERR_BAD_CRC;
+    //if RX is null then don't calculate CRC
+    if(rx!=NULL){
+        //assemble CRC
+        crc=rx[arcBus_stat.spi_stat.len+1];//LSB
+        crc|=(((unsigned short)rx[arcBus_stat.spi_stat.len])<<8);//MSB
+        //check CRC
+        if(crc!=crc16(rx,arcBus_stat.spi_stat.len)){
+          //Bad CRC
+          return ERR_BAD_CRC;
+        }
     }
     //Success!!
     return RET_SUCCESS;

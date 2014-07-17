@@ -30,6 +30,9 @@ static unsigned char SPI_addr=0;
 
 static void ARC_bus_helper(void *p);
 
+//power state of subsystem
+unsigned short powerState=SUB_PWR_OFF;
+
 //ARC bus Task, do ARC bus stuff
 static void ARC_bus_run(void *p) __toplevel{
   unsigned int e;
@@ -138,7 +141,7 @@ static void ARC_bus_run(void *p) __toplevel{
         //get len
         len=I2C_rx_buf[I2C_rx_out].len;
         //compute crc
-        crc=crc8(I2C_rx_buf[I2C_rx_out].dat,len-1);
+        crc=crc7(I2C_rx_buf[I2C_rx_out].dat,len-1);
         //get length of payload
         len=len-BUS_I2C_CRC_LEN-BUS_I2C_HDR_LEN;
         //get sender address
@@ -165,7 +168,7 @@ static void ARC_bus_run(void *p) __toplevel{
               //check to make sure that the command is directed to this subsystem
               if(len==1 && ptr[0]==UCB0I2COA){
                 //set new power status
-                powerState=SUB_PWR_ON;
+                powerState=SUB_PWR_OFF;
                 //inform subsystem
                 ctl_events_set_clear(&SUB_events,SUB_EV_PWR_OFF,0);
               }else{
@@ -275,99 +278,102 @@ static void ARC_bus_run(void *p) __toplevel{
 #ifndef CDH_LIB
               ctl_events_set_clear(&BUS_helper_events,BUS_HELPER_EV_SPI_CLEAR_CMD,0);
 #endif
-            //notify calling task
-            ctl_events_set_clear(&arcBus_stat.events,BUS_EV_SPI_COMPLETE,0);
-          break;
-          case CMD_ASYNC_SETUP:
-            //check length
-            if(len!=1){
-              resp=ERR_PK_LEN;
-              break;
-            }
-            switch(ptr[0]){
-              case ASYNC_OPEN:
-                //open remote connection
-                async_open_remote(addr);
-              break;
-              case ASYNC_CLOSE:
-                //check if sending address corosponds to async address
-                if(async_addr!=addr){
-                  //report error
-                  report_error(ERR_LEV_ERROR,BUS_ERR_SRC_ASYNC,ASYNC_ERR_CLOSE_WRONG_ADDR,(((unsigned short)addr)<<8)|async_addr);
-                  break;
-                }
-                //tell helper thread to close connection
-                ctl_events_set_clear(&BUS_helper_events,BUS_HELPER_EV_ASYNC_CLOSE,0);
-              break;
-              case ASYNC_STOP:
-                //check that async address is sender address
-                if(addr!=async_addr){
-                  //TODO: handle error here
-                  break;
-                }
-                //stop async from sending
-                txFlow=ASYNC_FLOW_STOPPED;
+              //notify calling task
+              ctl_events_set_clear(&arcBus_stat.events,BUS_EV_SPI_COMPLETE,0);
+            break;
+            case CMD_ASYNC_SETUP:
+              //check length
+              if(len!=1){
+                resp=ERR_PK_LEN;
+                break;
+              }
+              switch(ptr[0]){
+                case ASYNC_OPEN:
+                  //open remote connection
+                  async_open_remote(addr);
+                break;
+                case ASYNC_CLOSE:
+                  //check if sending address corosponds to async address
+                  if(async_addr!=addr){
+                    //report error
+                    report_error(ERR_LEV_ERROR,BUS_ERR_SRC_ASYNC,ASYNC_ERR_CLOSE_WRONG_ADDR,(((unsigned short)addr)<<8)|async_addr);
+                    break;
+                  }
+                  //tell helper thread to close connection
+                  ctl_events_set_clear(&BUS_helper_events,BUS_HELPER_EV_ASYNC_CLOSE,0);
+                break;
+                case ASYNC_STOP:
+                  //check that async address is sender address
+                  if(addr!=async_addr){
+                    //TODO: handle error here
+                    break;
+                  }
+                  //stop async from sending
+                  txFlow=ASYNC_FLOW_STOPPED;
+                  //give debug message
+                  report_error(ERR_LEV_DEBUG,BUS_ERR_SRC_ASYNC,ASYNC_ERR_TX_FLOWCTL,txFlow);
+                break;
+                case ASYNC_RESTART:
+                  //check that async address is sender address
+                  if(addr!=async_addr){
+                    //TODO: handle error here
+                    break;
+                  }
+                  //restart async sending
+                  txFlow=ASYNC_FLOW_RUNNING;
+                  //give debug message
+                  report_error(ERR_LEV_DEBUG,BUS_ERR_SRC_ASYNC,ASYNC_ERR_TX_FLOWCTL,txFlow);
+                  //tell helper to send data
+                  ctl_events_set_clear(&BUS_helper_events,BUS_HELPER_EV_ASYNC_SEND,0);
+                break;
+                default:
+                  //unknown command: handle accordingly
+                  //TODO: handle this better
+                  __no_operation();
+              }
+            break;
+            case CMD_ASYNC_DAT:
+              //TODO: check sender address
+              //post bytes to queue
+              ctl_byte_queue_post_multi_nb(&async_rxQ,len,ptr);
+              //check if restarting
+              if(rxFlow==ASYNC_FLOW_RESTARTING){
+                //flow is running, packet received
+                rxFlow=ASYNC_FLOW_RUNNING;
                 //give debug message
-                report_error(ERR_LEV_DEBUG,BUS_ERR_SRC_ASYNC,ASYNC_ERR_TX_FLOWCTL,txFlow);
-              break;
-              case ASYNC_RESTART:
-                //check that async address is sender address
-                if(addr!=async_addr){
-                  //TODO: handle error here
-                  break;
-                }
-                //restart async sending
-                txFlow=ASYNC_FLOW_RUNNING;
-                //give debug message
-                report_error(ERR_LEV_DEBUG,BUS_ERR_SRC_ASYNC,ASYNC_ERR_TX_FLOWCTL,txFlow);
-                //tell helper to send data
-                ctl_events_set_clear(&BUS_helper_events,BUS_HELPER_EV_ASYNC_SEND,0);
-              break;
-              default:
-                //unknown command: handle accordingly
-                //TODO: handle this better
-                __no_operation();
+                report_error(ERR_LEV_DEBUG,BUS_ERR_SRC_ASYNC,ASYNC_ERR_RX_FLOWCTL,rxFlow);
+              }
+              //check free bytes in queue
+              if(rxFlow!=ASYNC_FLOW_OFF && ctl_byte_queue_num_free(&async_rxQ)<=ASYNC_FLOW_STOP_THRESHOLD){              
+                //tell helper thread to send stop command
+                ctl_events_set_clear(&BUS_helper_events,BUS_HELPER_EV_ASYNC_STOP,0);
+              }
+            break;
+            case CMD_NACK:
+              //TODO: handle this better somehow?
+              //set event 
+              ctl_events_set_clear(&arcBus_stat.events,BUS_EV_CMD_NACK,0);
+              //report error
+              report_error(ERR_LEV_ERROR,BUS_ERR_SRC_MAIN_LOOP,MAIN_LOOP_ERR_NACK_REC,(((unsigned short)ptr[0])<<8)|((unsigned short)ptr[1]));
+            break;
+            default:
+              //check for subsystem command
+              resp=SUB_parseCmd(addr,cmd,ptr,len);
+            break;
+          }
+          //check if command was recognized
+          if(resp!=0){
+            report_error(ERR_LEV_ERROR,BUS_ERR_SRC_MAIN_LOOP,MAIN_LOOP_ERR_BAD_CMD,(((unsigned short)resp)<<8)|((unsigned short)cmd));
+            //check packet to see if NACK should be sent
+            if(I2C_rx_buf[I2C_rx_out].dat[0]&CMD_TX_NACK){
+              //setup command
+              ptr=BUS_cmd_init(pk,CMD_NACK);
+              //send NACK reason
+              ptr[0]=resp;
+              //send packet
+              BUS_cmd_tx(addr,pk,1,0,BUS_I2C_SEND_BGND);
             }
-          break;
-          case CMD_ASYNC_DAT:
-            //TODO: check sender address
-            //post bytes to queue
-            ctl_byte_queue_post_multi_nb(&async_rxQ,len,ptr);
-            //check if restarting
-            if(rxFlow==ASYNC_FLOW_RESTARTING){
-              //flow is running, packet received
-              rxFlow=ASYNC_FLOW_RUNNING;
-              //give debug message
-              report_error(ERR_LEV_DEBUG,BUS_ERR_SRC_ASYNC,ASYNC_ERR_RX_FLOWCTL,rxFlow);
-            }
-            //check free bytes in queue
-            if(rxFlow!=ASYNC_FLOW_OFF && ctl_byte_queue_num_free(&async_rxQ)<=ASYNC_FLOW_STOP_THRESHOLD){              
-              //tell helper thread to send stop command
-              ctl_events_set_clear(&BUS_helper_events,BUS_HELPER_EV_ASYNC_STOP,0);
-            }
-          break;
-          case CMD_NACK:
-            //TODO: handle this better somehow?
-            //set event 
-            ctl_events_set_clear(&arcBus_stat.events,BUS_EV_CMD_NACK,0);
-            //report error
-            report_error(ERR_LEV_ERROR,BUS_ERR_SRC_MAIN_LOOP,MAIN_LOOP_ERR_NACK_REC,(((unsigned short)ptr[0])<<8)|((unsigned short)ptr[1]));
-          break;
-          default:
-            //check for subsystem command
-            resp=SUB_parseCmd(addr,cmd,ptr,len);
-          break;
-        }
-        //malformed command, send nack if requested
-        if(resp!=0 && I2C_rx_buf[I2C_rx_out].dat[0]&CMD_TX_NACK){
-          report_error(ERR_LEV_ERROR,BUS_ERR_SRC_MAIN_LOOP,MAIN_LOOP_ERR_BAD_CMD,(((unsigned short)resp)<<8)|((unsigned short)cmd));
-          //setup command
-          ptr=BUS_cmd_init(pk,CMD_NACK);
-          //send NACK reason
-          ptr[0]=ERR_BAD_CRC;
-          //send packet
-          //BUS_cmd_tx(addr,pk,1,0,BUS_I2C_SEND_BGND);
-        }
+          }
       }else if(cmd!=CMD_NACK){
         //CRC check failed, send NACK
         report_error(ERR_LEV_ERROR,BUS_ERR_SRC_MAIN_LOOP,MAIN_LOOP_ERR_CMD_CRC,cmd);
