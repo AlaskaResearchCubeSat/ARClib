@@ -18,6 +18,9 @@
       <file file_name="buffer.c"/>
       <file file_name="DMA.h"/>
       <file file_name="async.c"/>
+      <file file_name="version.c">
+        <configuration Name="Common" compile_pre_build_command="python version.py"/>
+      </file>
     </folder>
     <folder Name="Startup Code">
       <file file_name="crt0.asm"/>
