@@ -7,3 +7,7 @@ MSP430 Debug/
 MSP430 Release/
 MSP430 Debug CDH/
 MSP430 Release CDH/
+
+#auto generated files
+version.c
+

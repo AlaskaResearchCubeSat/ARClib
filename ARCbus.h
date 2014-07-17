@@ -135,6 +135,9 @@ extern CTL_EVENT_SET_t SUB_events;
 //keep track of power status
 extern unsigned short powerState;
 
+//ARClib version
+extern const char ARClib_version[];
+
 //setup clocks and low tasking stuff for ARC
 void ARC_setup(void);
 //low voltage version
