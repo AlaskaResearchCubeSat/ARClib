@@ -85,7 +85,7 @@ int BUS_cmd_tx(unsigned char addr,unsigned char *buff,unsigned short len,unsigne
     buff[0]&=~CMD_TX_NACK;
   }
   //calculate CRC
-  buff[len]=crc8(buff,len);
+  buff[len]=crc7(buff,len);
   //add a byte for the CRC
   len+=BUS_I2C_CRC_LEN;
   //check for zero length
