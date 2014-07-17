@@ -42,7 +42,7 @@ else:
 	#write warning line to indicate versioning problems
 	f.write('#warning version not found "'+err+'"\n')
 	#write version string as unversioned to indicate an error
-	f.write('const char *const ARClib_version="unversioned";\n\n')
+	f.write('const char ARClib_version[]="unversioned";\n\n')
 	#close file
 	f.close()
 	
