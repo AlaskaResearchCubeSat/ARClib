@@ -84,6 +84,9 @@ enum{BUS_SPI_IDLE=0,BUS_SPI_SLAVE,BUS_SPI_MASTER};
 //SPI data actions
 enum{SPI_DAT_ACTION_INVALID=0,SPI_DAT_ACTION_SD_WRITE,SPI_DAT_ACTION_NULL,SPI_DAT_ACTION_PRINT};
 
+//SPI Data types
+enum{SPI_BEACON_DAT,SPI_IMG_DAT,SPI_LEDL_DAT};
+
 //ticker for time keeping
 typedef unsigned long ticker;
 
