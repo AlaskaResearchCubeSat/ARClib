@@ -178,6 +178,8 @@ char *err_decode_arcbus(char buf[150], unsigned short source,int err, unsigned s
           return "ARCbus Main Loop : Input Supply Low Error";
         case MAIN_LOOP_SPI_ABORT:  
           sprintf(buf,"ARCbus Main Loop : Abort command recived, aborting SPI transaction. SPI addr = 0x%02X",argument);
+        case MAIN_LOOP_ERR_SUBSYSTEM_VERSION_MISMATCH:
+          sprintf(buf,"ARCbus Main Loop : Version mismatch for address 0x%02X",argument);
           return buf;
       }
     break; 
