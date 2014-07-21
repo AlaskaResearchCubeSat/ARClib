@@ -1,6 +1,7 @@
 #include <ctl.h>
 #include <msp430.h>
 #include <stdlib.h>
+#include <string.h>
 #include "timerA.h"
 #include "ARCbus.h"
 #include "crc.h"
@@ -33,6 +34,8 @@ static void ARC_bus_helper(void *p);
 //power state of subsystem
 unsigned short powerState=SUB_PWR_OFF;
 
+#define POWERUP_VERSION_LEN     25
+
 //ARC bus Task, do ARC bus stuff
 static void ARC_bus_run(void *p) __toplevel{
   unsigned int e;
@@ -49,9 +52,11 @@ static void ARC_bus_run(void *p) __toplevel{
   //Initialize ErrorLib
   error_recording_start();
   //first send "I'm on" command
-  BUS_cmd_init(pk,CMD_SUB_POWERUP);//setup command
+  ptr=BUS_cmd_init(pk,CMD_SUB_POWERUP);//setup command
+  //write version into string
+  len=strlcpy((char*)ptr,ARClib_version,POWERUP_VERSION_LEN);
   //send command
-  resp=BUS_cmd_tx(BUS_ADDR_CDH,pk,0,0,BUS_I2C_SEND_FOREGROUND);
+  resp=BUS_cmd_tx(BUS_ADDR_CDH,pk,len,0,BUS_I2C_SEND_FOREGROUND);
   #ifndef CDH_LIB         //Subsystem board 
     //check for failed send
     if(resp!=RET_SUCCESS){
@@ -60,7 +65,7 @@ static void ARC_bus_run(void *p) __toplevel{
       //wait a bit
       ctl_timeout_wait(ctl_get_current_time()+30);
       //resend
-      resp=BUS_cmd_tx(BUS_ADDR_CDH,pk,0,0,BUS_I2C_SEND_FOREGROUND);
+      resp=BUS_cmd_tx(BUS_ADDR_CDH,pk,len,0,BUS_I2C_SEND_FOREGROUND);
       //check for success
       if(resp!=RET_SUCCESS){
         //Failed
