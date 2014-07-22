@@ -338,14 +338,19 @@ static void ARC_bus_run(void *p) __toplevel{
             BUS_cmd_tx(addr,pk,1,0,BUS_I2C_SEND_BGND);
           }
         }
+        //done with packet set status
+        I2C_rx_buf[I2C_rx_out].stat=I2C_PACKET_STAT_EMPTY;
         //increment index
         I2C_rx_out++;
         //check for wraparound
         if(I2C_rx_out>=BUS_I2C_PACKET_QUEUE_LEN){
           I2C_rx_out=0;
         }
-        //done with packet set status
-        I2C_rx_buf[I2C_rx_out].stat=I2C_PACKET_STAT_EMPTY;
+        //check next packet status
+        if(I2C_rx_buf[I2C_rx_out].stat==I2C_PACKET_STAT_COMPLETE){   
+          //There is still a packet set event again
+          ctl_events_set_clear(&BUS_INT_events,BUS_INT_EV_I2C_CMD_RX,0);
+        }
       }
     }
     //check for errors and report
