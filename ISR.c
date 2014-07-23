@@ -103,8 +103,15 @@ void UC0_rx(void) __ctl_interrupt[USCIAB0RX_VECTOR]{
     UCB0CTL1|=UCTXSTP; 
     //if running in background a diffrent event must be set to release the mutex
     if(!arcBus_stat.i2c_stat.mutex_release){
-      //set ERROR flag
-      ctl_events_set_clear(&arcBus_stat.events,BUS_EV_I2C_NACK,0);
+      //check if we have written more than a byte to the TX buffer
+      //one byte is always written after the start condition is sent
+      if(arcBus_stat.i2c_stat.tx.idx>1){
+          //set ABORT flag
+          ctl_events_set_clear(&arcBus_stat.events,BUS_EV_I2C_ABORT,0);
+      }else{
+          //set NACK flag
+          ctl_events_set_clear(&arcBus_stat.events,BUS_EV_I2C_NACK,0);
+      }
     }else{
       //set event
       ctl_events_set_clear(&BUS_INT_events,BUS_INT_EV_RELEASE_MUTEX,0);

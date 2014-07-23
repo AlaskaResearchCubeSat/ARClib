@@ -164,6 +164,9 @@ int BUS_cmd_tx(unsigned char addr,unsigned char *buff,unsigned short len,unsigne
     case BUS_EV_I2C_NACK:
       //I2C device did not acknowledge
       return ERR_I2C_NACK;
+    case BUS_EV_I2C_ABORT:
+      //I2C device did not acknowledge
+      return ERR_I2C_ABORT;
     case 0:
       //no event happened, so time out
       return ERR_TIMEOUT;
