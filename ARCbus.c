@@ -38,7 +38,7 @@ static unsigned BUS_I2C_lock(void){
   int i;
   //try to capture mutex
   if(0==ctl_mutex_lock(&arcBus_stat.i2c_stat.mutex,CTL_TIMEOUT_DELAY,10)){
-     return ERR_TIMEOUT;
+     return ERR_BUSY;
   }
   //wait for bus to be free
     for(i=0;arcBus_stat.i2c_stat.mode!=BUS_I2C_IDLE && i<10;i++){
@@ -48,7 +48,7 @@ static unsigned BUS_I2C_lock(void){
     //release mutex
     BUS_I2C_release();
     //bus is still busy, return error
-    return ERR_TIMEOUT;
+    return ERR_BUSY;
   } 
   return 0;
 } 
@@ -107,7 +107,7 @@ int BUS_cmd_tx(unsigned char addr,unsigned char *buff,unsigned short len,unsigne
   //wait for the bus to become free
   if(BUS_I2C_lock()){
     //I2C bus is in use
-    return ERR_TIMEOUT;
+    return ERR_BUSY;
   }
   //only change mutex_relase in arcBus structure after lock is obtained
   arcBus_stat.i2c_stat.mutex_release=mutex_release;
@@ -117,7 +117,7 @@ int BUS_cmd_tx(unsigned char addr,unsigned char *buff,unsigned short len,unsigne
     //release I2C bus
     BUS_I2C_release();
     //TODO : perhaps provide a better error here
-    return ERR_TIMEOUT;
+    return ERR_BUSY;
   }
   //Setup for I2C transaction  
   //set slave address
