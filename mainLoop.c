@@ -101,8 +101,6 @@ static void ARC_bus_run(void *p) __toplevel{
         SPI_deactivate();
         //tell helper thread to send SPI complete command
         ctl_events_set_clear(&BUS_helper_events,BUS_HELPER_EV_SPI_COMPLETE_CMD,0);
-        //transaction complete, clear address
-        SPI_addr=0;
         //assemble CRC
         crc=SPI_buf[arcBus_stat.spi_stat.len+1];//LSB
         crc|=(((unsigned short)SPI_buf[arcBus_stat.spi_stat.len])<<8);//MSB
@@ -380,6 +378,8 @@ static void ARC_bus_helper(void *p) __toplevel{
       //done with SPI send command
       BUS_cmd_init(pk,CMD_SPI_COMPLETE);
       resp=BUS_cmd_tx(SPI_addr,pk,0,0,BUS_I2C_SEND_FOREGROUND);
+      //transaction complete, clear address
+      SPI_addr=0;
       //check if command was successful and try again if it failed
       if(resp!=RET_SUCCESS){
         resp=BUS_cmd_tx(SPI_addr,pk,0,0,BUS_I2C_SEND_FOREGROUND);
