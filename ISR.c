@@ -149,6 +149,24 @@ void UC0_rx(void) __ctl_interrupt[USCIAB0RX_VECTOR]{
     //disable stop interrupt
     UCB0I2CIE&=~UCSTPIE;
   }
+  //arbitration lost, no longer master
+  if(UCB0STAT&UCALIFG){
+    //Arbitration lost, resend later?
+    UCB0STAT&=~UCALIFG;
+    //check if running
+    if(arcBus_stat.i2c_stat.mode!=BUS_I2C_IDLE){
+      //set flag to indicate condition
+      ctl_events_set_clear(&BUS_INT_events,BUS_INT_EV_I2C_ARB_LOST,0);
+      //set status to idle
+      arcBus_stat.i2c_stat.mode=BUS_I2C_IDLE;
+    }
+    //reset rx buffer status if in progress
+    if(I2C_rx_buf[I2C_rx_in].stat==I2C_PACKET_STAT_IN_PROGRESS){
+      //reset packet flags
+      I2C_rx_buf[I2C_rx_in].stat=I2C_PACKET_STAT_EMPTY;
+      //decrement packet index
+    }
+  }
   //start condition and slave address received, setup for command
   if(UCB0STAT&UCSTTIFG){
     //check status
@@ -198,24 +216,6 @@ void UC0_rx(void) __ctl_interrupt[USCIAB0RX_VECTOR]{
     UCB0I2CIE|=UCSTPIE;
     //clear start flag
     UCB0STAT&=~UCSTTIFG;
-  }
-  //arbitration lost, no longer master
-  if(UCB0STAT&UCALIFG){
-    //Arbitration lost, resend later?
-    UCB0STAT&=~UCALIFG;
-    //check if running
-    if(arcBus_stat.i2c_stat.mode!=BUS_I2C_IDLE){
-      //set flag to indicate condition
-      ctl_events_set_clear(&BUS_INT_events,BUS_INT_EV_I2C_ARB_LOST,0);
-      //set status to idle
-      arcBus_stat.i2c_stat.mode=BUS_I2C_IDLE;
-    }
-    //reset rx buffer status if in progress
-    if(I2C_rx_buf[I2C_rx_in].stat==I2C_PACKET_STAT_IN_PROGRESS){
-      //reset packet flags
-      I2C_rx_buf[I2C_rx_in].stat=I2C_PACKET_STAT_EMPTY;
-      //decrement packet index
-    }
   }
 }
 
