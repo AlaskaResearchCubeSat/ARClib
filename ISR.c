@@ -103,8 +103,15 @@ void UC0_rx(void) __ctl_interrupt[USCIAB0RX_VECTOR]{
     UCB0CTL1|=UCTXSTP; 
     //if running in background a diffrent event must be set to release the mutex
     if(!arcBus_stat.i2c_stat.mutex_release){
-      //set ERROR flag
-      ctl_events_set_clear(&arcBus_stat.events,BUS_EV_I2C_NACK,0);
+      //check if we have written more than a byte to the TX buffer
+      //one byte is always written after the start condition is sent
+      if(arcBus_stat.i2c_stat.tx.idx>1){
+          //set ABORT flag
+          ctl_events_set_clear(&arcBus_stat.events,BUS_EV_I2C_ABORT,0);
+      }else{
+          //set NACK flag
+          ctl_events_set_clear(&arcBus_stat.events,BUS_EV_I2C_NACK,0);
+      }
     }else{
       //set event
       ctl_events_set_clear(&BUS_INT_events,BUS_INT_EV_RELEASE_MUTEX,0);
@@ -148,6 +155,24 @@ void UC0_rx(void) __ctl_interrupt[USCIAB0RX_VECTOR]{
     UC0IE&=~(UCB0TXIE|UCB0RXIE);
     //disable stop interrupt
     UCB0I2CIE&=~UCSTPIE;
+  }
+  //arbitration lost, no longer master
+  if(UCB0STAT&UCALIFG){
+    //Arbitration lost, resend later?
+    UCB0STAT&=~UCALIFG;
+    //check if running
+    if(arcBus_stat.i2c_stat.mode!=BUS_I2C_IDLE){
+      //set flag to indicate condition
+      ctl_events_set_clear(&BUS_INT_events,BUS_INT_EV_I2C_ARB_LOST,0);
+      //set status to idle
+      arcBus_stat.i2c_stat.mode=BUS_I2C_IDLE;
+    }
+    //reset rx buffer status if in progress
+    if(I2C_rx_buf[I2C_rx_in].stat==I2C_PACKET_STAT_IN_PROGRESS){
+      //reset packet flags
+      I2C_rx_buf[I2C_rx_in].stat=I2C_PACKET_STAT_EMPTY;
+      //decrement packet index
+    }
   }
   //start condition and slave address received, setup for command
   if(UCB0STAT&UCSTTIFG){
@@ -198,24 +223,6 @@ void UC0_rx(void) __ctl_interrupt[USCIAB0RX_VECTOR]{
     UCB0I2CIE|=UCSTPIE;
     //clear start flag
     UCB0STAT&=~UCSTTIFG;
-  }
-  //arbitration lost, no longer master
-  if(UCB0STAT&UCALIFG){
-    //Arbitration lost, resend later?
-    UCB0STAT&=~UCALIFG;
-    //check if running
-    if(arcBus_stat.i2c_stat.mode!=BUS_I2C_IDLE){
-      //set flag to indicate condition
-      ctl_events_set_clear(&BUS_INT_events,BUS_INT_EV_I2C_ARB_LOST,0);
-      //set status to idle
-      arcBus_stat.i2c_stat.mode=BUS_I2C_IDLE;
-    }
-    //reset rx buffer status if in progress
-    if(I2C_rx_buf[I2C_rx_in].stat==I2C_PACKET_STAT_IN_PROGRESS){
-      //reset packet flags
-      I2C_rx_buf[I2C_rx_in].stat=I2C_PACKET_STAT_EMPTY;
-      //decrement packet index
-    }
   }
 }
 

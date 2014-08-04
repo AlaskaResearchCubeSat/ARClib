@@ -26,6 +26,8 @@ const char *BUS_error_str(int error){
       return "ERROR INVALID ARGUMENT";
     case ERR_PACKET_TOO_LONG:
       return "ERROR PACKET TOO LONG";
+    case ERR_I2C_ABORT:
+      return "ERROR I2C Transaction Aborted";
     //Error was not found
     default:
       return "UNKNOWN ERROR";
