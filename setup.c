@@ -243,6 +243,12 @@ void initARCbus(unsigned char addr){
   //UCA0BR0=0x40;
   //UCA0BR1=0;
   //leave UCA1 in reset state until it is used for communication
+  #ifdef CDH_LIB
+      //set lines to be pulled down only on CDH
+      P3OUT&=~BUS_PINS_SPI;
+      //enable pull resistors for SPI pins only on CDH
+      P3REN|=BUS_PINS_SPI;
+  #endif
     
   //======[setup pin interrupts]=======
 
