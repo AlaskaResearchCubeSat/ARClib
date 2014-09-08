@@ -232,8 +232,6 @@ void bus_int(void) __ctl_interrupt[PORT1_VECTOR]{
   P1IFG&=~flags;
   //set events for flags
   ctl_events_set_clear(&arcBus_stat.PortEvents,flags,0);
-  //TESTING: send time check event
-  //ctl_events_set_clear(&SUB_events,SUB_EV_TIME_CHECK,0);
 }
 
 
