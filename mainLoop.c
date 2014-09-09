@@ -214,7 +214,11 @@ static void ARC_bus_run(void *p) __toplevel{
               SPI_buf=BUS_get_buffer(CTL_TIMEOUT_NOW,0);
               //check if buffer was locked
               if(SPI_buf==NULL){
+                //buffer locked, set event
+                ctl_events_set_clear(&arcBus_stat.events,SUB_EV_SPI_ERR_BUSY,0);
+                //set response
                 resp=ERR_BUFFER_BUSY;
+                //stop SPI setup
                 break;
               }
               //save address of SPI slave
