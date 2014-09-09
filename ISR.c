@@ -232,7 +232,7 @@ void bus_int(void) __ctl_interrupt[PORT1_VECTOR]{
   //clear flags
   P1IFG&=~flags;
   //set events for flags
-  ctl_events_set_clear(&arcBus_stat.events,((unsigned short)flags)<<(SUB_EV_INT_SHIFT),0);
+  ctl_events_set_clear(&SUB_events,(SUB_EV_INT)&(((unsigned short)flags)<<(SUB_EV_INT_SHIFT)),0);
 }
 
 
