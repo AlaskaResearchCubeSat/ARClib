@@ -26,9 +26,19 @@ enum{BUS_EV_CMD_NACK=(1<<0),BUS_EV_I2C_COMPLETE=(1<<1),BUS_EV_I2C_NACK=(1<<2),BU
 
 //flags for events handled by the subsystem
 enum{SUB_EV_PWR_OFF=(1<<0),SUB_EV_PWR_ON=(1<<1),SUB_EV_SEND_STAT=(1<<2),SUB_EV_SPI_DAT=(1<<3),
-     SUB_EV_SPI_ERR_CRC=(1<<4),SUB_EV_ASYNC_OPEN=(1<<5),SUB_EV_ASYNC_CLOSE=(1<<6)};
+     SUB_EV_SPI_ERR_CRC=(1<<4),SUB_EV_ASYNC_OPEN=(1<<5),SUB_EV_ASYNC_CLOSE=(1<<6),
+     SUB_EV_INT_0=(1<< 8),SUB_EV_INT_1=(1<< 9),SUB_EV_INT_2=(1<<10),SUB_EV_INT_3=(1<<11),
+     SUB_EV_INT_4=(1<<12),SUB_EV_INT_5=(1<<13),SUB_EV_INT_6=(1<<14),SUB_EV_INT_7=(1<<15)
+     };
+//shift to apply to interrupt flags
+#define SUB_EV_INT_SHIFT        8
+
 //all subsystem events
-#define SUB_EV_ALL                  (SUB_EV_PWR_OFF|SUB_EV_PWR_ON|SUB_EV_SEND_STAT|SUB_EV_SPI_DAT|SUB_EV_SPI_ERR_CRC)
+#define SUB_EV_ALL                  (SUB_EV_PWR_OFF|SUB_EV_PWR_ON|SUB_EV_SEND_STAT|SUB_EV_SPI_DAT|SUB_EV_SPI_ERR_CRC|SUB_EV_INT_0|SUB_EV_INT_1|SUB_EV_INT_2|SUB_EV_INT_3|SUB_EV_INT_4|SUB_EV_INT_5|SUB_EV_INT_6|SUB_EV_INT_7)
+//all subsystem events but pin interrupts
+#define SUB_EV_NO_INT               (SUB_EV_PWR_OFF|SUB_EV_PWR_ON|SUB_EV_SEND_STAT|SUB_EV_SPI_DAT|SUB_EV_SPI_ERR_CRC)
+//only pin interrupts
+#define SUB_EV_INT                  (SUB_EV_INT_0|SUB_EV_INT_1|SUB_EV_INT_2|SUB_EV_INT_3|SUB_EV_INT_4|SUB_EV_INT_5|SUB_EV_INT_6|SUB_EV_INT_7)
 
 //command table for ARCBUS commands
 enum{CMD_NACK=51,CMD_SPI_COMPLETE,CMD_SPI_RDY,CMD_SUB_ON,CMD_SUB_OFF,CMD_SUB_POWERUP,CMD_RESET,CMD_SUB_STAT,
@@ -117,7 +127,6 @@ typedef struct{
   BUS_I2C_STAT i2c_stat;
   BUS_SPI_STAT spi_stat;
   CTL_EVENT_SET_t events;
-  CTL_EVENT_SET_t PortEvents;
 }BUS_STAT;
 
 //bus status

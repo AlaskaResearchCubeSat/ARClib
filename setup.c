@@ -181,7 +181,6 @@ void initARCbus(unsigned char addr){
   //init event sets
   ctl_events_init(&arcBus_stat.events,0);     //bus events
   ctl_events_init(&SUB_events,0);             //subsystem events
-  ctl_events_init(&arcBus_stat.PortEvents,0);
   ctl_events_init(&DMA_events,0);
   //I2C mutex init
   ctl_mutex_init(&arcBus_stat.i2c_stat.mutex);
