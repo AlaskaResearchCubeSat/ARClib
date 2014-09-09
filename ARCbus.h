@@ -22,7 +22,7 @@ enum{BUS_EV_CMD_NACK=(1<<0),BUS_EV_I2C_COMPLETE=(1<<1),BUS_EV_I2C_NACK=(1<<2),BU
 //all events for SPI master
 #define BUS_EV_SPI_MASTER           (BUS_EV_SPI_COMPLETE)
 //all events created by master transactions
-#define BUS_EV_I2C_MASTER           (BUS_EV_I2C_COMPLETE|BUS_EV_I2C_NACK)
+#define BUS_EV_I2C_MASTER           (BUS_EV_I2C_COMPLETE|BUS_EV_I2C_NACK|BUS_EV_I2C_ABORT)
 
 //flags for events handled by the subsystem
 enum{SUB_EV_PWR_OFF=(1<<0),SUB_EV_PWR_ON=(1<<1),SUB_EV_SEND_STAT=(1<<2),SUB_EV_SPI_DAT=(1<<3),
