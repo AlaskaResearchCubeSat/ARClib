@@ -333,8 +333,10 @@ static void ARC_bus_run(void *p) __toplevel{
             if(I2C_rx_buf[I2C_rx_out].dat[0]&CMD_TX_NACK){
               //setup command
               ptr=BUS_cmd_init(pk,CMD_NACK);
+              //sent command
+              *ptr++=cmd;
               //send NACK reason
-              ptr[0]=resp;
+              *ptr++=resp;
               //send packet
               BUS_cmd_tx(addr,pk,1,0,BUS_I2C_SEND_BGND);
             }
@@ -346,8 +348,10 @@ static void ARC_bus_run(void *p) __toplevel{
           if(cmd!=CMD_NACK){
             //setup command
             ptr=BUS_cmd_init(pk,CMD_NACK);
+            //sent command
+            *ptr++=cmd;
             //send NACK reason
-            ptr[0]=ERR_BAD_CRC;
+            *ptr++=ERR_BAD_CRC;
             //send packet
             BUS_cmd_tx(addr,pk,1,0,BUS_I2C_SEND_BGND);
           }
