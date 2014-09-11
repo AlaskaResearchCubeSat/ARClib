@@ -207,7 +207,7 @@ static void ARC_bus_run(void *p) __toplevel{
                 break;
               }
               //check if already transmitting
-              if(SPI_buf==NULL){
+              if(SPI_buf!=NULL){
                 resp=ERR_SPI_BUSY;
                 break;
               }
