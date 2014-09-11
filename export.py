@@ -15,15 +15,10 @@ basename="BUSlib"
 gitpath="C:\\Program Files (x86)\\Git\\bin\\git.exe"
 
 #check if there are uncommited changes
-p=subprocess.Popen([gitpath,"diff-index","--quiet","HEAD"])
-#wait for command to complete
-p.wait()
-#get returncode
-rc=p.returncode
-#not sure why but this is needed
-print(rc)
+rc=subprocess.call([gitpath,"diff-index","--quiet","HEAD"])
 #check return code
 if rc!=0:
+	subprocess.call([gitpath,"status"])
 	print("Error : There are uncommitted changes. Commit or stash before exporting")
 	exit(rc)
 
@@ -49,11 +44,9 @@ for folder in dirs:
 #get bath to crossbuild
 crossbuild=os.path.join(rowleyPath,path,'bin','crossbuild.exe')
 #run crossbuild
-p=subprocess.Popen([crossbuild,'-batch','-config','MSP430 Debug','BUSlib.hzp'])
-#wait for command to complete
-p.wait()
+rc=subprocess.call([crossbuild,'-batch','-config','MSP430 Debug','BUSlib.hzp'])
 #check return code
-if p.returncode!=0:
+if rc!=0:
 	print("Error : project did not build exiting")
 	exit(p.returncode)
 
@@ -65,11 +58,9 @@ tag=time.strftime("Export-%m-%d-%Y_%H%M%S",t);
 #generate message
 msg=time.strftime("Exported on %m/%d/%Y at %H:%M:%S",t);
 #tag release
-p=subprocess.Popen([gitpath,"tag","--force","-m="+msg,tag])
-#wait for command to complete
-p.wait()
+rc=subprocess.call([gitpath,"tag","--force","-m="+msg,tag])
 
-if p.returncode!=0:
+if rc!=0:
 	print("Error : could not tag export")
 	exit(p.returncode)
 
