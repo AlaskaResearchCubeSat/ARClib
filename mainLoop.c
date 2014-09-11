@@ -304,6 +304,11 @@ static void ARC_bus_run(void *p) __toplevel{
             break;
             case CMD_NACK:
               //TODO: handle this better somehow?
+              //check length
+              if(len!=2){
+                resp=ERR_PK_LEN;
+                break;
+              }
               //set event 
               ctl_events_set_clear(&arcBus_stat.events,BUS_EV_CMD_NACK,0);
               //report error
