@@ -284,6 +284,8 @@ int BUS_SPI_txrx(unsigned char addr,unsigned char *tx,unsigned char *rx,unsigned
     }
     //Success!!
     return RET_SUCCESS;
+  }else if(e&BUS_EV_SPI_NACK){
+    return ERR_BUSY;
   }else{
     //Return error, timeout occurred
     return ERR_TIMEOUT;

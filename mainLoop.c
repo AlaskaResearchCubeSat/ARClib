@@ -308,6 +308,13 @@ static void ARC_bus_run(void *p) __toplevel{
               ctl_events_set_clear(&arcBus_stat.events,BUS_EV_CMD_NACK,0);
               //report error
               report_error(ERR_LEV_ERROR,BUS_ERR_SRC_MAIN_LOOP,MAIN_LOOP_ERR_NACK_REC,(((unsigned short)ptr[0])<<8)|((unsigned short)ptr[1]));
+              //check which packet was nacked
+              switch(ptr[1]){
+                  case CMD_SPI_RDY:
+                    //send event to spi code
+                    ctl_events_set_clear(&arcBus_stat.events,BUS_EV_SPI_NACK,0);
+                  break;
+              }
             break;
             default:
               //check for subsystem command
