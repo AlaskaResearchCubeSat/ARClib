@@ -214,7 +214,11 @@ static void ARC_bus_run(void *p) __toplevel{
               SPI_buf=BUS_get_buffer(CTL_TIMEOUT_NOW,0);
               //check if buffer was locked
               if(SPI_buf==NULL){
+                //buffer locked, set event
+                ctl_events_set_clear(&SUB_events,SUB_EV_SPI_ERR_BUSY,0);
+                //set response
                 resp=ERR_BUFFER_BUSY;
+                //stop SPI setup
                 break;
               }
               //save address of SPI slave
@@ -300,10 +304,22 @@ static void ARC_bus_run(void *p) __toplevel{
             break;
             case CMD_NACK:
               //TODO: handle this better somehow?
+              //check length
+              if(len!=2){
+                resp=ERR_PK_LEN;
+                break;
+              }
               //set event 
               ctl_events_set_clear(&arcBus_stat.events,BUS_EV_CMD_NACK,0);
               //report error
               report_error(ERR_LEV_ERROR,BUS_ERR_SRC_MAIN_LOOP,MAIN_LOOP_ERR_NACK_REC,(((unsigned short)ptr[0])<<8)|((unsigned short)ptr[1]));
+              //check which packet was nacked
+              switch(ptr[1]){
+                  case CMD_SPI_RDY:
+                    //send event to spi code
+                    ctl_events_set_clear(&arcBus_stat.events,BUS_EV_SPI_NACK,0);
+                  break;
+              }
             break;
             default:
               //check for subsystem command
@@ -317,8 +333,10 @@ static void ARC_bus_run(void *p) __toplevel{
             if(I2C_rx_buf[I2C_rx_out].dat[0]&CMD_TX_NACK){
               //setup command
               ptr=BUS_cmd_init(pk,CMD_NACK);
+              //sent command
+              *ptr++=cmd;
               //send NACK reason
-              ptr[0]=resp;
+              *ptr++=resp;
               //send packet
               BUS_cmd_tx(addr,pk,1,0,BUS_I2C_SEND_BGND);
             }
@@ -330,8 +348,10 @@ static void ARC_bus_run(void *p) __toplevel{
           if(cmd!=CMD_NACK){
             //setup command
             ptr=BUS_cmd_init(pk,CMD_NACK);
+            //sent command
+            *ptr++=cmd;
             //send NACK reason
-            ptr[0]=ERR_BAD_CRC;
+            *ptr++=ERR_BAD_CRC;
             //send packet
             BUS_cmd_tx(addr,pk,1,0,BUS_I2C_SEND_BGND);
           }

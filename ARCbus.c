@@ -284,11 +284,43 @@ int BUS_SPI_txrx(unsigned char addr,unsigned char *tx,unsigned char *rx,unsigned
     }
     //Success!!
     return RET_SUCCESS;
+  }else if(e&BUS_EV_SPI_NACK){
+    return ERR_BUSY;
   }else{
     //Return error, timeout occurred
     return ERR_TIMEOUT;
   }
 }
 
-
+//assert one or more interrupts on the bus
+void BUS_int_set(unsigned char set){
+    //disable interrupts for the pins
+    P1IE&=~set;
+    //set output level to high
+    P1OUT|=set;
+    //set pins to output
+    P1DIR|=set;
+#ifdef CDH_LIB
+    //if CDH set to full drive strength
+    P1REN&=~set;
+#endif        
+}
+    
+//de-assert one or more interrupts on the bus
+void BUS_int_clear(unsigned char clear){
+#ifdef CDH_LIB
+    //if CDH set to pull resistor
+    P1REN|=clear;
+#endif  
+    //set pins to input
+    P1DIR&=~clear;
+#ifdef CDH_LIB
+    //if CDH set to pull down
+    P1OUT&=~clear;
+#endif
+    //clear interrupt flag
+    P1IFG&=~clear;
+    //enable interrupts for the pins
+    P1IE|=clear;
+}
 

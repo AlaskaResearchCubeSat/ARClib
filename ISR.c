@@ -229,11 +229,10 @@ void UC0_rx(void) __ctl_interrupt[USCIAB0RX_VECTOR]{
 //=================[Port pin Handler]=============================
 void bus_int(void) __ctl_interrupt[PORT1_VECTOR]{
   unsigned char flags=P1IFG&P1IE;
+  //clear flags
   P1IFG&=~flags;
   //set events for flags
-  ctl_events_set_clear(&arcBus_stat.PortEvents,flags,0);
-  //TESTING: send time check event
-  //ctl_events_set_clear(&SUB_events,SUB_EV_TIME_CHECK,0);
+  ctl_events_set_clear(&SUB_events,(SUB_EV_INT)&(((unsigned short)flags)<<(SUB_EV_INT_SHIFT)),0);
 }
 
 
