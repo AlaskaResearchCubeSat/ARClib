@@ -149,6 +149,8 @@ void initARCbus(unsigned char addr);
 
 //Enter the Idle loop. Start the ARCbus tasks and drop idle tasks to lowest priority
 void mainLoop(void);
+//main loop testing function, start ARC_Bus task then enter Idle task
+void mainLoop_testing(void (*cb)(void));
 
 //send packet over the bus
 int BUS_cmd_tx(unsigned char addr,unsigned char *buff,unsigned short len,unsigned short flags,short bgnd);

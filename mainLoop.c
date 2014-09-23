@@ -461,3 +461,24 @@ void mainLoop(void) __toplevel{
       #endif
   }
 }
+
+//main loop testing function, start ARC_Bus task then enter Idle task
+void mainLoop_testing(void (*cb)(void)) __toplevel{
+  //initialize events
+  ctl_events_init(&BUS_INT_events,0);
+  //start ARCbus task
+  ctl_task_run(&ARC_bus_task,BUS_PRI_ARCBUS,ARC_bus_run,NULL,"ARC_Bus",sizeof(BUS_stack)/sizeof(BUS_stack[0])-2,BUS_stack+1,0);
+  //kick WDT to give us some time
+  WDT_KICK();
+  // drop to lowest priority to start created tasks running.
+  ctl_task_set_priority(&idle_task,0); 
+  
+  //main idle loop
+  //NOTE that this task should never wait to ensure that there is always a runnable task
+  for(;;){    
+      //kick watchdog
+      WDT_KICK();
+      //call the callback
+      cb();
+  }
+}
