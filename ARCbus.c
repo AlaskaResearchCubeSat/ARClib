@@ -41,10 +41,10 @@ static unsigned BUS_I2C_lock(void){
      return ERR_BUSY;
   }
   //wait for bus to be free
-    for(i=0;arcBus_stat.i2c_stat.mode!=BUS_I2C_IDLE && i<10;i++){
+  for(i=0;UCB1STAT&UCBBUSY && i<10;i++){
     ctl_timeout_wait(ctl_get_current_time()+3);
   }
-  if(arcBus_stat.i2c_stat.mode!=BUS_I2C_IDLE){
+  if(UCB1STAT&UCBBUSY){
     //release mutex
     BUS_I2C_release();
     //bus is still busy, return error
