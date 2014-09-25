@@ -472,8 +472,6 @@ void mainLoop_testing(void (*cb)(void)) __toplevel{
   //main idle loop
   //NOTE that this task should never wait to ensure that there is always a runnable task
   for(;;){    
-      //kick watchdog
-      WDT_KICK();
       //call the callback
       cb();
   }
