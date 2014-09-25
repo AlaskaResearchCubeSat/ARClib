@@ -451,14 +451,10 @@ void mainLoop(void) __toplevel{
   //main idle loop
   //NOTE that this task should never wait to ensure that there is always a runnable task
   for(;;){    
-      //kick watchdog
-      WDT_KICK();
-      #ifndef IDLE_DEBUG
-        //go to low power mode
-        LPM0;
-      #else
-        P7OUT^=BIT0+BIT1+BIT2+BIT3;
-      #endif
+    //kick watchdog
+    WDT_KICK();
+    //go to low power mode
+    LPM0;
   }
 }
 
