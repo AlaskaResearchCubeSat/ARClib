@@ -38,17 +38,17 @@ static unsigned BUS_I2C_lock(void){
   int i;
   //try to capture mutex
   if(0==ctl_mutex_lock(&arcBus_stat.i2c_stat.mutex,CTL_TIMEOUT_DELAY,10)){
-     return ERR_TIMEOUT;
+     return ERR_BUSY;
   }
   //wait for bus to be free
-    for(i=0;arcBus_stat.i2c_stat.mode!=BUS_I2C_IDLE && i<10;i++){
+  for(i=0;UCB1STAT&UCBBUSY && i<10;i++){
     ctl_timeout_wait(ctl_get_current_time()+3);
   }
-  if(arcBus_stat.i2c_stat.mode!=BUS_I2C_IDLE){
+  if(UCB1STAT&UCBBUSY){
     //release mutex
     BUS_I2C_release();
     //bus is still busy, return error
-    return ERR_TIMEOUT;
+    return ERR_BUSY;
   } 
   return 0;
 } 
@@ -107,7 +107,7 @@ int BUS_cmd_tx(unsigned char addr,unsigned char *buff,unsigned short len,unsigne
   //wait for the bus to become free
   if(BUS_I2C_lock()){
     //I2C bus is in use
-    return ERR_TIMEOUT;
+    return ERR_BUSY;
   }
   //only change mutex_relase in arcBus structure after lock is obtained
   arcBus_stat.i2c_stat.mutex_release=mutex_release;
@@ -117,7 +117,7 @@ int BUS_cmd_tx(unsigned char addr,unsigned char *buff,unsigned short len,unsigne
     //release I2C bus
     BUS_I2C_release();
     //TODO : perhaps provide a better error here
-    return ERR_TIMEOUT;
+    return ERR_BUSY;
   }
   //Setup for I2C transaction  
   //set slave address
@@ -151,9 +151,7 @@ int BUS_cmd_tx(unsigned char addr,unsigned char *buff,unsigned short len,unsigne
   }
   //wait for transaction to complete
   //TODO: set a good timeout
-  //e=ctl_events_wait(CTL_EVENT_WAIT_ANY_EVENTS_WITH_AUTO_CLEAR,&arcBus_stat.events,BUS_EV_I2C_MASTER,CTL_TIMEOUT_DELAY,2048);
-  //TESTING: never timeout
-  e=ctl_events_wait(CTL_EVENT_WAIT_ANY_EVENTS_WITH_AUTO_CLEAR,&arcBus_stat.events,BUS_EV_I2C_MASTER,CTL_TIMEOUT_NONE,2048);
+  e=ctl_events_wait(CTL_EVENT_WAIT_ANY_EVENTS_WITH_AUTO_CLEAR,&arcBus_stat.events,BUS_EV_I2C_MASTER,CTL_TIMEOUT_DELAY,2048);
   //release I2C bus
   BUS_I2C_release();
   //check which event(s) happened
@@ -164,6 +162,9 @@ int BUS_cmd_tx(unsigned char addr,unsigned char *buff,unsigned short len,unsigne
     case BUS_EV_I2C_NACK:
       //I2C device did not acknowledge
       return ERR_I2C_NACK;
+    case BUS_EV_I2C_ABORT:
+      //I2C device did not acknowledge
+      return ERR_I2C_ABORT;
     case 0:
       //no event happened, so time out
       return ERR_TIMEOUT;
@@ -283,11 +284,43 @@ int BUS_SPI_txrx(unsigned char addr,unsigned char *tx,unsigned char *rx,unsigned
     }
     //Success!!
     return RET_SUCCESS;
+  }else if(e&BUS_EV_SPI_NACK){
+    return ERR_BUSY;
   }else{
     //Return error, timeout occurred
     return ERR_TIMEOUT;
   }
 }
 
-
+//assert one or more interrupts on the bus
+void BUS_int_set(unsigned char set){
+    //disable interrupts for the pins
+    P1IE&=~set;
+    //set output level to high
+    P1OUT|=set;
+    //set pins to output
+    P1DIR|=set;
+#ifdef CDH_LIB
+    //if CDH set to full drive strength
+    P1REN&=~set;
+#endif        
+}
+    
+//de-assert one or more interrupts on the bus
+void BUS_int_clear(unsigned char clear){
+#ifdef CDH_LIB
+    //if CDH set to pull resistor
+    P1REN|=clear;
+#endif  
+    //set pins to input
+    P1DIR&=~clear;
+#ifdef CDH_LIB
+    //if CDH set to pull down
+    P1OUT&=~clear;
+#endif
+    //clear interrupt flag
+    P1IFG&=~clear;
+    //enable interrupts for the pins
+    P1IE|=clear;
+}
 

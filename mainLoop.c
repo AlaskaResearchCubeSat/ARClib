@@ -101,8 +101,6 @@ static void ARC_bus_run(void *p) __toplevel{
         SPI_deactivate();
         //tell helper thread to send SPI complete command
         ctl_events_set_clear(&BUS_helper_events,BUS_HELPER_EV_SPI_COMPLETE_CMD,0);
-        //transaction complete, clear address
-        SPI_addr=0;
         //assemble CRC
         crc=SPI_buf[arcBus_stat.spi_stat.len+1];//LSB
         crc|=(((unsigned short)SPI_buf[arcBus_stat.spi_stat.len])<<8);//MSB
@@ -224,7 +222,11 @@ static void ARC_bus_run(void *p) __toplevel{
               SPI_buf=BUS_get_buffer(CTL_TIMEOUT_NOW,0);
               //check if buffer was locked
               if(SPI_buf==NULL){
+                //buffer locked, set event
+                ctl_events_set_clear(&SUB_events,SUB_EV_SPI_ERR_BUSY,0);
+                //set response
                 resp=ERR_BUFFER_BUSY;
+                //stop SPI setup
                 break;
               }
               //save address of SPI slave
@@ -351,10 +353,22 @@ static void ARC_bus_run(void *p) __toplevel{
             break;
             case CMD_NACK:
               //TODO: handle this better somehow?
+              //check length
+              if(len!=2){
+                resp=ERR_PK_LEN;
+                break;
+              }
               //set event 
               ctl_events_set_clear(&arcBus_stat.events,BUS_EV_CMD_NACK,0);
               //report error
               report_error(ERR_LEV_ERROR,BUS_ERR_SRC_MAIN_LOOP,MAIN_LOOP_ERR_NACK_REC,(((unsigned short)ptr[0])<<8)|((unsigned short)ptr[1]));
+              //check which packet was nacked
+              switch(ptr[1]){
+                  case CMD_SPI_RDY:
+                    //send event to spi code
+                    ctl_events_set_clear(&arcBus_stat.events,BUS_EV_SPI_NACK,0);
+                  break;
+              }
             break;
             default:
               //check for subsystem command
@@ -368,8 +382,10 @@ static void ARC_bus_run(void *p) __toplevel{
             if(I2C_rx_buf[I2C_rx_out].dat[0]&CMD_TX_NACK){
               //setup command
               ptr=BUS_cmd_init(pk,CMD_NACK);
+              //sent command
+              *ptr++=cmd;
               //send NACK reason
-              ptr[0]=resp;
+              *ptr++=resp;
               //send packet
               BUS_cmd_tx(addr,pk,1,0,BUS_I2C_SEND_BGND);
             }
@@ -381,8 +397,10 @@ static void ARC_bus_run(void *p) __toplevel{
           if(cmd!=CMD_NACK){
             //setup command
             ptr=BUS_cmd_init(pk,CMD_NACK);
+            //sent command
+            *ptr++=cmd;
             //send NACK reason
-            ptr[0]=ERR_BAD_CRC;
+            *ptr++=ERR_BAD_CRC;
             //send packet
             BUS_cmd_tx(addr,pk,1,0,BUS_I2C_SEND_BGND);
           }
@@ -425,6 +443,8 @@ static void ARC_bus_helper(void *p) __toplevel{
       //done with SPI send command
       BUS_cmd_init(pk,CMD_SPI_COMPLETE);
       resp=BUS_cmd_tx(SPI_addr,pk,0,0,BUS_I2C_SEND_FOREGROUND);
+      //transaction complete, clear address
+      SPI_addr=0;
       //check if command was successful and try again if it failed
       if(resp!=RET_SUCCESS){
         resp=BUS_cmd_tx(SPI_addr,pk,0,0,BUS_I2C_SEND_FOREGROUND);
@@ -510,5 +530,26 @@ void mainLoop(void) __toplevel{
       //kick watchdog
       WDT_KICK();
       LPM0;
+  }
+}
+
+//main loop testing function, start ARC_Bus task then enter Idle task
+void mainLoop_testing(void (*cb)(void)) __toplevel{
+  //initialize events
+  ctl_events_init(&BUS_INT_events,0);
+  //start ARCbus task
+  ctl_task_run(&ARC_bus_task,BUS_PRI_ARCBUS,ARC_bus_run,NULL,"ARC_Bus",sizeof(BUS_stack)/sizeof(BUS_stack[0])-2,BUS_stack+1,0);
+  //kick WDT to give us some time
+  WDT_KICK();
+  // drop to lowest priority to start created tasks running.
+  ctl_task_set_priority(&idle_task,0); 
+  
+  //main idle loop
+  //NOTE that this task should never wait to ensure that there is always a runnable task
+  for(;;){    
+      //kick watchdog
+      WDT_KICK();
+      //call the callback
+      cb();
   }
 }

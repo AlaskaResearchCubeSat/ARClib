@@ -5,7 +5,7 @@ import sys
 
 try:
 	#call git describe to get version string
-	p=subprocess.Popen(["C:\\Program Files (x86)\\Git\\bin\\git.exe","describe","--long","--tags","--dirty","--always"],stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+	p=subprocess.Popen(["C:\\Program Files (x86)\\Git\\bin\\git.exe","describe","--dirty=-dty","--always","--match=v*.*"],stdout=subprocess.PIPE,stderr=subprocess.PIPE)
 	#wait for command to complete
 	p.wait()
 	#get data from command

@@ -18,17 +18,27 @@ enum{BUS_PRI_EXTRA_LOW=20,BUS_PRI_LOW=50,BUS_PRI_NORMAL=80,BUS_PRI_HIGH=110,BUS_
 
 
 //Flags for events handled by BUS functions (ex BUS_cmd_tx)
-enum{BUS_EV_CMD_NACK=(1<<0),BUS_EV_I2C_COMPLETE=(1<<1),BUS_EV_I2C_NACK=(1<<2),BUS_EV_SPI_COMPLETE=(1<<3)};
+enum{BUS_EV_CMD_NACK=(1<<0),BUS_EV_I2C_COMPLETE=(1<<1),BUS_EV_I2C_NACK=(1<<2),BUS_EV_SPI_COMPLETE=(1<<3),BUS_EV_I2C_ABORT=(1<<4),BUS_EV_SPI_NACK=(1<<5)};
 //all events for SPI master
 #define BUS_EV_SPI_MASTER           (BUS_EV_SPI_COMPLETE)
 //all events created by master transactions
-#define BUS_EV_I2C_MASTER           (BUS_EV_I2C_COMPLETE|BUS_EV_I2C_NACK)
+#define BUS_EV_I2C_MASTER           (BUS_EV_I2C_COMPLETE|BUS_EV_I2C_NACK|BUS_EV_I2C_ABORT)
 
 //flags for events handled by the subsystem
-enum{SUB_EV_PWR_OFF=(1<<0),SUB_EV_PWR_ON=(1<<1),SUB_EV_SEND_STAT=(1<<2),SUB_EV_TIME_CHECK=(1<<3),SUB_EV_SPI_DAT=(1<<4),
-     SUB_EV_SPI_ERR_CRC=(1<<5),SUB_EV_ASYNC_OPEN=(1<<6),SUB_EV_ASYNC_CLOSE=(1<<7)};
+enum{SUB_EV_PWR_OFF=(1<<0),SUB_EV_PWR_ON=(1<<1),SUB_EV_SEND_STAT=(1<<2),SUB_EV_SPI_DAT=(1<<3),
+     SUB_EV_SPI_ERR_CRC=(1<<4),SUB_EV_SPI_ERR_BUSY=(1<<5),SUB_EV_ASYNC_OPEN=(1<<6),SUB_EV_ASYNC_CLOSE=(1<<7),
+     SUB_EV_INT_0=(1<< 8),SUB_EV_INT_1=(1<< 9),SUB_EV_INT_2=(1<<10),SUB_EV_INT_3=(1<<11),
+     SUB_EV_INT_4=(1<<12),SUB_EV_INT_5=(1<<13),SUB_EV_INT_6=(1<<14),SUB_EV_INT_7=(1<<15)
+     };
+//shift to apply to interrupt flags
+#define SUB_EV_INT_SHIFT        8
+
 //all subsystem events
-#define SUB_EV_ALL                  (SUB_EV_PWR_OFF|SUB_EV_PWR_ON|SUB_EV_SEND_STAT|SUB_EV_TIME_CHECK|SUB_EV_SPI_DAT|SUB_EV_SPI_ERR_CRC)
+#define SUB_EV_ALL                  (SUB_EV_PWR_OFF|SUB_EV_PWR_ON|SUB_EV_SEND_STAT|SUB_EV_SPI_DAT|SUB_EV_SPI_ERR_CRC|SUB_EV_INT_0|SUB_EV_INT_1|SUB_EV_INT_2|SUB_EV_INT_3|SUB_EV_INT_4|SUB_EV_INT_5|SUB_EV_INT_6|SUB_EV_INT_7)
+//all subsystem events but pin interrupts
+#define SUB_EV_NO_INT               (SUB_EV_PWR_OFF|SUB_EV_PWR_ON|SUB_EV_SEND_STAT|SUB_EV_SPI_DAT|SUB_EV_SPI_ERR_CRC)
+//only pin interrupts
+#define SUB_EV_INT                  (SUB_EV_INT_0|SUB_EV_INT_1|SUB_EV_INT_2|SUB_EV_INT_3|SUB_EV_INT_4|SUB_EV_INT_5|SUB_EV_INT_6|SUB_EV_INT_7)
 
 //command table for ARCBUS commands
 enum{CMD_NACK=51,CMD_SPI_COMPLETE,CMD_SPI_RDY,CMD_SUB_ON,CMD_SUB_OFF,CMD_SUB_POWERUP,CMD_RESET,CMD_SUB_STAT,
@@ -51,7 +61,7 @@ enum{CMD_NACK=51,CMD_SPI_COMPLETE,CMD_SPI_RDY,CMD_SUB_ON,CMD_SUB_OFF,CMD_SUB_POW
 #define BUS_I2C_MAX_PACKET_LEN      (30)
 
 //Return values from bus functions
-enum{RET_SUCCESS=0,ERR_BAD_LEN=-1,ERR_CMD_NACK=-2,ERR_I2C_NACK=-3,ERR_UNKNOWN=-4,ERR_BAD_ADDR=-5,ERR_BAD_CRC=-6,ERR_TIMEOUT=-7,ERR_BUSY=-8,ERR_INVALID_ARGUMENT=-9,ERR_FLOW_CTL_STOPPED=-10,ERR_PACKET_TOO_LONG=-11};
+enum{RET_SUCCESS=0,ERR_BAD_LEN=-1,ERR_CMD_NACK=-2,ERR_I2C_NACK=-3,ERR_UNKNOWN=-4,ERR_BAD_ADDR=-5,ERR_BAD_CRC=-6,ERR_TIMEOUT=-7,ERR_BUSY=-8,ERR_INVALID_ARGUMENT=-9,ERR_PACKET_TOO_LONG=-10,ERR_I2C_ABORT=-11,ERR_FLOW_CTL_STOPPED=-12};
 
 //Return values for SUB_parseCmd these will be send as part of the NACK packet
 enum{ERR_PK_LEN=1,ERR_UNKNOWN_CMD=2,ERR_SPI_LEN=3,ERR_BAD_PK=4,ERR_SPI_BUSY=5,ERR_BUFFER_BUSY=6};
@@ -117,7 +127,6 @@ typedef struct{
   BUS_I2C_STAT i2c_stat;
   BUS_SPI_STAT spi_stat;
   CTL_EVENT_SET_t events;
-  CTL_EVENT_SET_t PortEvents;
 }BUS_STAT;
 
 //bus status
@@ -140,6 +149,8 @@ void initARCbus(unsigned char addr);
 
 //Enter the Idle loop. Start the ARCbus tasks and drop idle tasks to lowest priority
 void mainLoop(void);
+//main loop testing function, start ARC_Bus task then enter Idle task
+void mainLoop_testing(void (*cb)(void));
 
 //send packet over the bus
 int BUS_cmd_tx(unsigned char addr,unsigned char *buff,unsigned short len,unsigned short flags,short bgnd);
