@@ -353,8 +353,10 @@ static void ARC_bus_run(void *p) __toplevel{
                     resp=ERR_INVALID_ARGUMENT;
                 break;
               }
-              if(resp){
-                  ctl_events_set_clear(&BUS_helper_events,BUS_HELPER_EV_ERR_REQ,0);
+              //check if the packet was parsed
+              if(!resp){
+                //send event to process request
+                ctl_events_set_clear(&BUS_helper_events,BUS_HELPER_EV_ERR_REQ,0);
               }
             ctl_mutex_unlock(&err_req.mutex);
             break;
