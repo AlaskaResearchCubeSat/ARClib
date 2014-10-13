@@ -30,6 +30,14 @@ static unsigned char SPI_addr=0;
 
 static void ARC_bus_helper(void *p);
 
+static struct{
+    CTL_MUTEX_t mutex;
+    unsigned short size;
+    unsigned char type;
+    unsigned char level;
+    unsigned char dest;
+}err_req;
+
 //power state of subsystem
 unsigned short powerState=SUB_PWR_OFF;
 
@@ -48,6 +56,8 @@ static void ARC_bus_run(void *p) __toplevel{
   SPI_addr=0;
   //Initialize ErrorLib
   error_recording_start();
+  //init error request mutex
+  ctl_mutex_init(&err_req.mutex);
   //first send "I'm on" command
   BUS_cmd_init(pk,CMD_SUB_POWERUP);//setup command
   //send command
@@ -321,6 +331,33 @@ static void ARC_bus_run(void *p) __toplevel{
                   break;
               }
             break;
+            case CMD_ERR_REQ:
+              if(len<1){
+                resp=ERR_PK_LEN;
+                break;
+              }
+              if(!ctl_mutex_lock(&err_req.mutex,CTL_TIMEOUT_NOW,0)){
+                resp=ERR_BUSY;
+                break;
+              }
+              //request type
+              err_req.type=ptr[0];
+              //address to send data to
+              err_req.dest=addr;
+              switch(ptr[0]){
+                case ERR_REQ_REPLAY:
+                    err_req.size=(((unsigned short)ptr[0])<<8)|((unsigned short)ptr[1]);
+                    err_req.level=ptr[2];
+                break;
+                default:
+                    resp=ERR_INVALID_ARGUMENT;
+                break;
+                if(resp){
+                    ctl_events_set_clear(&BUS_helper_events,BUS_HELPER_EV_ERR_REQ,0);
+                }
+                ctl_mutex_unlock(&err_req.mutex);
+              }
+            break;
             default:
               //check for subsystem command
               resp=SUB_parseCmd(addr,cmd,ptr,len);
@@ -385,7 +422,7 @@ static void ARC_bus_run(void *p) __toplevel{
 //ARC bus Task, do ARC bus stuff
 static void ARC_bus_helper(void *p) __toplevel{
   unsigned int e;
-  int resp;
+  int resp,maxsize;
   unsigned char *ptr,pk[BUS_I2C_HDR_LEN+0+BUS_I2C_CRC_LEN];
   for(;;){
     e=ctl_events_wait(CTL_EVENT_WAIT_ANY_EVENTS_WITH_AUTO_CLEAR,&BUS_helper_events,BUS_HELPER_EV_ALL,CTL_TIMEOUT_NONE,0);
@@ -429,6 +466,48 @@ static void ARC_bus_helper(void *p) __toplevel{
       async_close_remote();
       //send event
       ctl_events_set_clear(&SUB_events,SUB_EV_ASYNC_CLOSE,0);
+    }
+    if(e&BUS_HELPER_EV_ERR_REQ){
+        //get mutex
+        if(ctl_mutex_lock(&err_req.mutex,CTL_TIMEOUT_DELAY,100)){
+            //get buffer
+            ptr=BUS_get_buffer(CTL_TIMEOUT_DELAY,100);
+            //check if buffer was aquired
+            if(ptr){
+              //set own address
+              ptr[0]=UCB0I2COA;
+              //set data type
+              ptr[1]=SPI_ERROR_DAT;
+              //get maximum size for data packet. part of the buffer is used to read errors into
+              maxsize=BUS_get_buffer_size()-512-2;
+              //check if requested size is greater then max
+              if(maxsize<err_req.size){
+                //set maxsize
+                err_req.size=maxsize;
+              }
+              //check request type
+              switch(err_req.type){
+                case ERR_REQ_REPLAY:
+                  //get errors
+                  error_log_mem_replay(ptr+2,err_req.size,err_req.level,ptr+2+maxsize);
+                break;
+              }
+              //send data
+              resp=BUS_SPI_txrx(err_req.dest,ptr,NULL,err_req.size+2);
+              //TODO: report error
+              //free buffer
+              BUS_free_buffer();
+            }else{
+              //set flag so we try again
+              ctl_events_set_clear(&BUS_helper_events,BUS_HELPER_EV_ERR_REQ,0);
+              //TODO: give error?
+            }
+            ctl_mutex_unlock(&err_req.mutex);
+        }else{
+          //set flag so we try again
+          ctl_events_set_clear(&BUS_helper_events,BUS_HELPER_EV_ERR_REQ,0);
+          //TODO: give error?
+        }
     }
   }
 }
