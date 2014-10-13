@@ -346,8 +346,8 @@ static void ARC_bus_run(void *p) __toplevel{
               err_req.dest=addr;
               switch(ptr[0]){
                 case ERR_REQ_REPLAY:
-                    err_req.size=(((unsigned short)ptr[0])<<8)|((unsigned short)ptr[1]);
-                    err_req.level=ptr[2];
+                    err_req.size=(((unsigned short)ptr[1])<<8)|((unsigned short)ptr[2]);
+                    err_req.level=ptr[3];
                 break;
                 default:
                     resp=ERR_INVALID_ARGUMENT;
