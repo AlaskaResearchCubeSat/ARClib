@@ -123,5 +123,7 @@
   void async_open_remote(unsigned char addr);
   
   void BUS_I2C_release(void);
+  
+  void BUS_timer_timeout_check(void);
 
 #endif

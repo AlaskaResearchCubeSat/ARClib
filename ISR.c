@@ -267,4 +267,5 @@ void task_tick(void) __ctl_interrupt[TIMERA0_VECTOR]{
       ctl_events_set_clear(&BUS_helper_events,BUS_HELPER_EV_ASYNC_TIMEOUT,0);
     }
   }
+  BUS_timer_timeout_check();
 }

@@ -99,6 +99,9 @@ enum{SPI_BEACON_DAT,SPI_IMG_DAT,SPI_LEDL_DAT,SPI_ERROR_DAT};
     
 //error request types
 enum{ERR_REQ_REPLAY=0};
+    
+//Alarm numbers for BUS alarms
+enum{BUS_ALARM_0=0,BUS_ALARM_1,BUS_NUM_ALARMS};
 
 //ticker for time keeping
 typedef unsigned long ticker;
@@ -212,6 +215,12 @@ int BUS_stop_interrupts(void);
 
 //gracefully restart global interrupts
 void BUS_restart_interrupts(int int_stat);
+
+//set alarm to give an event at the given time
+int BUS_set_alarm(unsigned char num,ticker time,CTL_EVENT_SET_t *e,CTL_EVENT_SET_t event);
+
+//free a timer
+void BUS_free_alarm(unsigned char num);
 
 #endif
   
