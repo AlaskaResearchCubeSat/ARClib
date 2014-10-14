@@ -58,6 +58,10 @@ static void ARC_bus_run(void *p) __toplevel{
   error_recording_start();
   //init error request mutex
   ctl_mutex_init(&err_req.mutex);
+  #ifndef CDH_LIB         //Subsystem board 
+      //subsystems wait a bit before attempting to contact CDH
+      ctl_timeout_wait(ctl_get_current_time()+130);
+  #endif
   //first send "I'm on" command
   BUS_cmd_init(pk,CMD_SUB_POWERUP);//setup command
   //send command
