@@ -37,6 +37,14 @@ const char* cmdtostr(unsigned char cmd){
       return "Async Data";
     case CMD_SPI_DATA_ACTION:
       return "SPI Data Action";
+    case CMD_PING:
+        return "CMD_PING";
+    case CMD_MAG_DATA:
+        return "CMD_MAG_DATA";
+    case CMD_MAG_SAMPLE_CONFIG:
+        return "CMD_MAG_SAMPLE_CONFIG";
+    case CMD_ERR_REQ:
+        return "CMD_ERR_REQ";
     default:
       return "Unknown";
   }
