@@ -364,6 +364,9 @@ static void ARC_bus_run(void *p) __toplevel{
               }
             ctl_mutex_unlock(&err_req.mutex);
             break;
+            case CMD_PING:
+                //this is a dummy command that does nothing
+            break;
             default:
               //check for subsystem command
               resp=SUB_parseCmd(addr,cmd,ptr,len);
