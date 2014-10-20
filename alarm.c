@@ -59,7 +59,7 @@ void BUS_timer_timeout_check(void){
     //loop through all inputs
     for(i=0;i<BUS_NUM_ALARMS;i++){
         //check for timeout
-        if(alarms[i].e!=NULL || alarms[i].event!=0 && alarms[i].time==ticker_time){
+        if(alarms[i].e!=NULL && alarms[i].event!=0 && alarms[i].time==ticker_time){
             //time elapsed, trigger event
             ctl_events_set_clear(alarms[i].e,alarms[i].event,0);
             //free alarm once triggered
