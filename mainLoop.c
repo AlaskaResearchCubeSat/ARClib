@@ -184,16 +184,22 @@ static void ARC_bus_run(void *p) __toplevel{
               //check for proper length
               if(len!=4){
                 resp=ERR_PK_LEN;
-              }
-              //assemble time from packet
-              nt=ptr[3];
-              nt|=((ticker)ptr[2])<<8;
-              nt|=((ticker)ptr[1])<<16;
-              nt|=((ticker)ptr[0])<<24;
-              //update time
-              set_ticker_time(nt);
-              //tell subsystem to send status
-              ctl_events_set_clear(&SUB_events,SUB_EV_SEND_STAT,0);
+              }                
+              #ifndef CDH_LIB //only update time on subsystem boards
+                  //assemble time from packet
+                  nt=ptr[3];
+                  nt|=((ticker)ptr[2])<<8;
+                  nt|=((ticker)ptr[1])<<16;
+                  nt|=((ticker)ptr[0])<<24;
+                  //update time
+                  set_ticker_time(nt);
+                  //tell subsystem to send status
+                  ctl_events_set_clear(&SUB_events,SUB_EV_SEND_STAT,0);
+              #else
+                  //if CMD_SUB_STAT is recived by CDH, report an error
+                  report_error(ERR_LEV_INFO,BUS_ERR_SRC_MAIN_LOOP,MAIN_LOOP_CDH_SUB_STAT_REC,addr);
+                  resp=ERR_ILLEAGLE_COMMAND;
+              #endif
             break;
             case CMD_RESET:          
               //check for proper length
