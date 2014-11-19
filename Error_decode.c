@@ -169,6 +169,22 @@ char *err_decode_arcbus(char buf[150], unsigned short source,int err, unsigned s
           return "ARClib Setup : Missing DCO Calibration Data";
       }
     break;
+    case BUS_ERR_SRC_ALARMS:
+        switch(err){
+            case ALARMS_INVALID_TIME_UPDATE:
+                sprintf(buf,"Alarms : Invalid time update, time diffrence %u",argument);
+            return buf;
+            case ALARMS_FWD_TIME_UPDATE:
+                sprintf(buf,"Alarms : forward time update, time diffrence %u",argument);
+            return buf;
+            case ALARMS_REV_TIME_UPDATE:
+                sprintf(buf,"Alarms : reverse time update, time diffrence %u",argument);
+            return buf;
+            case ALARMS_ADJ_TRIGGER:
+                sprintf(buf,"Alarms : Alarm #%i was triggered due to time adjustment",argument);
+            return buf;
+        }
+    break;
   }
   sprintf(buf,"source = %i, error = %i, argument = %i",source,err,argument);
   return buf;

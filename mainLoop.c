@@ -192,12 +192,14 @@ static void ARC_bus_run(void *p) __toplevel{
                   nt|=((ticker)ptr[1])<<16;
                   nt|=((ticker)ptr[0])<<24;
                   //update time
-                  set_ticker_time(nt);
+                  ot=setget_ticker_time(nt);
                   //tell subsystem to send status
                   ctl_events_set_clear(&SUB_events,SUB_EV_SEND_STAT,0);
+                  //trigger any alarms that were skipped
+                  BUS_alarm_ticker_update(nt,ot);
               #else
                   //if CMD_SUB_STAT is recived by CDH, report an error
-                  report_error(ERR_LEV_INFO,BUS_ERR_SRC_MAIN_LOOP,MAIN_LOOP_CDH_SUB_STAT_REC,addr);
+                  report_error(ERR_LEV_ERROR,BUS_ERR_SRC_MAIN_LOOP,MAIN_LOOP_CDH_SUB_STAT_REC,addr);
                   resp=ERR_ILLEAGLE_COMMAND;
               #endif
             break;
