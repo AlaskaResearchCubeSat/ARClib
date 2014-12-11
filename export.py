@@ -48,7 +48,7 @@ rc=subprocess.call([crossbuild,'-batch','-config','MSP430 Debug','BUSlib.hzp'])
 #check return code
 if rc!=0:
 	print("Error : project did not build exiting")
-	exit(p.returncode)
+	exit(rc)
 
 #generate tag for export
 #get time
@@ -62,7 +62,7 @@ rc=subprocess.call([gitpath,"tag","--force","-m="+msg,tag])
 
 if rc!=0:
 	print("Error : could not tag export")
-	exit(p.returncode)
+	exit(rc)
 
 for folder in ("MSP430 Release","MSP430 Debug","MSP430 Release CDH","MSP430 Debug CDH"):
     outname=basename+"_"+"_".join(folder.split()[1:])+".hza"
