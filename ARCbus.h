@@ -175,6 +175,8 @@ int SUB_parseCmd(unsigned char src,unsigned char cmd,unsigned char *dat,unsigned
 ticker get_ticker_time(void);
 //set current time
 void set_ticker_time(ticker nt);
+//set and get current time
+ticker setget_ticker_time(ticker nt);
 
 //get and lock buffer
 void* BUS_get_buffer(CTL_TIMEOUT_t t, CTL_TIME_t timeout);

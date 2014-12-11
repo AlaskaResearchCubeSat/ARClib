@@ -51,7 +51,7 @@ static void ARC_bus_run(void *p) __toplevel{
   unsigned char *ptr;
   unsigned short crc;
   unsigned char *SPI_buf=NULL;
-  ticker nt;
+  ticker nt,ot;
   int snd,i;
   SPI_addr=0;
   //Initialize ErrorLib
