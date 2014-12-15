@@ -27,6 +27,18 @@ int BUS_alarm_is_free(unsigned char num){
     return RET_SUCCESS;
 }
 
+ticker BUS_get_alarm_time(unsigned char num){
+    if(num>=BUS_NUM_ALARMS){
+        return 0;
+    }
+    //check event
+    if(alarms[num].e!=NULL || alarms[num].event!=0){
+        return alarms[num].time;
+    }
+    //timer not in use
+    return 0;
+}
+
 int BUS_set_alarm(unsigned char num,ticker time,CTL_EVENT_SET_t *e,CTL_EVENT_SET_t event){
     int ret;
     int en;

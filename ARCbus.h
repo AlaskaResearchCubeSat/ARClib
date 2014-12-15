@@ -224,6 +224,10 @@ void BUS_restart_interrupts(int int_stat);
 
 //set alarm to give an event at the given time
 int BUS_set_alarm(unsigned char num,ticker time,CTL_EVENT_SET_t *e,CTL_EVENT_SET_t event);
+//get the time an alarm will happen
+ticker BUS_get_alarm_time(unsigned char num);
+//check if an alarm is free
+int BUS_alarm_is_free(unsigned char num);
 
 //free a timer
 void BUS_free_alarm(unsigned char num);
