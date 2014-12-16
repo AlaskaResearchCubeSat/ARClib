@@ -45,6 +45,14 @@ const char* cmdtostr(unsigned char cmd){
         return "CMD_MAG_SAMPLE_CONFIG";
     case CMD_ERR_REQ:
         return "CMD_ERR_REQ";
+    case CMD_IMG_READ_PIC:
+        return "CMD_IMG_READ_PIC";
+    case CMD_IMG_TAKE_TIMED_PIC:
+        return "CMD_IMG_TAKE_TIMED_PIC";
+    case CMD_IMG_TAKE_PIC_NOW:
+        return "CMD_IMG_TAKE_PIC_NOW";
+    case CMD_GS_DATA:
+        return "CMD_GS_DATA";
     default:
       return "Unknown";
   }
@@ -66,6 +74,8 @@ const char* cmd_resptostr(unsigned char resp){
       return "Error SPI busy";
     case ERR_BUFFER_BUSY:
       return "Error Buffer Busy";
+    case ERR_ILLEAGLE_COMMAND:
+      return "Error Illeagle Command";
     default:
       return "Unknown";
   }
