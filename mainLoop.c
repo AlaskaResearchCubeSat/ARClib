@@ -30,6 +30,14 @@ static unsigned char SPI_addr=0;
 
 static void ARC_bus_helper(void *p);
 
+static struct{
+    CTL_MUTEX_t mutex;
+    unsigned short size;
+    unsigned char type;
+    unsigned char level;
+    unsigned char dest;
+}err_req;
+
 //power state of subsystem
 unsigned short powerState=SUB_PWR_OFF;
 
@@ -43,11 +51,17 @@ static void ARC_bus_run(void *p) __toplevel{
   unsigned char *ptr;
   unsigned short crc;
   unsigned char *SPI_buf=NULL;
-  ticker nt;
+  ticker nt,ot;
   int snd,i;
   SPI_addr=0;
   //Initialize ErrorLib
   error_recording_start();
+  //init error request mutex
+  ctl_mutex_init(&err_req.mutex);
+  #ifndef CDH_LIB         //Subsystem board 
+      //subsystems wait a bit before attempting to contact CDH
+      ctl_timeout_wait(ctl_get_current_time()+730);
+  #endif
   //first send "I'm on" command
   BUS_cmd_init(pk,CMD_SUB_POWERUP);//setup command
   //send command
@@ -170,16 +184,24 @@ static void ARC_bus_run(void *p) __toplevel{
               //check for proper length
               if(len!=4){
                 resp=ERR_PK_LEN;
-              }
-              //assemble time from packet
-              nt=ptr[3];
-              nt|=((ticker)ptr[2])<<8;
-              nt|=((ticker)ptr[1])<<16;
-              nt|=((ticker)ptr[0])<<24;
-              //update time
-              set_ticker_time(nt);
-              //tell subsystem to send status
-              ctl_events_set_clear(&SUB_events,SUB_EV_SEND_STAT,0);
+              }                
+              #ifndef CDH_LIB //only update time on subsystem boards
+                  //assemble time from packet
+                  nt=ptr[3];
+                  nt|=((ticker)ptr[2])<<8;
+                  nt|=((ticker)ptr[1])<<16;
+                  nt|=((ticker)ptr[0])<<24;
+                  //update time
+                  ot=setget_ticker_time(nt);
+                  //tell subsystem to send status
+                  ctl_events_set_clear(&SUB_events,SUB_EV_SEND_STAT,0);
+                  //trigger any alarms that were skipped
+                  BUS_alarm_ticker_update(nt,ot);
+              #else
+                  //if CMD_SUB_STAT is recived by CDH, report an error
+                  report_error(ERR_LEV_ERROR,BUS_ERR_SRC_MAIN_LOOP,MAIN_LOOP_CDH_SUB_STAT_REC,addr);
+                  resp=ERR_ILLEAGLE_COMMAND;
+              #endif
             break;
             case CMD_RESET:          
               //check for proper length
@@ -321,6 +343,38 @@ static void ARC_bus_run(void *p) __toplevel{
                   break;
               }
             break;
+            case CMD_ERR_REQ:
+              if(len<1){
+                resp=ERR_PK_LEN;
+                break;
+              }
+              if(!ctl_mutex_lock(&err_req.mutex,CTL_TIMEOUT_NOW,0)){
+                resp=ERR_BUSY;
+                break;
+              }
+              //request type
+              err_req.type=ptr[0];
+              //address to send data to
+              err_req.dest=addr;
+              switch(ptr[0]){
+                case ERR_REQ_REPLAY:
+                    err_req.size=(((unsigned short)ptr[1])<<8)|((unsigned short)ptr[2]);
+                    err_req.level=ptr[3];
+                break;
+                default:
+                    resp=ERR_INVALID_ARGUMENT;
+                break;
+              }
+              //check if the packet was parsed
+              if(!resp){
+                //send event to process request
+                ctl_events_set_clear(&BUS_helper_events,BUS_HELPER_EV_ERR_REQ,0);
+              }
+            ctl_mutex_unlock(&err_req.mutex);
+            break;
+            case CMD_PING:
+                //this is a dummy command that does nothing
+            break;
             default:
               //check for subsystem command
               resp=SUB_parseCmd(addr,cmd,ptr,len);
@@ -385,7 +439,7 @@ static void ARC_bus_run(void *p) __toplevel{
 //ARC bus Task, do ARC bus stuff
 static void ARC_bus_helper(void *p) __toplevel{
   unsigned int e;
-  int resp;
+  int resp,maxsize;
   unsigned char *ptr,pk[BUS_I2C_HDR_LEN+0+BUS_I2C_CRC_LEN];
   for(;;){
     e=ctl_events_wait(CTL_EVENT_WAIT_ANY_EVENTS_WITH_AUTO_CLEAR,&BUS_helper_events,BUS_HELPER_EV_ALL,CTL_TIMEOUT_NONE,0);
@@ -430,6 +484,48 @@ static void ARC_bus_helper(void *p) __toplevel{
       //send event
       ctl_events_set_clear(&SUB_events,SUB_EV_ASYNC_CLOSE,0);
     }
+    if(e&BUS_HELPER_EV_ERR_REQ){
+        //get mutex
+        if(ctl_mutex_lock(&err_req.mutex,CTL_TIMEOUT_DELAY,100)){
+            //get buffer
+            ptr=BUS_get_buffer(CTL_TIMEOUT_DELAY,100);
+            //check if buffer was aquired
+            if(ptr){
+              //set own address
+              ptr[0]=UCB0I2COA;
+              //set data type
+              ptr[1]=SPI_ERROR_DAT;
+              //get maximum size for data packet. part of the buffer is used to read errors into
+              maxsize=BUS_get_buffer_size()-512-2;
+              //check if requested size is greater then max
+              if(maxsize<err_req.size){
+                //set maxsize
+                err_req.size=maxsize;
+              }
+              //check request type
+              switch(err_req.type){
+                case ERR_REQ_REPLAY:
+                  //get errors
+                  error_log_mem_replay(ptr+2,err_req.size,err_req.level,ptr+2+maxsize);
+                break;
+              }
+              //send data
+              resp=BUS_SPI_txrx(err_req.dest,ptr,NULL,err_req.size+2);
+              //TODO: report error
+              //free buffer
+              BUS_free_buffer();
+            }else{
+              //set flag so we try again
+              ctl_events_set_clear(&BUS_helper_events,BUS_HELPER_EV_ERR_REQ,0);
+              //TODO: give error?
+            }
+            ctl_mutex_unlock(&err_req.mutex);
+        }else{
+          //set flag so we try again
+          ctl_events_set_clear(&BUS_helper_events,BUS_HELPER_EV_ERR_REQ,0);
+          //TODO: give error?
+        }
+    }
   }
 }
 
@@ -451,14 +547,29 @@ void mainLoop(void) __toplevel{
   //main idle loop
   //NOTE that this task should never wait to ensure that there is always a runnable task
   for(;;){    
-      //kick watchdog
-      WDT_KICK();
-      #ifndef IDLE_DEBUG
-        //go to low power mode
-        LPM0;
-      #else
-        P7OUT^=BIT0+BIT1+BIT2+BIT3;
-      #endif
+    //kick watchdog
+    WDT_KICK();
+    //go to low power mode
+    LPM0;
+  }
+}
+
+//main loop testing function, start ARC_Bus task then enter Idle task
+void mainLoop_testing(void (*cb)(void)) __toplevel{
+  //initialize events
+  ctl_events_init(&BUS_INT_events,0);
+  //start ARCbus task
+  ctl_task_run(&ARC_bus_task,BUS_PRI_ARCBUS,ARC_bus_run,NULL,"ARC_Bus",sizeof(BUS_stack)/sizeof(BUS_stack[0])-2,BUS_stack+1,0);
+  //kick WDT to give us some time
+  WDT_KICK();
+  // drop to lowest priority to start created tasks running.
+  ctl_task_set_priority(&idle_task,0); 
+  
+  //main idle loop
+  //NOTE that this task should never wait to ensure that there is always a runnable task
+  for(;;){    
+      //call the callback
+      cb();
   }
 }
 

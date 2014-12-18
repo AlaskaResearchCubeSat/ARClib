@@ -37,6 +37,22 @@ const char* cmdtostr(unsigned char cmd){
       return "Async Data";
     case CMD_SPI_DATA_ACTION:
       return "SPI Data Action";
+    case CMD_PING:
+        return "CMD_PING";
+    case CMD_MAG_DATA:
+        return "CMD_MAG_DATA";
+    case CMD_MAG_SAMPLE_CONFIG:
+        return "CMD_MAG_SAMPLE_CONFIG";
+    case CMD_ERR_REQ:
+        return "CMD_ERR_REQ";
+    case CMD_IMG_READ_PIC:
+        return "CMD_IMG_READ_PIC";
+    case CMD_IMG_TAKE_TIMED_PIC:
+        return "CMD_IMG_TAKE_TIMED_PIC";
+    case CMD_IMG_TAKE_PIC_NOW:
+        return "CMD_IMG_TAKE_PIC_NOW";
+    case CMD_GS_DATA:
+        return "CMD_GS_DATA";
     default:
       return "Unknown";
   }
@@ -58,6 +74,8 @@ const char* cmd_resptostr(unsigned char resp){
       return "Error SPI busy";
     case ERR_BUFFER_BUSY:
       return "Error Buffer Busy";
+    case ERR_ILLEAGLE_COMMAND:
+      return "Error Illeagle Command";
     default:
       return "Unknown";
   }
@@ -160,6 +178,22 @@ char *err_decode_arcbus(char buf[150], unsigned short source,int err, unsigned s
         case SETUP_ERR_DCO_MISSING_CAL:
           return "ARClib Setup : Missing DCO Calibration Data";
       }
+    break;
+    case BUS_ERR_SRC_ALARMS:
+        switch(err){
+            case ALARMS_INVALID_TIME_UPDATE:
+                sprintf(buf,"Alarms : Invalid time update, time diffrence %u",argument);
+            return buf;
+            case ALARMS_FWD_TIME_UPDATE:
+                sprintf(buf,"Alarms : forward time update, time diffrence %u",argument);
+            return buf;
+            case ALARMS_REV_TIME_UPDATE:
+                sprintf(buf,"Alarms : reverse time update, time diffrence %u",argument);
+            return buf;
+            case ALARMS_ADJ_TRIGGER:
+                sprintf(buf,"Alarms : Alarm #%i was triggered due to time adjustment",argument);
+            return buf;
+        }
     break;
   }
   sprintf(buf,"source = %i, error = %i, argument = %i",source,err,argument);

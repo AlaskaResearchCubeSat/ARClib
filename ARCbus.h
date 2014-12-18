@@ -39,11 +39,15 @@ enum{SUB_EV_PWR_OFF=(1<<0),SUB_EV_PWR_ON=(1<<1),SUB_EV_SEND_STAT=(1<<2),SUB_EV_S
 #define SUB_EV_NO_INT               (SUB_EV_PWR_OFF|SUB_EV_PWR_ON|SUB_EV_SEND_STAT|SUB_EV_SPI_DAT|SUB_EV_SPI_ERR_CRC)
 //only pin interrupts
 #define SUB_EV_INT                  (SUB_EV_INT_0|SUB_EV_INT_1|SUB_EV_INT_2|SUB_EV_INT_3|SUB_EV_INT_4|SUB_EV_INT_5|SUB_EV_INT_6|SUB_EV_INT_7)
+//only SPI subsystem events
+#define SUB_EV_SPI                  (SUB_EV_SPI_DAT|SUB_EV_SPI_ERR_CRC|SUB_EV_SPI_ERR_BUSY)
+
 
 //command table for ARCBUS commands
-enum{CMD_NACK=51,CMD_SPI_COMPLETE,CMD_SPI_RDY,CMD_SUB_ON,CMD_SUB_OFF,CMD_SUB_POWERUP,CMD_RESET,CMD_SUB_STAT,
+enum{CMD_PING=7,CMD_NACK=51,CMD_SPI_COMPLETE,CMD_SPI_RDY,CMD_SUB_ON,CMD_SUB_OFF,CMD_SUB_POWERUP,CMD_RESET,CMD_SUB_STAT,
      CMD_SPI_CLEAR,CMD_EPS_STAT,CMD_LEDL_STAT,CMD_ACDS_STAT,CMD_COMM_STAT,CMD_IMG_STAT,CMD_ASYNC_SETUP,
-     CMD_ASYNC_DAT,CMD_SPI_DATA_ACTION,CMD_MAG_DATA,CMD_MAG_SAMPLE_CONFIG};
+     CMD_ASYNC_DAT,CMD_SPI_DATA_ACTION,CMD_MAG_DATA,CMD_MAG_SAMPLE_CONFIG,CMD_ERR_REQ,CMD_IMG_READ_PIC,
+     CMD_IMG_TAKE_TIMED_PIC,CMD_IMG_TAKE_PIC_NOW,CMD_GS_DATA};
 
 //bit to allow NACK to be sent
 #define CMD_TX_NACK                 (0x80)
@@ -64,7 +68,7 @@ enum{CMD_NACK=51,CMD_SPI_COMPLETE,CMD_SPI_RDY,CMD_SUB_ON,CMD_SUB_OFF,CMD_SUB_POW
 enum{RET_SUCCESS=0,ERR_BAD_LEN=-1,ERR_CMD_NACK=-2,ERR_I2C_NACK=-3,ERR_UNKNOWN=-4,ERR_BAD_ADDR=-5,ERR_BAD_CRC=-6,ERR_TIMEOUT=-7,ERR_BUSY=-8,ERR_INVALID_ARGUMENT=-9,ERR_PACKET_TOO_LONG=-10,ERR_I2C_ABORT=-11};
 
 //Return values for SUB_parseCmd these will be send as part of the NACK packet
-enum{ERR_PK_LEN=1,ERR_UNKNOWN_CMD=2,ERR_SPI_LEN=3,ERR_BAD_PK=4,ERR_SPI_BUSY=5,ERR_BUFFER_BUSY=6};
+enum{ERR_PK_LEN=1,ERR_UNKNOWN_CMD=2,ERR_SPI_LEN=3,ERR_BAD_PK=4,ERR_SPI_BUSY=5,ERR_BUFFER_BUSY=6,ERR_ILLEAGLE_COMMAND=7};
 
 //table of board addresses
 //BUS_ADDR_GC is general call address which every board will acknowledge for receiving
@@ -98,7 +102,13 @@ enum{SPI_DAT_ACTION_INVALID=0,SPI_DAT_ACTION_SD_WRITE,SPI_DAT_ACTION_NULL,SPI_DA
 enum{ML_LP_EXIT,ML_LPM0,ML_LPM1,ML_LPM2,ML_LPM3,ML_LPM4};
 
 //SPI Data types
-enum{SPI_BEACON_DAT,SPI_IMG_DAT,SPI_LEDL_DAT};
+enum{SPI_BEACON_DAT,SPI_IMG_DAT,SPI_LEDL_DAT,SPI_ERROR_DAT};
+    
+//error request types
+enum{ERR_REQ_REPLAY=0};
+    
+//Alarm numbers for BUS alarms
+enum{BUS_ALARM_0=0,BUS_ALARM_1,BUS_NUM_ALARMS};
 
 //ticker for time keeping
 typedef unsigned long ticker;
@@ -169,6 +179,9 @@ void initARCbus_pd(unsigned char addr);
 void mainLoop(void);
 //enter low power main loop. allows the MSP to go into all low power modes
 void mainLoop_lp(void);
+//main loop testing function, start ARC_Bus task then enter Idle task
+void mainLoop_testing(void (*cb)(void));
+
 
 //send packet over the bus
 int BUS_cmd_tx(unsigned char addr,unsigned char *buff,unsigned short len,unsigned short flags,short bgnd);
@@ -183,6 +196,8 @@ int SUB_parseCmd(unsigned char src,unsigned char cmd,unsigned char *dat,unsigned
 ticker get_ticker_time(void);
 //set current time
 void set_ticker_time(ticker nt);
+//set and get current time
+ticker setget_ticker_time(ticker nt);
 
 //get and lock buffer
 void* BUS_get_buffer(CTL_TIMEOUT_t t, CTL_TIME_t timeout);
@@ -227,6 +242,16 @@ int BUS_stop_interrupts(void);
 
 //gracefully restart global interrupts
 void BUS_restart_interrupts(int int_stat);
+
+//set alarm to give an event at the given time
+int BUS_set_alarm(unsigned char num,ticker time,CTL_EVENT_SET_t *e,CTL_EVENT_SET_t event);
+//get the time an alarm will happen
+ticker BUS_get_alarm_time(unsigned char num);
+//check if an alarm is free
+int BUS_alarm_is_free(unsigned char num);
+
+//free a timer
+void BUS_free_alarm(unsigned char num);
 
 #endif
   
