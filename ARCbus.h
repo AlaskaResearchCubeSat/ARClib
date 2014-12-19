@@ -232,5 +232,10 @@ int BUS_alarm_is_free(unsigned char num);
 //free a timer
 void BUS_free_alarm(unsigned char num);
 
+//assert one or more interrupts on the bus
+void BUS_int_set(unsigned char set);
+//de-assert one or more interrupts on the bus
+void BUS_int_clear(unsigned char clear);
+
 #endif
   
