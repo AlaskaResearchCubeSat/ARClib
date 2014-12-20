@@ -1,17 +1,12 @@
 #include <msp430.h>
 #include <stdlib.h>
-#include <limits.h>
-#include <error.h>
 #include "ARCbus.h"
-#include "ARCbus_internal.h"
 
 typedef struct{
     ticker time;
     CTL_EVENT_SET_t *e;
     CTL_EVENT_SET_t event;
 }ALARM_DAT;
-
-#define     ALARM_MAX_UPDATE_DIFF       (5*60*1024)
 
 ALARM_DAT alarms[BUS_NUM_ALARMS];
 
@@ -84,55 +79,3 @@ void BUS_timer_timeout_check(void){
         }
     }
 }
-
-void BUS_alarm_ticker_update(ticker newt,ticker oldt){
-    ticker diff;
-    int i;
-    //check time difference
-    if(newt==oldt){
-        //nothing to do
-        return;
-    }else{
-        //subtract times to get difference
-        diff=newt-oldt;
-        if(diff<ALARM_MAX_UPDATE_DIFF){
-            //time went forwards
-            report_error(ERR_LEV_INFO,BUS_ERR_SRC_ALARMS,ALARMS_FWD_TIME_UPDATE,diff);
-            //trigger alarms that were skipped over
-            //loop through all alarms
-            for(i=0;i<BUS_NUM_ALARMS;i++){
-                //check if time was updated over timeout time
-                if(alarms[i].e!=NULL && alarms[i].event!=0 && (alarms[i].time-oldt<=diff)){
-                    //time elapsed, trigger event
-                    ctl_events_set_clear(alarms[i].e,alarms[i].event,0);
-                    //free alarm once triggered
-                    BUS_free_alarm(i);
-                    //Generate debug message 
-                    report_error(ERR_LEV_INFO,BUS_ERR_SRC_ALARMS,ALARMS_ADJ_TRIGGER,i);
-                }
-            } 
-        }else{
-            //newt<oldt
-            diff=oldt-newt;
-            //check if times are close
-            if(diff>ALARM_MAX_UPDATE_DIFF){
-                //check if difference is large
-                if(diff>USHRT_MAX){
-                    if(newt-oldt<USHRT_MAX){
-                        diff=newt-oldt;
-                    }else{
-                        diff=USHRT_MAX;
-                    }
-                }
-                //time difference is too large, report error
-                report_error(ERR_LEV_ERROR,BUS_ERR_SRC_ALARMS,ALARMS_INVALID_TIME_UPDATE,diff);
-                //don't trigger alarms
-                return;
-            }
-            //time went backwards 
-            report_error(ERR_LEV_INFO,BUS_ERR_SRC_ALARMS,ALARMS_REV_TIME_UPDATE,diff);
-            //TODO: trigger alarms?
-        }
-    }   
-}
-

@@ -19,7 +19,7 @@
   #define BUS_PINS_SPI      (BUS_PIN_SOMI|BUS_PIN_SIMO|BUS_PIN_SCK)
   
   //ARCbus error sources
-  enum{BUS_ERR_SRC_CTL=ERR_SRC_ARCBUS,BUS_ERR_SRC_MAIN_LOOP,BUS_ERR_SRC_STARTUP,BUS_ERR_SRC_ASYNC,BUS_ERR_SRC_SETUP,BUS_ERR_SRC_ALARMS};
+  enum{BUS_ERR_SRC_CTL=ERR_SRC_ARCBUS,BUS_ERR_SRC_MAIN_LOOP,BUS_ERR_SRC_STARTUP,BUS_ERR_SRC_ASYNC,BUS_ERR_SRC_SETUP};
   
   //error codes for CTL
   enum{CTL_ERR_HANDLER};
@@ -37,9 +37,6 @@
           
   //error codes for setup 
   enum{SETUP_ERR_DCO_MISSING_CAL};
-  
-  //error codes for alarms
-  enum{ALARMS_INVALID_TIME_UPDATE,ALARMS_REV_TIME_UPDATE,ALARMS_FWD_TIME_UPDATE,ALARMS_ADJ_TRIGGER};
   
   #define BUS_ERR_LEV_ROUTINE_RST   (ERR_LEV_DEBUG+3)
   
@@ -129,7 +126,5 @@
   void BUS_I2C_release(void);
   
   void BUS_timer_timeout_check(void);
-  //trigger alarms that may have been updated over
-  void BUS_alarm_ticker_update(ticker newt,ticker oldt);
 
 #endif
