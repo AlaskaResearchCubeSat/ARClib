@@ -138,7 +138,26 @@ static void ARC_bus_run(void *p) __toplevel{
     if(e&BUS_INT_EV_I2C_CMD_RX){
         //check if packet is complete
         if(I2C_rx_buf[I2C_rx_out].stat!=I2C_PACKET_STAT_COMPLETE){
-          report_error(ERR_LEV_ERROR,BUS_ERR_SRC_MAIN_LOOP,MAIN_LOOP_ERR_RX_BUF_STAT,I2C_rx_buf[I2C_rx_out].stat);
+            //report error
+            report_error(ERR_LEV_ERROR,BUS_ERR_SRC_MAIN_LOOP,MAIN_LOOP_ERR_RX_BUF_STAT,I2C_rx_buf[I2C_rx_out].stat);
+            //disable interrupts
+            ctl_global_interrupts_set(0);
+            //put UCB0 into reset state
+            UCB0CTL1|=UCSWRST;   
+            //initialize I2C packet queue to empty state
+            for(i=0;i<BUS_I2C_PACKET_QUEUE_LEN;i++){
+                I2C_rx_buf[i].stat=I2C_PACKET_STAT_EMPTY;
+            }
+            //I2C mutex init
+            ctl_mutex_init(&arcBus_stat.i2c_stat.mutex);
+            //set I2C to idle mode
+            arcBus_stat.i2c_stat.mode=BUS_I2C_IDLE;
+            //initialize I2C packet queue pointers
+            I2C_rx_in=I2C_rx_out=0;
+            //bring UCB0 out of reset state
+            UCB0CTL1&=~UCSWRST;
+            //re-enable interrupts
+            ctl_global_interrupts_enable();
         }else{
         //clear response
         resp=0;
