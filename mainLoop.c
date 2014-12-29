@@ -25,11 +25,14 @@ BUS_STAT arcBus_stat;
 //events for subsystems
 CTL_EVENT_SET_t SUB_events;
 
-//ticker time that the last time update happened at
-ticker last_time_update;
 
-//flag to see if time has been updated
-short timesync=0;
+#ifndef CDH_LIB         //Subsystem board 
+    //ticker time that the last time update happened at
+    ticker last_time_update;
+
+    //flag to see if time has been updated
+    short timesync=0;
+#endif
 
 //address of SPI slave during transaction
 static unsigned char SPI_addr=0;
