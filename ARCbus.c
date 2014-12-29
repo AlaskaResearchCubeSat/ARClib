@@ -77,6 +77,9 @@ static unsigned BUS_I2C_lock(void){
         //wait for next slot
         ctl_timeout_wait(ctl_get_current_time()+delay);
     }
+    //release mutex
+    BUS_I2C_release();
+    //return error
     return ERR_BUSY;
 } 
 
