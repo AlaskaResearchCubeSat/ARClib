@@ -43,6 +43,16 @@ static unsigned BUS_I2C_lock(void){
     const unsigned char addr_slot[BUS_NUM_SLOTS]={BUS_ADDR_CDH,BUS_ADDR_LEDL,BUS_ADDR_ACDS,BUS_ADDR_COMM,BUS_ADDR_IMG,BUS_ADDR_LEDL,INVALID_I2C_ADDR,INVALID_I2C_ADDR};    
     //get address
     addr=UCB0I2COA&0x7F;
+    #ifndef CDH_LIB
+        //check that time has been updated
+        if(!timesync){
+            return ERR_TIME_INVALID;
+        }
+        //check that time was synced within the last minuet
+        if((get_ticker_time()-timesync)>(1024*60)){
+            return ERR_TIME_TOO_OLD;
+        }
+    #endif
     //try to capture mutex
     if(0==ctl_mutex_lock(&arcBus_stat.i2c_stat.mutex,CTL_TIMEOUT_DELAY,BUS_NUM_SLOTS*BUS_SLOT_TIME_LEN*2)){
         return ERR_BUSY;
