@@ -57,6 +57,11 @@ static unsigned BUS_I2C_lock(void){
     if(0==ctl_mutex_lock(&arcBus_stat.i2c_stat.mutex,CTL_TIMEOUT_DELAY,BUS_NUM_SLOTS*BUS_SLOT_TIME_LEN*2)){
         return ERR_BUSY;
     }
+    //check if the bus is busy
+    if(UCB1STAT&UCBBUSY){
+        //wait a bit
+        ctl_timeout_wait(ctl_get_current_time()+3);
+    }
     for(i=0;i<2*BUS_NUM_SLOTS+2;i++){
         //check timeslot
         tt=get_ticker_time();
