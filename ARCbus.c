@@ -64,8 +64,8 @@ static unsigned BUS_I2C_lock(void){
         slt=(tt>>BUS_SLOT_NUM_SHIFT)&BUS_SLOT_NUM_MASK;
         //calculate slot time
         st=tt&BUS_SLOT_TIME_MASK;
-        //check time slot and remaining time and make sure that bus is not busy
-        if(UCB1STAT&UCBBUSY && addr_slot[slt]==addr && st<(BUS_SLOT_TIME_LEN-BUS_MAX_PACKET_TIME)){
+        //check time slot and remaining time
+        if(addr_slot[slt]==addr && st<(BUS_SLOT_TIME_LEN-BUS_MAX_PACKET_TIME)){
             return RET_SUCCESS;
         }
         //calculate delay to next slot
