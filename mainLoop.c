@@ -67,33 +67,15 @@ static void ARC_bus_run(void *p) __toplevel{
   error_recording_start();
   //init error request mutex
   ctl_mutex_init(&err_req.mutex);
-  #ifndef CDH_LIB         //Subsystem board 
-      //subsystems wait a bit before attempting to contact CDH
-      ctl_timeout_wait(ctl_get_current_time()+730);
-  #endif
-  //first send "I'm on" command
-  BUS_cmd_init(pk,CMD_SUB_POWERUP);//setup command
-  //send command
-  resp=BUS_cmd_tx(BUS_ADDR_CDH,pk,0,0,BUS_I2C_SEND_FOREGROUND);
-  #ifndef CDH_LIB         //Subsystem board 
-    //check for failed send
-    if(resp!=RET_SUCCESS){
-      //give a warning
-      report_error(ERR_LEV_WARNING,BUS_ERR_SRC_MAIN_LOOP,MAIN_LOOP_ERR_CDH_NOT_FOUND,resp);
-      //wait a bit
-      ctl_timeout_wait(ctl_get_current_time()+30);
-      //resend
-      resp=BUS_cmd_tx(BUS_ADDR_CDH,pk,0,0,BUS_I2C_SEND_FOREGROUND);
-      //check for success
-      if(resp!=RET_SUCCESS){
-        //Failed
-        report_error(ERR_LEV_ERROR,BUS_ERR_SRC_MAIN_LOOP,MAIN_LOOP_ERR_CDH_NOT_FOUND,resp);     
-      }
-    }
-  #else     //CDH board, check for other CDH board
+  #ifdef CDH_LIB        
+    //first send "I'm on" command
+    BUS_cmd_init(pk,CMD_SUB_POWERUP);//setup command
+    //send command
+    resp=BUS_cmd_tx(BUS_ADDR_CDH,pk,0,0,BUS_I2C_SEND_FOREGROUND);
+    //check for other CDH board
     if(resp==RET_SUCCESS){
-      report_error(ERR_LEV_ERROR+30,BUS_ERR_SRC_MAIN_LOOP,MAIN_LOOP_ERR_MUTIPLE_CDH,0);
-      //TODO : this is bad. perhaps do something here to recover
+        report_error(ERR_LEV_ERROR+30,BUS_ERR_SRC_MAIN_LOOP,MAIN_LOOP_ERR_MUTIPLE_CDH,0);
+        //TODO : this is bad. perhaps do something here to recover
     }
   #endif
   //initialize helper events
@@ -221,6 +203,11 @@ static void ARC_bus_run(void *p) __toplevel{
                   nt|=((ticker)ptr[0])<<24;
                   //update time
                   ot=setget_ticker_time(nt);
+                  //check if time has been synced
+                  if(!timesync){
+                    //send powerup message
+                    ctl_events_set_clear(&BUS_helper_events,BUS_HELPER_EV_SUB_POWERUP,0);
+                  }
                   //save time of last update
                   last_time_update=nt;
                   //indicate that time has been updated
@@ -480,6 +467,30 @@ static void ARC_bus_helper(void *p) __toplevel{
       //send some data
       async_send_data();
     }
+#ifndef CDH_LIB
+    //time to send subsystem powerup message
+    if(e&BUS_HELPER_EV_SUB_POWERUP){
+        //first send "I'm on" command
+        BUS_cmd_init(pk,CMD_SUB_POWERUP);//setup command
+        //send command
+        resp=BUS_cmd_tx(BUS_ADDR_CDH,pk,0,0,BUS_I2C_SEND_FOREGROUND);
+         //check for failed send
+        if(resp!=RET_SUCCESS){
+          //give a warning
+          report_error(ERR_LEV_WARNING,BUS_ERR_SRC_MAIN_LOOP,MAIN_LOOP_ERR_CDH_NOT_FOUND,resp);
+          //wait a bit
+          ctl_timeout_wait(ctl_get_current_time()+30);
+          //resend
+          resp=BUS_cmd_tx(BUS_ADDR_CDH,pk,0,0,BUS_I2C_SEND_FOREGROUND);
+          //check for success
+          if(resp!=RET_SUCCESS){
+            //Failed
+            report_error(ERR_LEV_ERROR,BUS_ERR_SRC_MAIN_LOOP,MAIN_LOOP_ERR_CDH_NOT_FOUND,resp);     
+          }
+        }
+    }
+#endif
+    //SPI transaction is complete
     if(e&BUS_HELPER_EV_SPI_COMPLETE_CMD){      
       //done with SPI send command
       BUS_cmd_init(pk,CMD_SPI_COMPLETE);
