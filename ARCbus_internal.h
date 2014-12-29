@@ -124,7 +124,11 @@
   //task structures
   extern CTL_TASK_t ARC_bus_task;
   
+  //ticker time that the last time update happened at
+  extern ticker last_time_update;
 
+  //flag to see if time has been updated
+  extern short timesync;
   
   //events for subsystems
   extern CTL_EVENT_SET_t SUB_events,BUS_helper_events,BUS_INT_events;
