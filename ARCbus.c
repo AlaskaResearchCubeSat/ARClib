@@ -35,22 +35,39 @@ int addr_chk(unsigned char addr){
 
 
 static unsigned BUS_I2C_lock(void){
-  int i;
-  //try to capture mutex
-  if(0==ctl_mutex_lock(&arcBus_stat.i2c_stat.mutex,CTL_TIMEOUT_DELAY,10)){
-     return ERR_BUSY;
-  }
-  //wait for bus to be free
-  for(i=0;UCB1STAT&UCBBUSY && i<10;i++){
-    ctl_timeout_wait(ctl_get_current_time()+3);
-  }
-  if(UCB1STAT&UCBBUSY){
-    //release mutex
-    BUS_I2C_release();
-    //bus is still busy, return error
+    int i;
+    ticker tt;
+    unsigned long delay;
+    unsigned char addr;
+    unsigned short slt,st;
+    const unsigned char addr_slot[BUS_NUM_SLOTS]={BUS_ADDR_CDH,BUS_ADDR_LEDL,BUS_ADDR_ACDS,BUS_ADDR_COMM,BUS_ADDR_IMG,BUS_ADDR_LEDL,INVALID_I2C_ADDR,INVALID_I2C_ADDR};
+    //try to capture mutex
+    if(0==ctl_mutex_lock(&arcBus_stat.i2c_stat.mutex,CTL_TIMEOUT_DELAY,BUS_NUM_SLOTS*BUS_SLOT_TIME_LEN*2)){
+        return ERR_BUSY;
+    }
+    for(i=0;i<2*BUS_NUM_SLOTS+2;i++){
+        //check timeslot
+        tt=get_ticker_time();
+        //calculate time slot
+        slt=(tt<<BUS_SLOT_NUM_SHIFT)&BUS_SLOT_NUM_MASK;
+        //calculate slot time
+        st=tt&BUS_SLOT_TIME_MASK;
+        //get address
+        addr=UCB0I2COA&0x7F;
+        //check time slot and remaining time
+        if(addr_slot[slt]==addr && st>(BUS_SLOT_TIME_LEN-BUS_MAX_PACKET_TIME)){
+            return RET_SUCCESS;
+        }
+        //calculate delay to next slot
+        delay=BUS_SLOT_TIME_LEN-st;
+        //ensure minimum delay
+        if(delay<3){
+            delay=3;
+        }
+        //wait for next slot
+        ctl_timeout_wait(ctl_get_current_time()+delay);
+    }
     return ERR_BUSY;
-  } 
-  return 0;
 } 
 
 //release the I2C bus

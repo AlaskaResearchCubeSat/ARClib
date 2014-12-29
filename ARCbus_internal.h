@@ -18,6 +18,23 @@
     
   #define BUS_PINS_SPI      (BUS_PIN_SOMI|BUS_PIN_SIMO|BUS_PIN_SCK)
   
+  
+  //define constants for timeslots
+  #define   BUS_SLOT_TIME_BITS      (4)
+  #define   BUS_SLOT_NUM_BITS       (3)
+  
+  #define   BUS_SLOT_NUM_SHIFT      BUS_SLOT_TIME_BITS
+  #define   BUS_SLOT_NUM_MASK       ((1<<BUS_SLOT_NUM_BITS)-1)
+  #define   BUS_SLOT_TIME_MASK      ((1<<BUS_SLOT_NUM_BITS)-1)
+  #define   BUS_SLOT_TIME_LEN       ((1<<4)-1)
+  
+  #define   BUS_NUM_SLOTS           (1<<BUS_SLOT_NUM_BITS)
+  
+  #define   INVALID_I2C_ADDR        0xFF
+  
+  //this is for (1+2+30+1)*9bits/50kbps = 6.12ms
+  #define   BUS_MAX_PACKET_TIME     (7)
+  
   //ARCbus error sources
   enum{BUS_ERR_SRC_CTL=ERR_SRC_ARCBUS,BUS_ERR_SRC_MAIN_LOOP,BUS_ERR_SRC_STARTUP,BUS_ERR_SRC_ASYNC,BUS_ERR_SRC_SETUP,BUS_ERR_SRC_ALARMS};
   
