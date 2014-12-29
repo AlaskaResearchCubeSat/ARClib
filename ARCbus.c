@@ -65,7 +65,7 @@ static unsigned BUS_I2C_lock(void){
         //calculate slot time
         st=tt&BUS_SLOT_TIME_MASK;
         //check time slot and remaining time
-        if(addr_slot[slt]==addr && st>(BUS_SLOT_TIME_LEN-BUS_MAX_PACKET_TIME)){
+        if(addr_slot[slt]==addr && st<(BUS_SLOT_TIME_LEN-BUS_MAX_PACKET_TIME)){
             return RET_SUCCESS;
         }
         //calculate delay to next slot
