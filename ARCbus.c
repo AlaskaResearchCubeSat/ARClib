@@ -40,7 +40,9 @@ static unsigned BUS_I2C_lock(void){
     unsigned long delay;
     unsigned char addr;
     unsigned short slt,st;
-    const unsigned char addr_slot[BUS_NUM_SLOTS]={BUS_ADDR_CDH,BUS_ADDR_LEDL,BUS_ADDR_ACDS,BUS_ADDR_COMM,BUS_ADDR_IMG,BUS_ADDR_LEDL,INVALID_I2C_ADDR,INVALID_I2C_ADDR};
+    const unsigned char addr_slot[BUS_NUM_SLOTS]={BUS_ADDR_CDH,BUS_ADDR_LEDL,BUS_ADDR_ACDS,BUS_ADDR_COMM,BUS_ADDR_IMG,BUS_ADDR_LEDL,INVALID_I2C_ADDR,INVALID_I2C_ADDR};    
+    //get address
+    addr=UCB0I2COA&0x7F;
     //try to capture mutex
     if(0==ctl_mutex_lock(&arcBus_stat.i2c_stat.mutex,CTL_TIMEOUT_DELAY,BUS_NUM_SLOTS*BUS_SLOT_TIME_LEN*2)){
         return ERR_BUSY;
@@ -52,8 +54,6 @@ static unsigned BUS_I2C_lock(void){
         slt=(tt<<BUS_SLOT_NUM_SHIFT)&BUS_SLOT_NUM_MASK;
         //calculate slot time
         st=tt&BUS_SLOT_TIME_MASK;
-        //get address
-        addr=UCB0I2COA&0x7F;
         //check time slot and remaining time
         if(addr_slot[slt]==addr && st>(BUS_SLOT_TIME_LEN-BUS_MAX_PACKET_TIME)){
             return RET_SUCCESS;
