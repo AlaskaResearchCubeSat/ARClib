@@ -61,7 +61,7 @@ static unsigned BUS_I2C_lock(void){
         //check timeslot
         tt=get_ticker_time();
         //calculate time slot
-        slt=(tt<<BUS_SLOT_NUM_SHIFT)&BUS_SLOT_NUM_MASK;
+        slt=(tt>>BUS_SLOT_NUM_SHIFT)&BUS_SLOT_NUM_MASK;
         //calculate slot time
         st=tt&BUS_SLOT_TIME_MASK;
         //check time slot and remaining time
