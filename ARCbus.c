@@ -40,7 +40,7 @@ static unsigned BUS_I2C_lock(void){
     unsigned long delay;
     unsigned char addr;
     unsigned short slt,st;
-    const unsigned char addr_slot[BUS_NUM_SLOTS]={BUS_ADDR_CDH,BUS_ADDR_LEDL,BUS_ADDR_ACDS,BUS_ADDR_COMM,BUS_ADDR_IMG,BUS_ADDR_LEDL,INVALID_I2C_ADDR,INVALID_I2C_ADDR};    
+    const unsigned char addr_slot[BUS_NUM_SLOTS]={BUS_ADDR_CDH,INVALID_I2C_ADDR,INVALID_I2C_ADDR,BUS_ADDR_LEDL,BUS_ADDR_ACDS,BUS_ADDR_COMM,BUS_ADDR_IMG,BUS_ADDR_LEDL};    
     //get address
     addr=UCB0I2COA&0x7F;
     #ifndef CDH_LIB
