@@ -33,6 +33,7 @@ int addr_chk(unsigned char addr){
   return RET_SUCCESS;
 }
 
+static ticker packet_time=0;
 
 static unsigned BUS_I2C_lock(void){
     int i;
@@ -57,8 +58,8 @@ static unsigned BUS_I2C_lock(void){
     if(0==ctl_mutex_lock(&arcBus_stat.i2c_stat.mutex,CTL_TIMEOUT_DELAY,BUS_NUM_SLOTS*BUS_SLOT_TIME_LEN*2)){
         return ERR_BUSY;
     }
-    //check if the bus is busy
-    if(UCB1STAT&UCBBUSY){
+    //check if a packet was just sent
+    if((get_ticker_time()-packet_time)<=3){
         //wait a bit
         ctl_timeout_wait(ctl_get_current_time()+3);
     }
@@ -187,6 +188,8 @@ int BUS_cmd_tx(unsigned char addr,unsigned char *buff,unsigned short len,unsigne
   //wait for transaction to complete
   //TODO: set a good timeout
   e=ctl_events_wait(CTL_EVENT_WAIT_ANY_EVENTS_WITH_AUTO_CLEAR,&arcBus_stat.events,BUS_EV_I2C_MASTER,CTL_TIMEOUT_DELAY,2048);
+  //save transaction time
+  packet_time=get_ticker_time();
   //release I2C bus
   BUS_I2C_release();
   //check which event(s) happened
