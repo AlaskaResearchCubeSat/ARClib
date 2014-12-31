@@ -63,7 +63,7 @@ static unsigned BUS_I2C_lock(void){
     }
     #ifndef CDH_LIB
         //check for test mode
-        if(bus_test_mode!=BUS_TM_NO_TIMESLICE){
+        if(bus_test_mode==BUS_TM_NO_TIMESLICE){
             //Skip timesliceing and just check if bus is in use
             //wait for bus to be free
             for(i=0;UCB1STAT&UCBBUSY && i<10;i++){
