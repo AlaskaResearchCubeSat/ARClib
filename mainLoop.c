@@ -408,18 +408,8 @@ static void ARC_bus_run(void *p) __toplevel{
                         resp=ERR_PK_LEN;
                         break;
                     }
-                    //check which test mode to use
-                    switch(ptr[0]){
-                        case BUS_TM_OFF:
-                            bus_test_mode=BUS_TM_OFF;
-                        break;
-                        case BUS_TM_NO_TIMESLICE:
-                            bus_test_mode=BUS_TM_NO_TIMESLICE;
-                        break;
-                        default:
-                            resp=ERR_INVALID_ARGUMENT;
-                        break;                        
-                    }
+                    //set test mode
+                    resp=BUS_set_test_mode(ptr[0]);
                 break;
             #endif
             default:

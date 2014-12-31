@@ -245,6 +245,8 @@ void BUS_int_clear(unsigned char clear);
 
 //return which build is used
 int BUS_build(void);
+//change test mode
+int BUS_set_test_mode(int mode);
 
 #endif
   
