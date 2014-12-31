@@ -107,6 +107,9 @@ enum{ERR_REQ_REPLAY=0};
 //Alarm numbers for BUS alarms
 enum{BUS_ALARM_0=0,BUS_ALARM_1,BUS_NUM_ALARMS};
 
+//return values for BUS_build
+enum{BUS_BUILD_CDH,BUS_BUILD_SUBSYSTEM};
+
 //ticker for time keeping
 typedef unsigned long ticker;
 
@@ -236,6 +239,9 @@ void BUS_free_alarm(unsigned char num);
 void BUS_int_set(unsigned char set);
 //de-assert one or more interrupts on the bus
 void BUS_int_clear(unsigned char clear);
+
+//return which build is used
+int BUS_build(void);
 
 #endif
   

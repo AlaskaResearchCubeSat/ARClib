@@ -362,3 +362,12 @@ void BUS_int_clear(unsigned char clear){
     P1IE|=clear;
 }
 
+//return which build is used
+int BUS_build(void){
+#ifdef CDH_LIB
+    return BUS_BUILD_CDH;
+#else
+    return BUS_BUILD_SUBSYSTEM;
+#endif
+}
+
