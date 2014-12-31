@@ -50,6 +50,11 @@ static struct{
 //power state of subsystem
 unsigned short powerState=SUB_PWR_OFF;
 
+#ifndef CDH_LIB
+//test mode status
+int bus_test_mode=BUS_TM_OFF;
+#endif
+
 //ARC bus Task, do ARC bus stuff
 static void ARC_bus_run(void *p) __toplevel{
   unsigned int e;
@@ -394,6 +399,29 @@ static void ARC_bus_run(void *p) __toplevel{
             case CMD_PING:
                 //this is a dummy command that does nothing
             break;
+            //no test mode for CDH
+            #ifndef CDH_LIB
+                case CMD_TEST_MODE:
+                    //check length
+                    if(len!=1){
+                        //packet length is incorrect
+                        resp=ERR_PK_LEN;
+                        break;
+                    }
+                    //check which test mode to use
+                    switch(ptr[0]){
+                        case BUS_TM_OFF:
+                            bus_test_mode=BUS_TM_OFF;
+                        break;
+                        case BUS_TM_NO_TIMESLICE:
+                            bus_test_mode=BUS_TM_NO_TIMESLICE;
+                        break;
+                        default:
+                            resp=ERR_INVALID_ARGUMENT;
+                        break;                        
+                    }
+                break;
+            #endif
             default:
               //check for subsystem command
               resp=SUB_parseCmd(addr,cmd,ptr,len);

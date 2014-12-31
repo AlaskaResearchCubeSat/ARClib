@@ -45,19 +45,41 @@ static unsigned BUS_I2C_lock(void){
     //get address
     addr=UCB0I2COA&0x7F;
     #ifndef CDH_LIB
-        //check that time has been updated
-        if(!timesync){
-            return ERR_TIME_INVALID;
-        }
-        //check that time was synced within the last minuet
-        if((get_ticker_time()-timesync)>(1024*60)){
-            return ERR_TIME_TOO_OLD;
+        //check for test mode
+        if(bus_test_mode!=BUS_TM_NO_TIMESLICE){
+            //check that time has been updated
+            if(!timesync){
+                return ERR_TIME_INVALID;
+            }
+            //check that time was synced within the last minuet
+            if((get_ticker_time()-timesync)>(1024*60)){
+                return ERR_TIME_TOO_OLD;
+            }
         }
     #endif
     //try to capture mutex
     if(0==ctl_mutex_lock(&arcBus_stat.i2c_stat.mutex,CTL_TIMEOUT_DELAY,BUS_NUM_SLOTS*BUS_SLOT_TIME_LEN*2)){
         return ERR_BUSY;
     }
+    #ifndef CDH_LIB
+        //check for test mode
+        if(bus_test_mode!=BUS_TM_NO_TIMESLICE){
+            //Skip timesliceing and just check if bus is in use
+            //wait for bus to be free
+            for(i=0;UCB1STAT&UCBBUSY && i<10;i++){
+                ctl_timeout_wait(ctl_get_current_time()+3);
+            }
+            //check if bus is busy
+            if(UCB1STAT&UCBBUSY){
+                //release mutex
+                BUS_I2C_release();
+                //bus is still busy, return error
+                return ERR_BUSY;
+            }
+            //Success!
+            return RET_SUCCESS;
+        }
+    #endif
     //check if a packet was just sent
     if((get_ticker_time()-packet_time)<=3){
         //wait a bit

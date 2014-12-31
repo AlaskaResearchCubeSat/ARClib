@@ -84,6 +84,9 @@
   //task structure for idle task and ARC bus task
   extern CTL_TASK_t idle_task,ARC_bus_task;
   
+  //test mode status
+  extern int bus_test_mode;
+  
   //become master on the I2C bus and receive data
   short BUS_i2c_tx(unsigned short addr,const unsigned char *dat,unsigned short len);
   //become master on the I2C bus and transmit txLen bytes then recive rxlen bytes
