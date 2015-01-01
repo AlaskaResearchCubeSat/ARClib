@@ -47,7 +47,7 @@ enum{SUB_EV_PWR_OFF=(1<<0),SUB_EV_PWR_ON=(1<<1),SUB_EV_SEND_STAT=(1<<2),SUB_EV_S
 enum{CMD_PING=7,CMD_NACK=51,CMD_SPI_COMPLETE,CMD_SPI_RDY,CMD_SUB_ON,CMD_SUB_OFF,CMD_SUB_POWERUP,CMD_RESET,CMD_SUB_STAT,
      CMD_SPI_CLEAR,CMD_EPS_STAT,CMD_LEDL_STAT,CMD_ACDS_STAT,CMD_COMM_STAT,CMD_IMG_STAT,CMD_ASYNC_SETUP,
      CMD_ASYNC_DAT,CMD_SPI_DATA_ACTION,CMD_MAG_DATA,CMD_MAG_SAMPLE_CONFIG,CMD_ERR_REQ,CMD_IMG_READ_PIC,
-     CMD_IMG_TAKE_TIMED_PIC,CMD_IMG_TAKE_PIC_NOW,CMD_GS_DATA};
+     CMD_IMG_TAKE_TIMED_PIC,CMD_IMG_TAKE_PIC_NOW,CMD_GS_DATA,CMD_TEST_MODE};
 
 //bit to allow NACK to be sent
 #define CMD_TX_NACK                 (0x80)
@@ -65,7 +65,7 @@ enum{CMD_PING=7,CMD_NACK=51,CMD_SPI_COMPLETE,CMD_SPI_RDY,CMD_SUB_ON,CMD_SUB_OFF,
 #define BUS_I2C_MAX_PACKET_LEN      (30)
 
 //Return values from bus functions
-enum{RET_SUCCESS=0,ERR_BAD_LEN=-1,ERR_CMD_NACK=-2,ERR_I2C_NACK=-3,ERR_UNKNOWN=-4,ERR_BAD_ADDR=-5,ERR_BAD_CRC=-6,ERR_TIMEOUT=-7,ERR_BUSY=-8,ERR_INVALID_ARGUMENT=-9,ERR_PACKET_TOO_LONG=-10,ERR_I2C_ABORT=-11};
+enum{RET_SUCCESS=0,ERR_BAD_LEN=-1,ERR_CMD_NACK=-2,ERR_I2C_NACK=-3,ERR_UNKNOWN=-4,ERR_BAD_ADDR=-5,ERR_BAD_CRC=-6,ERR_TIMEOUT=-7,ERR_BUSY=-8,ERR_INVALID_ARGUMENT=-9,ERR_PACKET_TOO_LONG=-10,ERR_I2C_ABORT=-11,ERR_TIME_INVALID=-12,ERR_TIME_TOO_OLD=-13};
 
 //Return values for SUB_parseCmd these will be send as part of the NACK packet
 enum{ERR_PK_LEN=1,ERR_UNKNOWN_CMD=2,ERR_SPI_LEN=3,ERR_BAD_PK=4,ERR_SPI_BUSY=5,ERR_BUFFER_BUSY=6,ERR_ILLEAGLE_COMMAND=7};
@@ -73,6 +73,9 @@ enum{ERR_PK_LEN=1,ERR_UNKNOWN_CMD=2,ERR_SPI_LEN=3,ERR_BAD_PK=4,ERR_SPI_BUSY=5,ER
 //table of board addresses
 //BUS_ADDR_GC is general call address which every board will acknowledge for receiving
 enum{BUS_ADDR_LEDL=0x11,BUS_ADDR_ACDS=0x12,BUS_ADDR_COMM=0x13,BUS_ADDR_IMG=0x14,BUS_ADDR_CDH=0x15,BUS_ADDR_GC=0};
+    
+//test modes
+enum{BUS_TM_OFF,BUS_TM_NO_TIMESLICE};
 
 //data to be sent over I2C when there is no data to transmit
 #define BUS_I2C_DUMMY_DATA  (0xFF)
@@ -109,6 +112,9 @@ enum{ERR_REQ_REPLAY=0};
     
 //Alarm numbers for BUS alarms
 enum{BUS_ALARM_0=0,BUS_ALARM_1,BUS_NUM_ALARMS};
+
+//return values for BUS_build
+enum{BUS_BUILD_CDH,BUS_BUILD_SUBSYSTEM};
 
 //ticker for time keeping
 typedef unsigned long ticker;
@@ -252,6 +258,16 @@ int BUS_alarm_is_free(unsigned char num);
 
 //free a timer
 void BUS_free_alarm(unsigned char num);
+
+//assert one or more interrupts on the bus
+void BUS_int_set(unsigned char set);
+//de-assert one or more interrupts on the bus
+void BUS_int_clear(unsigned char clear);
+
+//return which build is used
+int BUS_build(void);
+//change test mode
+int BUS_set_test_mode(int mode);
 
 #endif
   

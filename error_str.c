@@ -28,6 +28,10 @@ const char *BUS_error_str(int error){
       return "ERROR PACKET TOO LONG";
     case ERR_I2C_ABORT:
       return "ERROR I2C Transaction Aborted";
+    case ERR_TIME_INVALID:
+      return "ERROR TICKER TIME IS NOT VALID";
+    case ERR_TIME_TOO_OLD:
+      return "ERROR TICKER TIME IS TOO OLD";
     //Error was not found
     default:
       return "UNKNOWN ERROR";

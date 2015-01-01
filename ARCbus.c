@@ -33,24 +33,82 @@ int addr_chk(unsigned char addr){
   return RET_SUCCESS;
 }
 
+static ticker packet_time=0;
 
 static unsigned BUS_I2C_lock(void){
-  int i;
-  //try to capture mutex
-  if(0==ctl_mutex_lock(&arcBus_stat.i2c_stat.mutex,CTL_TIMEOUT_DELAY,10)){
-     return ERR_BUSY;
-  }
-  //wait for bus to be free
-  for(i=0;UCB1STAT&UCBBUSY && i<10;i++){
-    ctl_timeout_wait(ctl_get_current_time()+3);
-  }
-  if(UCB1STAT&UCBBUSY){
+    int i;
+    ticker tt;
+    unsigned long delay;
+    unsigned char addr;
+    unsigned short slt,st;
+    const unsigned char addr_slot[BUS_NUM_SLOTS]={BUS_ADDR_CDH,INVALID_I2C_ADDR,INVALID_I2C_ADDR,BUS_ADDR_LEDL,BUS_ADDR_ACDS,BUS_ADDR_COMM,BUS_ADDR_IMG,BUS_ADDR_LEDL};    
+    //get address
+    addr=UCB0I2COA&0x7F;
+    #ifndef CDH_LIB
+        //check for test mode
+        if(bus_test_mode!=BUS_TM_NO_TIMESLICE){
+            //check that time has been updated
+            if(!timesync){
+                return ERR_TIME_INVALID;
+            }
+            //check that time was synced within the last minuet
+            if((get_ticker_time()-timesync)>(1024*60)){
+                return ERR_TIME_TOO_OLD;
+            }
+        }
+    #endif
+    //try to capture mutex
+    if(0==ctl_mutex_lock(&arcBus_stat.i2c_stat.mutex,CTL_TIMEOUT_DELAY,BUS_NUM_SLOTS*BUS_SLOT_TIME_LEN*2)){
+        return ERR_BUSY;
+    }
+    #ifndef CDH_LIB
+        //check for test mode
+        if(bus_test_mode==BUS_TM_NO_TIMESLICE){
+            //Skip timesliceing and just check if bus is in use
+            //wait for bus to be free
+            for(i=0;UCB1STAT&UCBBUSY && i<10;i++){
+                ctl_timeout_wait(ctl_get_current_time()+3);
+            }
+            //check if bus is busy
+            if(UCB1STAT&UCBBUSY){
+                //release mutex
+                BUS_I2C_release();
+                //bus is still busy, return error
+                return ERR_BUSY;
+            }
+            //Success!
+            return RET_SUCCESS;
+        }
+    #endif
+    //check if a packet was just sent
+    if((get_ticker_time()-packet_time)<=3){
+        //wait a bit
+        ctl_timeout_wait(ctl_get_current_time()+3);
+    }
+    for(i=0;i<2*BUS_NUM_SLOTS+2;i++){
+        //check timeslot
+        tt=get_ticker_time();
+        //calculate time slot
+        slt=(tt>>BUS_SLOT_NUM_SHIFT)&BUS_SLOT_NUM_MASK;
+        //calculate slot time
+        st=tt&BUS_SLOT_TIME_MASK;
+        //check time slot and remaining time
+        if(addr_slot[slt]==addr && st<(BUS_SLOT_TIME_LEN-BUS_MAX_PACKET_TIME)){
+            return RET_SUCCESS;
+        }
+        //calculate delay to next slot
+        delay=BUS_SLOT_TIME_LEN-st;
+        //ensure minimum delay
+        if(delay<3){
+            delay=3;
+        }
+        //wait for next slot
+        ctl_timeout_wait(ctl_get_current_time()+delay);
+    }
     //release mutex
     BUS_I2C_release();
-    //bus is still busy, return error
+    //return error
     return ERR_BUSY;
-  } 
-  return 0;
 } 
 
 //release the I2C bus
@@ -152,6 +210,8 @@ int BUS_cmd_tx(unsigned char addr,unsigned char *buff,unsigned short len,unsigne
   //wait for transaction to complete
   //TODO: set a good timeout
   e=ctl_events_wait(CTL_EVENT_WAIT_ANY_EVENTS_WITH_AUTO_CLEAR,&arcBus_stat.events,BUS_EV_I2C_MASTER,CTL_TIMEOUT_DELAY,2048);
+  //save transaction time
+  packet_time=get_ticker_time();
   //release I2C bus
   BUS_I2C_release();
   //check which event(s) happened
@@ -324,3 +384,30 @@ void BUS_int_clear(unsigned char clear){
     P1IE|=clear;
 }
 
+//return which build is used
+int BUS_build(void){
+#ifdef CDH_LIB
+    return BUS_BUILD_CDH;
+#else
+    return BUS_BUILD_SUBSYSTEM;
+#endif
+}
+
+#ifndef CDH_LIB
+int BUS_set_test_mode(int mode){
+    //check which test mode to use
+    switch(mode){
+        case BUS_TM_OFF:
+            bus_test_mode=BUS_TM_OFF;
+        break;
+        case BUS_TM_NO_TIMESLICE:
+            bus_test_mode=BUS_TM_NO_TIMESLICE;
+        break;
+        default:
+            return ERR_INVALID_ARGUMENT;
+        break;                        
+    }
+    return RET_SUCCESS;
+}
+#endif
+    

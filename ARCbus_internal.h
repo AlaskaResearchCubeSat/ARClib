@@ -18,6 +18,23 @@
     
   #define BUS_PINS_SPI      (BUS_PIN_SOMI|BUS_PIN_SIMO|BUS_PIN_SCK)
   
+  
+  //define constants for timeslots
+  #define   BUS_SLOT_TIME_BITS      (4)
+  #define   BUS_SLOT_NUM_BITS       (3)
+  
+  #define   BUS_SLOT_NUM_SHIFT      BUS_SLOT_TIME_BITS
+  #define   BUS_SLOT_NUM_MASK       ((1<<BUS_SLOT_NUM_BITS)-1)
+  #define   BUS_SLOT_TIME_MASK      ((1<<BUS_SLOT_NUM_BITS)-1)
+  #define   BUS_SLOT_TIME_LEN       ((1<<4)-1)
+  
+  #define   BUS_NUM_SLOTS           (1<<BUS_SLOT_NUM_BITS)
+  
+  #define   INVALID_I2C_ADDR        0xFF
+  
+  //this is for (1+2+30+1)*9bits/50kbps = 6.12ms plus some extra
+  #define   BUS_MAX_PACKET_TIME     (7+2)
+  
   //ARCbus error sources
   enum{BUS_ERR_SRC_CTL=ERR_SRC_ARCBUS,BUS_ERR_SRC_MAIN_LOOP,BUS_ERR_SRC_STARTUP,BUS_ERR_SRC_ASYNC,BUS_ERR_SRC_SETUP,BUS_ERR_SRC_ALARMS};
   
@@ -53,7 +70,7 @@
   #define BUS_INT_EV_ALL    (BUS_INT_EV_I2C_CMD_RX|BUS_INT_EV_SPI_COMPLETE|BUS_INT_EV_BUFF_UNLOCK|BUS_INT_EV_RELEASE_MUTEX|BUS_INT_EV_I2C_RX_BUSY|BUS_INT_EV_I2C_ARB_LOST)
 
   //flags for bus helper events
-  enum{BUS_HELPER_EV_ASYNC_TIMEOUT=1<<0,BUS_HELPER_EV_SPI_COMPLETE_CMD=1<<1,BUS_HELPER_EV_SPI_CLEAR_CMD=1<<2,BUS_HELPER_EV_ASYNC_CLOSE=1<<3,BUS_HELPER_EV_ERR_REQ=1<<4};
+  enum{BUS_HELPER_EV_ASYNC_TIMEOUT=1<<0,BUS_HELPER_EV_SPI_COMPLETE_CMD=1<<1,BUS_HELPER_EV_SPI_CLEAR_CMD=1<<2,BUS_HELPER_EV_ASYNC_CLOSE=1<<3,BUS_HELPER_EV_ERR_REQ=1<<4,BUS_HELPER_EV_SUB_POWERUP=1<<5};
   
   //flags for I2C_PACKET structures
   enum{I2C_PACKET_STAT_EMPTY,I2C_PACKET_STAT_IN_PROGRESS,I2C_PACKET_STAT_COMPLETE};
@@ -62,10 +79,13 @@
   #define BUS_I2C_PACKET_QUEUE_LEN      5
 
   //all helper task events
-  #define BUS_HELPER_EV_ALL (BUS_HELPER_EV_ASYNC_TIMEOUT|BUS_HELPER_EV_SPI_COMPLETE_CMD|BUS_HELPER_EV_SPI_CLEAR_CMD|BUS_HELPER_EV_ASYNC_CLOSE|BUS_HELPER_EV_ERR_REQ)
+  #define BUS_HELPER_EV_ALL (BUS_HELPER_EV_ASYNC_TIMEOUT|BUS_HELPER_EV_SPI_COMPLETE_CMD|BUS_HELPER_EV_SPI_CLEAR_CMD|BUS_HELPER_EV_ASYNC_CLOSE|BUS_HELPER_EV_ERR_REQ|BUS_HELPER_EV_SUB_POWERUP)
   
   //task structure for idle task and ARC bus task
   extern CTL_TASK_t idle_task,ARC_bus_task;
+  
+  //test mode status
+  extern int bus_test_mode;
   
   //become master on the I2C bus and receive data
   short BUS_i2c_tx(unsigned short addr,const unsigned char *dat,unsigned short len);
@@ -107,7 +127,11 @@
   //task structures
   extern CTL_TASK_t ARC_bus_task;
   
+  //ticker time that the last time update happened at
+  extern ticker last_time_update;
 
+  //flag to see if time has been updated
+  extern short timesync;
   
   //events for subsystems
   extern CTL_EVENT_SET_t SUB_events,BUS_helper_events,BUS_INT_events;
