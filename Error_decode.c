@@ -53,6 +53,8 @@ const char* cmdtostr(unsigned char cmd){
         return "CMD_IMG_TAKE_PIC_NOW";
     case CMD_GS_DATA:
         return "CMD_GS_DATA";
+    case CMD_TEST_MODE:
+        return "CMD_TEST_MODE";
     default:
       return "Unknown";
   }
