@@ -561,19 +561,25 @@ static void ARC_bus_helper(void *p) __toplevel{
               }
               //send data
               resp=BUS_SPI_txrx(err_req.dest,ptr,NULL,err_req.size+2);
-              //TODO: report error
+              //Check if data was sent
+              if(resp!=RET_SUCCESS){
+                  //report error
+                  report_error(ERR_LEV_ERROR,BUS_ERR_SRC_ERR_REQ,ERR_REQ_ERR_SPI_SEND,resp);
+              }
               //free buffer
               BUS_free_buffer();
             }else{
               //set flag so we try again
               ctl_events_set_clear(&BUS_helper_events,BUS_HELPER_EV_ERR_REQ,0);
-              //TODO: give error?
+              //report error
+              report_error(ERR_LEV_ERROR,BUS_ERR_SRC_ERR_REQ,ERR_REQ_ERR_BUFFER_BUSY,0);
             }
             ctl_mutex_unlock(&err_req.mutex);
         }else{
           //set flag so we try again
           ctl_events_set_clear(&BUS_helper_events,BUS_HELPER_EV_ERR_REQ,0);
-          //TODO: give error?
+          //report error
+          report_error(ERR_LEV_ERROR,BUS_ERR_SRC_ERR_REQ,ERR_REQ_ERR_MUTEX_TIMEOUT,0);
         }
     }
   }

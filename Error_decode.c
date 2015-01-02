@@ -195,6 +195,17 @@ char *err_decode_arcbus(char buf[150], unsigned short source,int err, unsigned s
             return buf;
         }
     break;
+    case BUS_ERR_SRC_ERR_REQ:
+        switch(err){
+            case ERR_REQ_ERR_SPI_SEND:
+              sprintf(buf,"Error Request : Failed to send data : %s",BUS_error_str(argument));
+            return buf;
+            case ERR_REQ_ERR_BUFFER_BUSY:
+                return "Error Request : Buffer busy";
+            case ERR_REQ_ERR_MUTEX_TIMEOUT:
+                return "Error Request : Mutex lock timeout";
+        }
+    break;
   }
   sprintf(buf,"source = %i, error = %i, argument = %i",source,err,argument);
   return buf;
