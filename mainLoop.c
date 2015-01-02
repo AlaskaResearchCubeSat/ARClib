@@ -269,19 +269,9 @@ static void ARC_bus_run(void *p) __toplevel{
               }
               //save address of SPI slave
               SPI_addr=addr;
-              //TODO : Fill with actual data
-              //fill  buffer with "random" data
-              for(i=0;i<arcBus_stat.spi_stat.len;i++){
-                SPI_buf[i]=i;
-              }
-              //calculate CRC
-              crc=crc16(SPI_buf,arcBus_stat.spi_stat.len);
-              //send CRC in big endian order
-              SPI_buf[arcBus_stat.spi_stat.len]=crc>>8;
-              SPI_buf[arcBus_stat.spi_stat.len+1]=crc;
               //setup SPI structure
               arcBus_stat.spi_stat.rx=SPI_buf;
-              arcBus_stat.spi_stat.tx=SPI_buf;
+              arcBus_stat.spi_stat.tx=NULL;
               //Setup SPI bus to exchange data as master
               SPI_master_setup();
               //============[setup DMA for transfer]============
@@ -296,17 +286,16 @@ static void ARC_bus_run(void *p) __toplevel{
               DMA0SZ = arcBus_stat.spi_stat.len+BUS_SPI_CRC_LEN;
               // Configure the DMA transfer, single byte transfer with destination increment
               DMA0CTL = DMAIE|DMADT_0|DMASBDB|DMAEN|DMADSTINCR1|DMADSTINCR0;
-              // Source DMA address: tx buffer
-              //skip the second byte, first byte sent manually
-              DMA1SA = (unsigned int)(arcBus_stat.spi_stat.tx+1);
+              // Source DMA address: SPI transmit buffer, constant data will be sent
+              DMA1DA = (unsigned int)(&UCA0TXBUF);
               // Destination DMA address: the transmit buffer.
               DMA1DA = (unsigned int)(&UCA0TXBUF);
               // The size of the block to be transferred
               DMA1SZ = arcBus_stat.spi_stat.len+BUS_SPI_CRC_LEN-1;
-              // Configure the DMA transfer, single byte transfer with source increment
-              DMA1CTL=DMADT_0|DMASBDB|DMAEN|DMASRCINCR1|DMASRCINCR0;
-              //write first byte into the Tx buffer to start transfer
-              UCA0TXBUF=*arcBus_stat.spi_stat.tx;
+              // Configure the DMA transfer, single byte transfer with no increment
+              DMA1CTL=DMADT_0|DMASBDB|DMAEN|DMASRCINCR0|DMASRCINCR0;
+              //write the Tx buffer to start transfer
+              UCA0TXBUF=BUS_SPI_DUMMY_DATA;
             break;
             
             case CMD_SPI_COMPLETE:
