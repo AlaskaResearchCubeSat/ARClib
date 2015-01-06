@@ -53,6 +53,8 @@ const char* cmdtostr(unsigned char cmd){
         return "CMD_IMG_TAKE_PIC_NOW";
     case CMD_GS_DATA:
         return "CMD_GS_DATA";
+    case CMD_TEST_MODE:
+        return "CMD_TEST_MODE";
     default:
       return "Unknown";
   }
@@ -193,6 +195,17 @@ char *err_decode_arcbus(char buf[150], unsigned short source,int err, unsigned s
             case ALARMS_ADJ_TRIGGER:
                 sprintf(buf,"Alarms : Alarm #%i was triggered due to time adjustment",argument);
             return buf;
+        }
+    break;
+    case BUS_ERR_SRC_ERR_REQ:
+        switch(err){
+            case ERR_REQ_ERR_SPI_SEND:
+              sprintf(buf,"Error Request : Failed to send data : %s",BUS_error_str(argument));
+            return buf;
+            case ERR_REQ_ERR_BUFFER_BUSY:
+                return "Error Request : Buffer busy";
+            case ERR_REQ_ERR_MUTEX_TIMEOUT:
+                return "Error Request : Mutex lock timeout";
         }
     break;
   }
