@@ -541,10 +541,10 @@ static void ARC_bus_helper(void *p) __toplevel{
             ptr=BUS_get_buffer(CTL_TIMEOUT_DELAY,100);
             //check if buffer was aquired
             if(ptr){
-              //set own address
-              ptr[0]=UCB0I2COA;
               //set data type
-              ptr[1]=SPI_ERROR_DAT;
+              ptr[0]=SPI_ERROR_DAT;
+              //set own address
+              ptr[1]=UCB0I2COA;
               //get maximum size for data packet. part of the buffer is used to read errors into
               maxsize=BUS_get_buffer_size()-512-2;
               //check if requested size is greater then max
