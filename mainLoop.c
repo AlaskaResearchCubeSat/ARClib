@@ -418,7 +418,7 @@ static void ARC_bus_run(void *p) __toplevel{
               //send NACK reason
               *ptr++=resp;
               //send packet
-              BUS_cmd_tx(addr,pk,1,0,BUS_I2C_SEND_BGND);
+              BUS_cmd_tx(addr,pk,2,0,BUS_I2C_SEND_BGND);
             }
           }
         }else{
@@ -433,7 +433,7 @@ static void ARC_bus_run(void *p) __toplevel{
             //send NACK reason
             *ptr++=ERR_BAD_CRC;
             //send packet
-            BUS_cmd_tx(addr,pk,1,0,BUS_I2C_SEND_BGND);
+            BUS_cmd_tx(addr,pk,2,0,BUS_I2C_SEND_BGND);
           }
         }
         //done with packet set status
