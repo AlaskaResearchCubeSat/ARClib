@@ -328,6 +328,8 @@ int BUS_SPI_txrx(unsigned char addr,unsigned char *tx,unsigned char *rx,unsigned
   //disable DMA
   DMA0CTL&=~DMAEN;
   DMA1CTL&=~DMAEN; 
+  //SPI pins back to GPIO
+  SPI_deactivate();
   //Check if SPI complete event received
   if(e&BUS_EV_SPI_COMPLETE){
     //if RX is null then don't calculate CRC
