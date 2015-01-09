@@ -258,11 +258,11 @@ int BUS_SPI_txrx(unsigned char addr,unsigned char *tx,unsigned char *rx,unsigned
   arcBus_stat.spi_stat.len=len;
   arcBus_stat.spi_stat.rx=rx;
   arcBus_stat.spi_stat.tx=tx;
-  //Setup SPI
-  SPI_slave_setup();
   //disable DMA
   DMA0CTL&=~DMAEN;
   DMA1CTL&=~DMAEN;
+  //Setup SPI
+  SPI_slave_setup();
   //setup DMA for transfer
   DMACTL0 &=~(DMA0TSEL_15|DMA1TSEL_15);
   DMACTL0 |= (DMA0TSEL_3|DMA1TSEL_4);
@@ -312,6 +312,9 @@ int BUS_SPI_txrx(unsigned char addr,unsigned char *tx,unsigned char *rx,unsigned
   resp=BUS_cmd_tx(addr,buf,2,BUS_CMD_FL_NACK,BUS_I2C_SEND_FOREGROUND);
   //check if sent correctly
   if(resp!=RET_SUCCESS){
+    //disable DMA
+    DMA0CTL&=~DMAEN;
+    DMA1CTL&=~DMAEN; 
     //SPI pins back to GPIO
     SPI_deactivate();
     //Return Error
@@ -323,11 +326,15 @@ int BUS_SPI_txrx(unsigned char addr,unsigned char *tx,unsigned char *rx,unsigned
   if(time<=10){
     time=10;
   }
+  //add time to wait for a time slot
+  time+=BUS_NUM_SLOTS*BUS_SLOT_TIME_LEN*2;
   //wait for SPI complete signal from master
   e=ctl_events_wait(CTL_EVENT_WAIT_ANY_EVENTS_WITH_AUTO_CLEAR,&arcBus_stat.events,BUS_EV_SPI_MASTER,CTL_TIMEOUT_DELAY,time);
   //disable DMA
   DMA0CTL&=~DMAEN;
   DMA1CTL&=~DMAEN; 
+  //SPI pins back to GPIO
+  SPI_deactivate();
   //Check if SPI complete event received
   if(e&BUS_EV_SPI_COMPLETE){
     //if RX is null then don't calculate CRC

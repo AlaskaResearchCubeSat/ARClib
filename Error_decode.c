@@ -55,6 +55,8 @@ const char* cmdtostr(unsigned char cmd){
         return "CMD_GS_DATA";
     case CMD_TEST_MODE:
         return "CMD_TEST_MODE";
+    case CMD_BEACON_ON:
+        return "CMD_BEACON_ON";
     default:
       return "Unknown";
   }
