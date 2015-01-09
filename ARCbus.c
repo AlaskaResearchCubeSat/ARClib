@@ -312,6 +312,9 @@ int BUS_SPI_txrx(unsigned char addr,unsigned char *tx,unsigned char *rx,unsigned
   resp=BUS_cmd_tx(addr,buf,2,BUS_CMD_FL_NACK,BUS_I2C_SEND_FOREGROUND);
   //check if sent correctly
   if(resp!=RET_SUCCESS){
+    //disable DMA
+    DMA0CTL&=~DMAEN;
+    DMA1CTL&=~DMAEN; 
     //SPI pins back to GPIO
     SPI_deactivate();
     //Return Error
