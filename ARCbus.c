@@ -258,11 +258,11 @@ int BUS_SPI_txrx(unsigned char addr,unsigned char *tx,unsigned char *rx,unsigned
   arcBus_stat.spi_stat.len=len;
   arcBus_stat.spi_stat.rx=rx;
   arcBus_stat.spi_stat.tx=tx;
-  //Setup SPI
-  SPI_slave_setup();
   //disable DMA
   DMA0CTL&=~DMAEN;
   DMA1CTL&=~DMAEN;
+  //Setup SPI
+  SPI_slave_setup();
   //setup DMA for transfer
   DMACTL0 &=~(DMA0TSEL_15|DMA1TSEL_15);
   DMACTL0 |= (DMA0TSEL_3|DMA1TSEL_4);
