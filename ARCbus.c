@@ -323,6 +323,8 @@ int BUS_SPI_txrx(unsigned char addr,unsigned char *tx,unsigned char *rx,unsigned
   if(time<=10){
     time=10;
   }
+  //add time to wait for a time slot
+  time+=BUS_NUM_SLOTS*BUS_SLOT_TIME_LEN*2;
   //wait for SPI complete signal from master
   e=ctl_events_wait(CTL_EVENT_WAIT_ANY_EVENTS_WITH_AUTO_CLEAR,&arcBus_stat.events,BUS_EV_SPI_MASTER,CTL_TIMEOUT_DELAY,time);
   //disable DMA
