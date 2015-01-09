@@ -474,7 +474,7 @@ static void ARC_bus_helper(void *p) __toplevel{
       //send some data
       async_send_data();
     }
-#ifndef CDH_LIB
+/*#ifndef CDH_LIB
     //time to send subsystem powerup message
     if(e&BUS_HELPER_EV_SUB_POWERUP){
         //first send "I'm on" command
@@ -496,7 +496,7 @@ static void ARC_bus_helper(void *p) __toplevel{
           }
         }
     }
-#endif
+#endif*/
     //SPI transaction is complete
     if(e&BUS_HELPER_EV_SPI_COMPLETE_CMD){      
       //done with SPI send command
