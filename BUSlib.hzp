@@ -1,7 +1,7 @@
 <!DOCTYPE CrossStudio_Project_File>
 <solution Name="BUSlib" target="9" version="2">
   <project Name="BUSlib">
-    <configuration Name="Common" batch_build_configurations="MSP430 Debug;MSP430 Debug CDH;MSP430 Release;MSP430 Release CDH" project_directory="" project_type="Library"/>
+    <configuration Name="Common" batch_build_configurations="MSP430 Debug;MSP430 Debug CDH;MSP430 Release;MSP430 Release CDH" c_system_include_directories="$(ProjectDir);$(StudioDir)/include;$(PackagesDir)/include" project_directory="" project_type="Library"/>
     <folder Name="Source Files">
       <configuration Name="Common" filter="c;h;s;asm;inc;s43"/>
       <file file_name="ARCbus.c"/>
