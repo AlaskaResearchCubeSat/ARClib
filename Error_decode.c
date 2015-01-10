@@ -80,6 +80,10 @@ const char* cmd_resptostr(unsigned char resp){
       return "Error Buffer Busy";
     case ERR_ILLEAGLE_COMMAND:
       return "Error Illeagle Command";
+    case ERR_SPI_NOT_RUNNING:
+      return "Error SPI not running";
+    case ERR_SPI_WRONG_ADDR:
+      return "Error SPI wrong address";
     default:
       return "Unknown";
   }
