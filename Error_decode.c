@@ -138,6 +138,8 @@ char *err_decode_arcbus(char buf[150], unsigned short source,int err, unsigned s
           return "ARCbus Main Loop : Rx Buffer busy, Packet Discarded";
         case MAIN_LOOP_ERR_I2C_ARB_LOST:
           return "ARCbus Main Loop : Arbitration Lost";
+        case MAIN_LOOP_RESET_FAIL:
+          return "ARCbus Main Loop : Reset Function Failed";
       }
     break; 
     case BUS_ERR_SRC_STARTUP:

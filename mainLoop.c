@@ -234,7 +234,8 @@ static void ARC_bus_run(void *p) __toplevel{
               }
               //reset msp430
               reset(ERR_LEV_INFO,BUS_ERR_SRC_MAIN_LOOP,MAIN_LOOP_ERR_RESET,0);
-              //TODO: code should never get here, handle this if it does happen
+              //code should never get here, report error
+              report_error(ERR_LEV_CRITICAL,BUS_ERR_SRC_MAIN_LOOP,MAIN_LOOP_RESET_FAIL,0);
               break;
             case CMD_SPI_RDY:
               //check length
