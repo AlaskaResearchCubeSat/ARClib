@@ -117,7 +117,7 @@ void BUS_I2C_release(void){
 }
 
 //send command
-int BUS_cmd_tx(unsigned char addr,unsigned char *buff,unsigned short len,unsigned short flags,short bgnd){
+int BUS_cmd_tx(unsigned char addr,void *buff,unsigned short len,unsigned short flags,short bgnd){
   unsigned int e;
   short ret;
   int i;
@@ -137,13 +137,13 @@ int BUS_cmd_tx(unsigned char addr,unsigned char *buff,unsigned short len,unsigne
   //add NACK flag if requested
   if(flags&BUS_CMD_FL_NACK){
     //request NACK
-    buff[0]|=CMD_TX_NACK;
+    ((unsigned char*)buff)[0]|=CMD_TX_NACK;
   }else{
     //clear NACK request
-    buff[0]&=~CMD_TX_NACK;
+    ((unsigned char*)buff)[0]&=~CMD_TX_NACK;
   }
   //calculate CRC
-  buff[len]=crc7(buff,len);
+  ((unsigned char*)buff)[len]=crc7(buff,len);
   //add a byte for the CRC
   len+=BUS_I2C_CRC_LEN;
   //check for zero length
