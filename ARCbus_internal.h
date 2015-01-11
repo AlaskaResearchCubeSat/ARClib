@@ -90,11 +90,6 @@
   //test mode status
   extern int bus_test_mode;
   
-  //become master on the I2C bus and receive data
-  short BUS_i2c_tx(unsigned short addr,const unsigned char *dat,unsigned short len);
-  //become master on the I2C bus and transmit txLen bytes then recive rxlen bytes
-  short BUS_i2c_txrx(unsigned short addr,const unsigned char *tx,unsigned short txLen,unsigned char *rx,unsigned short rxLen);
-  
     //type for keeping track of errors
   typedef struct{
     int magic;
