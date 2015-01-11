@@ -171,7 +171,7 @@ void mainLoop_testing(void (*cb)(void));
 //send packet over the bus
 int BUS_cmd_tx(unsigned char addr,unsigned char *buff,unsigned short len,unsigned short flags,short bgnd);
 //Send data over SPI
-int BUS_SPI_txrx(unsigned char addr,unsigned char *tx,unsigned char *rx,unsigned short len);
+int BUS_SPI_txrx(unsigned char addr,void *tx,void *rx,unsigned short len);
 //Setup buffer for command 
 unsigned char *BUS_cmd_init(unsigned char *buf,unsigned char id);
 
