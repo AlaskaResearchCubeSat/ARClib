@@ -59,6 +59,8 @@ const char* cmdtostr(unsigned char cmd){
         return "CMD_BEACON_ON";
     case CMD_ACDS_CONFIG:
         return "CMD_ACDS_CONFIG";
+    case CMD_IMG_CLEARPIC:
+        return "CMD_IMG_CLEARPIC";
     default:
       return "Unknown";
   }
