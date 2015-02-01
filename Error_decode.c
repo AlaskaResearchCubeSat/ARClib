@@ -92,6 +92,8 @@ const char* cmd_resptostr(unsigned char resp){
       return "Error SPI not running";
     case ERR_SPI_WRONG_ADDR:
       return "Error SPI wrong address";
+    case ERR_PK_BAD_PARM:
+      return "Error Bad parameter";
     default:
       return "Unknown";
   }
