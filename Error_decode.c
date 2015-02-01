@@ -61,6 +61,10 @@ const char* cmdtostr(unsigned char cmd){
         return "CMD_ACDS_CONFIG";
     case CMD_IMG_CLEARPIC:
         return "CMD_IMG_CLEARPIC";
+    case CMD_LEDL_READ_BLOCK:
+        return "CMD_LEDL_READ_BLOCK";
+    case CMD_ACDS_READ_BLOCK:
+        return "CMD_ACDS_READ_BLOCK";
     default:
       return "Unknown";
   }
