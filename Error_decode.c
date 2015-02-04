@@ -57,6 +57,16 @@ const char* cmdtostr(unsigned char cmd){
         return "CMD_TEST_MODE";
     case CMD_BEACON_ON:
         return "CMD_BEACON_ON";
+    case CMD_ACDS_CONFIG:
+        return "CMD_ACDS_CONFIG";
+    case CMD_IMG_CLEARPIC:
+        return "CMD_IMG_CLEARPIC";
+    case CMD_LEDL_READ_BLOCK:
+        return "CMD_LEDL_READ_BLOCK";
+    case CMD_ACDS_READ_BLOCK:
+        return "CMD_ACDS_READ_BLOCK";
+    case CMD_EPS_SEND:
+        return "CMD_EPS_SEND";
     default:
       return "Unknown";
   }
@@ -80,6 +90,12 @@ const char* cmd_resptostr(unsigned char resp){
       return "Error Buffer Busy";
     case ERR_ILLEAGLE_COMMAND:
       return "Error Illeagle Command";
+    case ERR_SPI_NOT_RUNNING:
+      return "Error SPI not running";
+    case ERR_SPI_WRONG_ADDR:
+      return "Error SPI wrong address";
+    case ERR_PK_BAD_PARM:
+      return "Error Bad parameter";
     default:
       return "Unknown";
   }
@@ -138,6 +154,8 @@ char *err_decode_arcbus(char buf[150], unsigned short source,int err, unsigned s
           return "ARCbus Main Loop : Rx Buffer busy, Packet Discarded";
         case MAIN_LOOP_ERR_I2C_ARB_LOST:
           return "ARCbus Main Loop : Arbitration Lost";
+        case MAIN_LOOP_RESET_FAIL:
+          return "ARCbus Main Loop : Reset Function Failed";
       }
     break; 
     case BUS_ERR_SRC_STARTUP:

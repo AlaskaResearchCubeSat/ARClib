@@ -47,7 +47,8 @@ enum{SUB_EV_PWR_OFF=(1<<0),SUB_EV_PWR_ON=(1<<1),SUB_EV_SEND_STAT=(1<<2),SUB_EV_S
 enum{CMD_PING=7,CMD_NACK=51,CMD_SPI_COMPLETE,CMD_SPI_RDY,CMD_SUB_ON,CMD_SUB_OFF,CMD_SUB_POWERUP,CMD_RESET,CMD_SUB_STAT,
      CMD_SPI_CLEAR,CMD_EPS_STAT,CMD_LEDL_STAT,CMD_ACDS_STAT,CMD_COMM_STAT,CMD_IMG_STAT,CMD_ASYNC_SETUP,
      CMD_ASYNC_DAT,CMD_SPI_DATA_ACTION,CMD_MAG_DATA,CMD_MAG_SAMPLE_CONFIG,CMD_ERR_REQ,CMD_IMG_READ_PIC,
-     CMD_IMG_TAKE_TIMED_PIC,CMD_IMG_TAKE_PIC_NOW,CMD_GS_DATA,CMD_TEST_MODE,CMD_BEACON_ON};
+     CMD_IMG_TAKE_TIMED_PIC,CMD_IMG_TAKE_PIC_NOW,CMD_GS_DATA,CMD_TEST_MODE,CMD_BEACON_ON,CMD_ACDS_CONFIG,
+     CMD_IMG_CLEARPIC,CMD_LEDL_READ_BLOCK,CMD_ACDS_READ_BLOCK,CMD_EPS_SEND};
 
 //bit to allow NACK to be sent
 #define CMD_TX_NACK                 (0x80)
@@ -68,7 +69,7 @@ enum{CMD_PING=7,CMD_NACK=51,CMD_SPI_COMPLETE,CMD_SPI_RDY,CMD_SUB_ON,CMD_SUB_OFF,
 enum{RET_SUCCESS=0,ERR_BAD_LEN=-1,ERR_CMD_NACK=-2,ERR_I2C_NACK=-3,ERR_UNKNOWN=-4,ERR_BAD_ADDR=-5,ERR_BAD_CRC=-6,ERR_TIMEOUT=-7,ERR_BUSY=-8,ERR_INVALID_ARGUMENT=-9,ERR_PACKET_TOO_LONG=-10,ERR_I2C_ABORT=-11,ERR_TIME_INVALID=-12,ERR_TIME_TOO_OLD=-13};
 
 //Return values for SUB_parseCmd these will be send as part of the NACK packet
-enum{ERR_PK_LEN=1,ERR_UNKNOWN_CMD=2,ERR_SPI_LEN=3,ERR_BAD_PK=4,ERR_SPI_BUSY=5,ERR_BUFFER_BUSY=6,ERR_ILLEAGLE_COMMAND=7};
+enum{ERR_PK_LEN=1,ERR_UNKNOWN_CMD=2,ERR_SPI_LEN=3,ERR_BAD_PK=4,ERR_SPI_BUSY=5,ERR_BUFFER_BUSY=6,ERR_ILLEAGLE_COMMAND=7,ERR_SPI_NOT_RUNNING=8,ERR_SPI_WRONG_ADDR=9,ERR_PK_BAD_PARM=10};
 
 //table of board addresses
 //BUS_ADDR_GC is general call address which every board will acknowledge for receiving
@@ -105,7 +106,7 @@ enum{SPI_DAT_ACTION_INVALID=0,SPI_DAT_ACTION_SD_WRITE,SPI_DAT_ACTION_NULL,SPI_DA
 enum{ML_LP_EXIT,ML_LPM0,ML_LPM1,ML_LPM2,ML_LPM3,ML_LPM4};
 
 //SPI Data types
-enum{SPI_BEACON_DAT='B',SPI_IMG_DAT='I',SPI_LEDL_DAT='L',SPI_ERROR_DAT='E'};
+enum{SPI_BEACON_DAT='B',SPI_IMG_DAT='I',SPI_LEDL_DAT='L',SPI_ERROR_DAT='E',SPI_ACDS_DAT='A'};
     
 //error request types
 enum{ERR_REQ_REPLAY=0};
@@ -190,9 +191,9 @@ void mainLoop_testing(void (*cb)(void));
 
 
 //send packet over the bus
-int BUS_cmd_tx(unsigned char addr,unsigned char *buff,unsigned short len,unsigned short flags,short bgnd);
+int BUS_cmd_tx(unsigned char addr,void *buff,unsigned short len,unsigned short flags,short bgnd);
 //Send data over SPI
-int BUS_SPI_txrx(unsigned char addr,unsigned char *tx,unsigned char *rx,unsigned short len);
+int BUS_SPI_txrx(unsigned char addr,void *tx,void *rx,unsigned short len);
 //Setup buffer for command 
 unsigned char *BUS_cmd_init(unsigned char *buf,unsigned char id);
 

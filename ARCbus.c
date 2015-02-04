@@ -117,7 +117,7 @@ void BUS_I2C_release(void){
 }
 
 //send command
-int BUS_cmd_tx(unsigned char addr,unsigned char *buff,unsigned short len,unsigned short flags,short bgnd){
+int BUS_cmd_tx(unsigned char addr,void *buff,unsigned short len,unsigned short flags,short bgnd){
   unsigned int e;
   short ret;
   int i;
@@ -137,13 +137,13 @@ int BUS_cmd_tx(unsigned char addr,unsigned char *buff,unsigned short len,unsigne
   //add NACK flag if requested
   if(flags&BUS_CMD_FL_NACK){
     //request NACK
-    buff[0]|=CMD_TX_NACK;
+    ((unsigned char*)buff)[0]|=CMD_TX_NACK;
   }else{
     //clear NACK request
-    buff[0]&=~CMD_TX_NACK;
+    ((unsigned char*)buff)[0]&=~CMD_TX_NACK;
   }
   //calculate CRC
-  buff[len]=crc7(buff,len);
+  ((unsigned char*)buff)[len]=crc7(buff,len);
   //add a byte for the CRC
   len+=BUS_I2C_CRC_LEN;
   //check for zero length
@@ -234,7 +234,7 @@ int BUS_cmd_tx(unsigned char addr,unsigned char *buff,unsigned short len,unsigne
 }
 
 //send/receive SPI data over the bus
-int BUS_SPI_txrx(unsigned char addr,unsigned char *tx,unsigned char *rx,unsigned short len){
+int BUS_SPI_txrx(unsigned char addr,void *tx,void *rx,unsigned short len){
   unsigned char buf[10],*ptr;
   unsigned int e;
   short time;
@@ -252,8 +252,8 @@ int BUS_SPI_txrx(unsigned char addr,unsigned char *tx,unsigned char *rx,unsigned
   //calculate CRC
   crc=crc16(tx,len);
   //send CRC in Big endian order
-  tx[len]=crc>>8;
-  tx[len+1]=crc;
+  ((unsigned char*)tx)[len]=crc>>8;
+  ((unsigned char*)tx)[len+1]=crc;
   //setup SPI structure
   arcBus_stat.spi_stat.len=len;
   arcBus_stat.spi_stat.rx=rx;
@@ -284,14 +284,14 @@ int BUS_SPI_txrx(unsigned char addr,unsigned char *tx,unsigned char *rx,unsigned
   //check for omitted transmit buffer
   if(tx!=NULL){
     // Source DMA address: tx buffer
-    DMA1SA = (unsigned int)tx+1;
+    DMA1SA =((unsigned int)tx)+1;
     // The size of the block to be transferred
     DMA1SZ = len+BUS_SPI_CRC_LEN-1;
     // Configure the DMA transfer, single byte transfer with destination increment
     //enable interrupt to notify code when transfer is complete
     DMA1CTL=DMADT_0|DMASBDB|DMASRCINCR1|DMASRCINCR0|DMAEN;
     //start things off with an initial transfer
-    UCA0TXBUF=*tx;
+    UCA0TXBUF=*((unsigned char*)tx);
   }else{
     //need to send something to receive something so setup TX for dummy bytes
     DMA1SA = (unsigned int)(&UCA0TXBUF);
@@ -340,8 +340,8 @@ int BUS_SPI_txrx(unsigned char addr,unsigned char *tx,unsigned char *rx,unsigned
     //if RX is null then don't calculate CRC
     if(rx!=NULL){
         //assemble CRC
-        crc=rx[arcBus_stat.spi_stat.len+1];//LSB
-        crc|=(((unsigned short)rx[arcBus_stat.spi_stat.len])<<8);//MSB
+        crc=((unsigned char*)rx)[arcBus_stat.spi_stat.len+1];//LSB
+        crc|=(((unsigned short)((unsigned char*)rx)[arcBus_stat.spi_stat.len])<<8);//MSB
         //check CRC
         if(crc!=crc16(rx,arcBus_stat.spi_stat.len)){
           //Bad CRC

@@ -17,7 +17,9 @@ void reset(unsigned char level,unsigned short source,int err, unsigned short arg
   saved_error.magic=RESET_MAGIC_PRE;
   //cause WDT access violation by not writing WDT password
   WDTCTL=0;
-  //TODO: code should never get here, report an error if it does
+  //code should never get here call the reset vector, we don't have many more options
+  (*((void (**)(void))RESET_VECTOR))();
+  //reset vector messes with the stack so it should never return here
 }
 
 //this function is called from startup code to set the structure values after main returns

@@ -44,7 +44,7 @@
   //error codes for main loop
   enum{MAIN_LOOP_ERR_RESET,MAIN_LOOP_ERR_CMD_CRC,MAIN_LOOP_ERR_BAD_CMD,MAIN_LOOP_ERR_NACK_REC,MAIN_LOOP_ERR_SPI_COMPLETE_FAIL,
       MAIN_LOOP_ERR_SPI_CLEAR_FAIL,MAIN_LOOP_ERR_MUTIPLE_CDH,MAIN_LOOP_ERR_CDH_NOT_FOUND,MAIN_LOOP_ERR_RX_BUF_STAT,MAIN_LOOP_ERR_I2C_RX_BUSY,
-      MAIN_LOOP_ERR_I2C_ARB_LOST,MAIN_LOOP_CDH_SUB_STAT_REC};
+      MAIN_LOOP_ERR_I2C_ARB_LOST,MAIN_LOOP_CDH_SUB_STAT_REC,MAIN_LOOP_RESET_FAIL};
       
   //error codes for startup code
   enum{STARTUP_ERR_RESET_UNKNOWN,STARTUP_ERR_MAIN_RETURN,STARTUP_ERR_WDT_RESET,STARTUP_ERR_POR,STARTUP_ERR_RESET_PIN,STARTUP_ERR_RESET_FLASH_KEYV,STARTUP_ERR_RESET_SVS};
@@ -89,11 +89,6 @@
   
   //test mode status
   extern int bus_test_mode;
-  
-  //become master on the I2C bus and receive data
-  short BUS_i2c_tx(unsigned short addr,const unsigned char *dat,unsigned short len);
-  //become master on the I2C bus and transmit txLen bytes then recive rxlen bytes
-  short BUS_i2c_txrx(unsigned short addr,const unsigned char *tx,unsigned short txLen,unsigned char *rx,unsigned short rxLen);
   
     //type for keeping track of errors
   typedef struct{

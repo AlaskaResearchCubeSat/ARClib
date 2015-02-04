@@ -234,7 +234,8 @@ static void ARC_bus_run(void *p) __toplevel{
               }
               //reset msp430
               reset(ERR_LEV_INFO,BUS_ERR_SRC_MAIN_LOOP,MAIN_LOOP_ERR_RESET,0);
-              //TODO: code should never get here, handle this if it does happen
+              //code should never get here, report error
+              report_error(ERR_LEV_CRITICAL,BUS_ERR_SRC_MAIN_LOOP,MAIN_LOOP_RESET_FAIL,0);
               break;
             case CMD_SPI_RDY:
               //check length
@@ -299,11 +300,29 @@ static void ARC_bus_run(void *p) __toplevel{
             break;
             
             case CMD_SPI_COMPLETE:
+              //check length
+              if(len!=0){
+                resp=ERR_PK_LEN;
+                break;
+              }
+              //check if a SPI transaction was in progress
+              if(arcBus_stat.spi_stat.mode!=BUS_SPI_MASTER){
+                //SPI is in the wrong state so send busy error
+                resp=ERR_SPI_NOT_RUNNING;
+                //send NACK
+                break;
+              }
+              //check that the command came from the correct subsystem
+              if(SPI_addr!=addr){
+                  //wrong address sent for complete command
+                  resp=ERR_SPI_WRONG_ADDR;
+                  //send NACK
+                  break;
+              }
               //turn off SPI
               SPI_deactivate();
               //SPI transfer is done
               //notify CDH board
-              //TODO: some sort of error check to make sure that a SPI transfer was requested and send an ERROR if one was not
 #ifndef CDH_LIB
               ctl_events_set_clear(&BUS_helper_events,BUS_HELPER_EV_SPI_CLEAR_CMD,0);
 #endif
