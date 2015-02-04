@@ -41,7 +41,7 @@ void SVS_on(void){
   //clear SVS bits to trigger power up delay if VLD!=0
   SVSCTL=0;
   //setup SVS to trigger on 3.3V and generate a POR
-  SVSCTL=VLD3|VLD1|PORON;
+  SVSCTL=VLD2|VLD1|PORON;
   //wait for SVS to power up
   //TODO: perhaps count loops to make sure we don't get stuck here
   while(!(SVSCTL&SVSON));
@@ -52,7 +52,7 @@ short SVS_ramp(unsigned short timeout){
   //clear SVS bits to trigger power up delay if VLD!=0
   SVSCTL=0;
   //setup SVS to trigger on 3.3V and generate a POR
-  SVSCTL=VLD3|VLD1;
+  SVSCTL=VLD2|VLD1;
   //wait for SVS to power up
   //TODO: perhaps count loops to make sure we don't get stuck here
   while(!(SVSCTL&SVSON));
