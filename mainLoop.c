@@ -662,10 +662,10 @@ void mainLoop_lp(void){
   BUS_pin_disable();
   //kick WDT to give us some time
   WDT_STOP();
-  // drop to lowest priority to start created tasks running.
-  ctl_task_set_priority(&idle_task,0); 
   //set initial low power mode
   BUS_lp_mode=ML_LPM0;
+  // drop to lowest priority to start created tasks running.
+  ctl_task_set_priority(&idle_task,0); 
   //main idle loop
   //NOTE that this task should never wait to ensure that there is always a runnable task
   while(BUS_lp_mode!=ML_LP_EXIT){    
