@@ -67,6 +67,8 @@ const char* cmdtostr(unsigned char cmd){
         return "CMD_ACDS_READ_BLOCK";
     case CMD_EPS_SEND:
         return "CMD_EPS_SEND";
+    case CMD_LEDL_BLOW_FUSE:
+        return "CMD_LEDL_BLOW_FUSE";
     default:
       return "Unknown";
   }
