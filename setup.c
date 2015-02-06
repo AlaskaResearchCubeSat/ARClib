@@ -372,23 +372,23 @@ void initARCbus(unsigned char addr){
 void BUS_pin_disable(void){
     //disable I2C state change interrupts
     UCB0I2CIE&=~(UCNACKIE|UCSTTIE|UCALIE);
-    //put UCA0 into reset state
-    UCA0CTL1|=UCSWRST;
+    //put UCB0 into reset state
+    UCB0CTL1|=UCSWRST;
     //set level
-    P3OUT|=BUS_PINS_SPI|BUS_PINS_I2C;
+    P3OUT&=~(BUS_PINS_SPI|BUS_PINS_I2C);
     //enable pull
-    P3REN|=BUS_PINS_SPI|BUS_PINS_I2C;
+    //P3REN|=BUS_PINS_SPI|BUS_PINS_I2C;
     //select GPIO function
     P3SEL&=~(BUS_PINS_SPI|BUS_PINS_I2C);
 }
 
 void BUS_pin_enable(void){
-    //put UCA0 into reset state
-    UCA0CTL1|=UCSWRST;
     //disable pull
     P3REN&=~(BUS_PINS_SPI|BUS_PINS_I2C);
     //select special function
-    P3SEL|=(BUS_PINS_SPI|BUS_PINS_I2C);
+    P3SEL|=BUS_PINS_I2C;
+    //take UCB0 out of reset state
+    UCB0CTL1&=~UCSWRST;
     //enable I2C state change interrupts
     UCB0I2CIE|=UCNACKIE|UCSTTIE|UCALIE;
 }
@@ -456,7 +456,7 @@ void initARCbus_pd(unsigned char addr){
   //pull up resistors
   //P1OUT=0xFF;
   //enable pull resistors
-  P1REN=0xFF;
+  //P1REN=0xFF;
   
   //clear flags
   P1IFG=0;

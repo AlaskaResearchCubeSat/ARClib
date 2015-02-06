@@ -707,6 +707,6 @@ void mainLoop_lp(void){
   }
   // raise priority back to maximum
   ctl_task_set_priority(&idle_task,255); 
-  //turn on bus pins
+  //turn on bus pins and I2C peripheral
   BUS_pin_enable();
 }
