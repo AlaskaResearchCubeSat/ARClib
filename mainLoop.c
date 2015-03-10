@@ -305,13 +305,19 @@ static void ARC_bus_run(void *p) __toplevel{
                 resp=ERR_PK_LEN;
                 break;
               }
+#ifndef CDH_LIB
               //check if a SPI transaction was in progress
               if(arcBus_stat.spi_stat.mode!=BUS_SPI_MASTER){
+#else
+              //check if a SPI transaction was in progress
+              if(arcBus_stat.spi_stat.mode!=BUS_SPI_MASTER && arcBus_stat.spi_stat.mode!=BUS_SPI_SLAVE){
+#endif
                 //SPI is in the wrong state so send busy error
                 resp=ERR_SPI_NOT_RUNNING;
                 //send NACK
                 break;
               }
+
               //check that the command came from the correct subsystem
               if(SPI_addr!=addr){
                   //wrong address sent for complete command
