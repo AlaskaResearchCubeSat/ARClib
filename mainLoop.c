@@ -319,7 +319,7 @@ static void ARC_bus_run(void *p) __toplevel{
               }
 
               //check that the command came from the correct subsystem
-              if(SPI_addr!=addr){
+              if(arcBus_stat.spi_stat.mode==BUS_SPI_MASTER && SPI_addr!=addr){
                   //wrong address sent for complete command
                   resp=ERR_SPI_WRONG_ADDR;
                   //send NACK
