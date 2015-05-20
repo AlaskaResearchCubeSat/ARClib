@@ -33,49 +33,70 @@ void main_return(void){
 
 //called from startup code to check SFR for the reason for the reset
 void startup_error_check(void){
-  unsigned char flags=IFG1;
-  IFG1=0;
-  //check for watchdog reset
-  if(flags&WDTIFG){
-    saved_error.level=ERR_LEV_CRITICAL;
-    saved_error.source=BUS_ERR_SRC_STARTUP;
-    saved_error.err=STARTUP_ERR_WDT_RESET;
-    saved_error.argument=0;
-    //set magic value
-    saved_error.magic=RESET_MAGIC_POST;
+  //check reset interrupt vector register
+  //TODO: handle all errors with unique error codes
+  switch(SYSRSTIV){
+    case SYSRSTIV_NONE:        //No Interrupt pending
+    break;
+    case SYSRSTIV_BOR:         //BOR
+      saved_error.level=BUS_ERR_LEV_ROUTINE_RST;
+      saved_error.source=BUS_ERR_SRC_STARTUP;
+      saved_error.err=STARTUP_ERR_POR;
+      saved_error.argument=0;
+      //set magic value
+      saved_error.magic=RESET_MAGIC_POST;
     return;
-  }
-  //check for power on reset
-  if(flags&PORIFG){
-    saved_error.level=BUS_ERR_LEV_ROUTINE_RST;
-    saved_error.source=BUS_ERR_SRC_STARTUP;
-    saved_error.err=STARTUP_ERR_POR;
-    saved_error.argument=0;
-    //set magic value
-    saved_error.magic=RESET_MAGIC_POST;
+    case SYSRSTIV_RSTNMI:      //RST/NMI pin
+      saved_error.level=BUS_ERR_LEV_ROUTINE_RST;
+      saved_error.source=BUS_ERR_SRC_STARTUP;
+      saved_error.err=STARTUP_ERR_RESET_PIN;
+      saved_error.argument=0;
+      //set magic value
+      saved_error.magic=RESET_MAGIC_POST;
+    break;
+    case SYSRSTIV_DOBOR:       //Software BOR
+    break;
+    case SYSRSTIV_LPM5WU:      //Port LPM5 Wake Up
+    break;
+    case SYSRSTIV_SECYV:       //Security violation
+    break;
+    case SYSRSTIV_SVSL:        //SVSL
+    break;
+    case SYSRSTIV_SVSH:        //SVSH
+    break;
+    case SYSRSTIV_SVML_OVP:    //SVML_OVP
+    break;
+    case SYSRSTIV_SVMH_OVP:    //SVMH_OVP
+    break;
+    case SYSRSTIV_DOPOR:       //Software POR
+    break;
+    case SYSRSTIV_WDTTO:       //WDT Time out
+    //TODO : make these separate errors
+    case SYSRSTIV_WDTKEY:      //WDTKEY violation
+      saved_error.level=ERR_LEV_CRITICAL;
+      saved_error.source=BUS_ERR_SRC_STARTUP;
+      saved_error.err=STARTUP_ERR_WDT_RESET;
+      saved_error.argument=0;
+      //set magic value
+      saved_error.magic=RESET_MAGIC_POST;
     return;
-  }
-  //check for reset pin
-  if(flags&RSTIFG){
-    saved_error.level=BUS_ERR_LEV_ROUTINE_RST;
-    saved_error.source=BUS_ERR_SRC_STARTUP;
-    saved_error.err=STARTUP_ERR_RESET_PIN;
-    saved_error.argument=0;
-    //set magic value
-    saved_error.magic=RESET_MAGIC_POST;
+    case SYSRSTIV_KEYV:        //Flash Key violation
+      saved_error.level=ERR_LEV_CRITICAL;
+      saved_error.source=BUS_ERR_SRC_STARTUP;
+      saved_error.err=STARTUP_ERR_RESET_FLASH_KEYV;
+      saved_error.argument=0;
+      //set magic value
+      saved_error.magic=RESET_MAGIC_POST;
+      //clear KEYV flag
+      FCTL3=FWKEY|LOCK;
     return;
-  }  
-  //check for flash key violation
-  if(FCTL3&KEYV){
-    saved_error.level=ERR_LEV_CRITICAL;
-    saved_error.source=BUS_ERR_SRC_STARTUP;
-    saved_error.err=STARTUP_ERR_RESET_FLASH_KEYV;
-    saved_error.argument=0;
-    //set magic value
-    saved_error.magic=RESET_MAGIC_POST;
-    //clear KEYV flag
-    FCTL3=FWKEY|LOCK;
-    return;
+    case SYSRSTIV_FLLUL:       //FLL unlock
+    break;
+    case SYSRSTIV_PERF:        //peripheral/config area fetch
+    break;
+    case SYSRSTIV_PMMKEY:      //PMMKEY violation
+    break;
+
   }
   //Unknown error encountered
   saved_error.level=ERR_LEV_CRITICAL;

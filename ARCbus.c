@@ -17,14 +17,14 @@
 unsigned char *BUS_cmd_init(unsigned char *buf,unsigned char id){
   buf[1]=id;
   //set originator address
-  buf[0]=UCB0I2COA;
+  buf[0]=UCB0I2COA3;
   //start of payload
   return buf+2;
 }
 
 //function to check I2C addresses
 int addr_chk(unsigned char addr){
-  if(addr==UCB0I2COA){
+  if(addr==UCB0I2COA3){
     return ERR_BAD_ADDR;
   }
   if(addr&0x80){
@@ -43,7 +43,7 @@ static unsigned BUS_I2C_lock(void){
     unsigned short slt,st;
     const unsigned char addr_slot[BUS_NUM_SLOTS]={BUS_ADDR_CDH,INVALID_I2C_ADDR,INVALID_I2C_ADDR,BUS_ADDR_LEDL,BUS_ADDR_ACDS,BUS_ADDR_COMM,BUS_ADDR_IMG,BUS_ADDR_LEDL};    
     //get address
-    addr=UCB0I2COA&0x7F;
+    addr=UCB0I2COA3&0x7F;
     #ifndef CDH_LIB
         //check for test mode
         if(bus_test_mode!=BUS_TM_NO_TIMESLICE){
@@ -199,7 +199,7 @@ int BUS_cmd_tx(unsigned char addr,void *buff,unsigned short len,unsigned short f
   //clear master I2C flags
   ctl_events_set_clear(&arcBus_stat.events,0,BUS_EV_I2C_MASTER);
   //enable I2C Tx Interrupt
-  UC0IE|=UCB0TXIE;
+  UCB0IE|=UCTXIE3;
   //generate start condition
   UCB0CTL1|=UCTXSTT;
   //if transmitting in the background, return

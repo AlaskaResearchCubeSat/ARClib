@@ -8,13 +8,13 @@
   
   //define serial pins
   #define BUS_PIN_SDA       BIT1
-  #define BUS_PIN_SCL       BIT2
+  #define BUS_PIN_SCL       BIT0
   
   #define BUS_PINS_I2C      (BUS_PIN_SDA|BUS_PIN_SCL)
   
-  #define BUS_PIN_SOMI      BIT5
+  #define BUS_PIN_SCK       BIT2
+  #define BUS_PIN_SOMI      BIT3
   #define BUS_PIN_SIMO      BIT4
-  #define BUS_PIN_SCK       BIT0
     
   #define BUS_PINS_SPI      (BUS_PIN_SOMI|BUS_PIN_SIMO|BUS_PIN_SCK)
   

@@ -17,49 +17,29 @@ void _record_error(unsigned char level,unsigned short source,int err, unsigned s
 
 //=============[initialization commands]=============
  
- //Check calibration data in segment A
-int checkSegA_cal_data(void){
-  unsigned short *ptr=(unsigned short*)(TLV_CHECKSUM_+2);
-  unsigned short check=0;
-  do{
-    check^=*ptr++;
-  }while(ptr<(unsigned short*)0x10FF);
-  //add checksum value
-  check+=TLV_CHECKSUM;
-  //return result
-  return check;
-}
  
  //initialize the MSP430 Clocks
 void initCLK(void){
   extern ticker ticker_time;
   //set XT1 load caps, do this first so XT1 starts up sooner
-  BCSCTL3=XCAP_0;
+  UCSCTL6=XCAP_0|XT2OFF|XT1DRIVE_3;
   //stop watchdog
   //WDT_STOP();
   //kick watchdog
   WDT_KICK();
+  //set higher core voltage
+  #warning TODO: add code for to raise core voltage
   //setup clocks
 
-  if(checkSegA_cal_data()==0 && TLV_DCO_30_TAG==TAG_DCO_30 && TLV_DCO_30_LEN==0x08){
-    //set DCO to 16MHz from calibrated values in flash
-    DCOCTL=0;
-    BCSCTL1=CALBC1_16MHZ;
-    DCOCTL=CALDCO_16MHZ;
-  }else{
-    _record_error(ERR_LEV_CRITICAL,BUS_ERR_SRC_SETUP,SETUP_ERR_DCO_MISSING_CAL,0,0);
-    //attempt to use a reasonable default value
-    //BCSCTL1=XT2OFF|RSEL_14;
-    BCSCTL1=XT2OFF|RSEL1|RSEL2|RSEL3;
-    //DCOCTL=DCO_3|MOD_14;
-    DCOCTL=DCO0|DCO1|MOD1|MOD2|MOD3;
-  }
+  //set frequency range
+  UCSCTL1=DCORSEL_6;
+  //setup FLL for 24.97 MHz operation
+  UCSCTL2=FLLD_2|(380);
+  UCSCTL3=SELREF_0|FLLREFDIV_1;
+  //use XT1 for ACLK and DCO for MCLK and SMCLK
+  UCSCTL4=SELA_0|SELS_3|SELM_3;
 
-  //Source Mclk and SMclk from DCO (default)
-  BCSCTL2=SELM_0|DIVM_0|DIVS_0;
-  
-  //also initialize timing generator for flash memory
-  FCTL2=FWKEY|FSSEL_2|33;
+ 
   
   //set time ticker to zero
   ticker_time=0;
@@ -70,26 +50,20 @@ void initCLK(void){
 //setup timer A to run off 32.768kHz xtal
 void init_timerA(void){
   //setup timer A 
-  TACTL=TASSEL_1|ID_0|TACLR;
+  TA1CTL=TASSEL_1|ID_0|TACLR;
   //init CCR0 for tick interrupt
-  TACCR0=32;
-  TACCTL0=CCIE;
+  TA1CCR0=32;
+  TA1CCTL0=CCIE;
 }
 
 //start timer A in continuous mode
 void start_timerA(void){
 //start timer A
-  TACTL|=MC_2;
+  TA1CTL|=MC_2;
 }
 
 void initSVS(void){
-  //clear SVS bits to trigger power up delay if VLD!=0
-  SVSCTL=0;
-  //setup SVS to trigger on 3.3V and generate a POR
-  SVSCTL=VLD3|VLD1|PORON;
-  //wait for SVS to power up
-  //TODO: perhaps count loops to make sure we don't get stuck here
-  while(!(SVSCTL&SVSON));
+  #warning TODO : setup supply voltage monitoring
 }
 
 //low level setup code
@@ -136,38 +110,39 @@ void I2C_clk(void){
   __delay_cycles(800);
 }
 
+
 //force a reset on the I2C bus if SDA is stuck low
 void I2C_reset(void){
   int i;
   //clock and data pins as GPIO
-  P3SEL&=~(BIT1|BIT2);
+  P3SEL0&=~(BUS_PINS_I2C);
   //clock and data pins as inputs
-  P3DIR&=~(BIT1|BIT2);
+  P3DIR&=~(BUS_PINS_I2C);
   //set out bits to zero
-  P3OUT&=~(BIT1|BIT2);
+  P3OUT&=~(BUS_PINS_I2C);
   //check if SDA is stuck low
-  if(!(P3IN&BIT1)){
+  if(!(P3IN&BUS_PIN_SDA)){
     //generate 9 clocks for good measure
     for(i=0;i<9;i++){
       I2C_clk();
     }
     //pull SDA low 
-    P3DIR|=BIT1;
+    P3DIR|=BUS_PIN_SDA;
     //wait for 0.05ms
     __delay_cycles(800);
     //pull SCL low
-    P3DIR|=BIT2;
+    P3DIR|=BUS_PIN_SCL;
     //wait for 0.05ms
     __delay_cycles(800);
     //realese SCL
-    P3DIR&=~BIT2;
+    P3DIR&=~BUS_PIN_SCL;
     //wait for 0.05ms
     __delay_cycles(800);
     //realese SDA
-    P3DIR&=~BIT1;
+    P3DIR&=~BUS_PIN_SDA;
   }
   //clock and data pins as I2C function
-  P3SEL|=BIT1|BIT2;
+  P3SEL0|=BUS_PINS_I2C;
 }
 
 //task structure idle task
@@ -196,13 +171,32 @@ void initARCbus(unsigned char addr){
   arcBus_stat.spi_stat.mode=BUS_SPI_IDLE;
   //startup with power off
   powerState=SUB_PWR_OFF;
+  //========[setup port mapping]=======
+  //unlock registers
+  PMAPKEYID=PMAPKEY;
+  //allow reconfiguration
+  PMAPCTL|=PMAPRECFG;
+  //setup BUS I2C SCL
+  P3MAP0=PM_UCB0SCL;
+  //setup BUS I2C SDA
+  P3MAP1=PM_UCB0SDA;
+  //setup BUS SPI CLK
+  P3MAP2=PM_UCB0SCL;
+  //setup BUS SPI SOMI
+  P3MAP3=PM_UCB0SOMI;
+  //setup BUS SPI SIMO
+  P3MAP4=PM_UCB0SOMI;
+  //set old definitions to unused
+  P2MAP5=PM_NONE;
+  P2MAP6=PM_NONE;
+  P2MAP7=PM_NONE;
+  //lock the Port map module
+  PMAPKEYID=0;
   //============[setup I2C]============ 
   //put UCB0 into reset state
-  UCB0CTL1=UCSWRST;
+  UCB0CTLW0=UCSWRST;
   //setup registers
-  //UCB0CTL0=UCMM|UCMODE_3|UCSYNC;
-  UCB0CTL0=UCMM|UCMST|UCMODE_3|UCSYNC;
-  UCB0CTL1|=UCSSEL_2;
+  UCB0CTLW0|=UCMM|UCMST|UCMODE_3|UCSYNC|UCSSEL_2;
   //set baud rate to 400kB/s off of 16MHz SMCLK
   //UCB0BR0=0x28;
   //UCB0BR1=0x00;
@@ -210,21 +204,24 @@ void initARCbus(unsigned char addr){
   //UCB0BR0=0xA0;
   //UCB0BR1=0x00;
   //set baud rate to 50kB/s off of 16MHz SMCLK
+  //TODO: use UCBxBRW
   UCB0BR0=0x40;
   UCB0BR1=0x01;
   //set baud rate to 1kB/s off of 16MHz SMCLK
   //UCB0BR0=0x80;
   //UCB0BR1=0x3E;
   //set own address
-  UCB0I2COA=UCGCEN|addr;
+  UCB0I2COA3=UCOAEN|addr;
+  //enable general call address
+  UCB0I2COA0|=UCGCEN;
   //configure ports
-  P3SEL|=BUS_PINS_I2C;
+  P3SEL0|=BUS_PINS_I2C;
   //bring UCB0 out of reset state
-  UCB0CTL1&=~UCSWRST;
+  UCB0CTLW0&=~UCSWRST;
   //enable state change interrupts
-  UCB0I2CIE|=UCNACKIE|UCSTTIE|UCALIE;
+  UCB0IE|=UCNACKIE|UCSTTIE|UCALIE;
   //enable Tx and Rx interrupts
-  //UC0IE|=UCB0RXIE|UCB0TXIE;
+  //UCB0IE|=UCB0RXIE|UCB0TXIE3;
   //============[setup SPI]============
   //put UCA0 into reset state
   UCA0CTL1=UCSWRST;
@@ -252,27 +249,27 @@ void initARCbus(unsigned char addr){
   //======[setup pin interrupts]=======
 
   //rising edge
-  P1IES=0x00;
+  P2IES=0x00;
   //falling edge
-  //P1IES=0xFF;
+  //P2IES=0xFF;
   
   
   #ifdef CDH_LIB
     //pull down resistors
-    P1OUT=0;
+    P2OUT=0;
     //pull up resistors
-    //P1OUT=0xFF;
+    //P2OUT=0xFF;
     //enable pull resistors
-    P1REN=0xFF;
+    P2REN=0xFF;
   #else
     //disable pullups
-    P1REN=0;
+    P2REN=0;
   #endif
   
   //clear flags
-  P1IFG=0;
+  P2IFG=0;
   //enable interrupts
-  P1IE=0xFF;
+  P2IE=0xFF;
 
    //create a main task with maximum priority so other tasks can be created without interruption
   //this should be called before other tasks are created

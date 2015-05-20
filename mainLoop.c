@@ -185,7 +185,7 @@ static void ARC_bus_run(void *p) __toplevel{
             break;
             case CMD_SUB_OFF:
               //check to make sure that the command is directed to this subsystem
-              if(len==1 && ptr[0]==UCB0I2COA){
+              if(len==1 && ptr[0]==UCB0I2COA3){
                 //set new power status
                 powerState=SUB_PWR_OFF;
                 //inform subsystem
@@ -569,7 +569,7 @@ static void ARC_bus_helper(void *p) __toplevel{
               //set data type
               ptr[0]=SPI_ERROR_DAT;
               //set own address
-              ptr[1]=UCB0I2COA;
+              ptr[1]=UCB0I2COA3;
               //get maximum size for data packet. part of the buffer is used to read errors into
               maxsize=BUS_get_buffer_size()-512-2;
               //check if requested size is greater then max

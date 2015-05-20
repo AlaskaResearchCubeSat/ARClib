@@ -35,7 +35,7 @@ int async_open(unsigned char addr){
     return ERR_BAD_ADDR;
   }
   //check for own address
-  if(addr==((~UCGCEN)&UCB0I2COA)){
+  if(addr==((~(UCGCEN|UCOAEN))&UCB0I2COA3)){
     //Error : can't open communication with own address
     return ERR_BAD_ADDR;
   }
@@ -69,7 +69,7 @@ void async_open_remote(unsigned char addr){
     return;
   }
   //check for own address
-  if(addr==((~UCGCEN)&UCB0I2COA)){
+  if(addr==((~(UCGCEN|UCOAEN))&UCB0I2COA3)){
     //Error : can't open communication with own address
     report_error(ERR_LEV_ERROR,BUS_ERR_SRC_ASYNC,ASYNC_ERR_OPEN_ADDR,addr);
     return;

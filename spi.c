@@ -15,7 +15,7 @@ void SPI_master_setup(void){
       P3REN&=~(BUS_PINS_SPI);
   #endif
   //set pins for SPI usage
-  P3SEL|=BUS_PINS_SPI;
+  P3SEL0|=BUS_PINS_SPI;
   //bring UCA0 out of reset state
   UCA0CTL1&=~UCSWRST;
 }
@@ -31,7 +31,7 @@ void SPI_slave_setup(void){
       P3REN&=~(BUS_PINS_SPI);
   #endif
   //set pins for SPI usage
-  P3SEL|=BUS_PINS_SPI;
+  P3SEL0|=BUS_PINS_SPI;
   //bring UCA0 out of reset state
   UCA0CTL1&=~UCSWRST;
 }
@@ -41,7 +41,7 @@ void SPI_deactivate(void){
   //put UCA0 into reset state
   UCA0CTL1|=UCSWRST;
   //set pins as inputs
-  P3SEL&=~(BUS_PINS_SPI);
+  P3SEL0&=~(BUS_PINS_SPI);
   #ifdef CDH_LIB
       //enable pull resistors for SPI pins only on CDH
       P3REN|=BUS_PINS_SPI;

@@ -4,7 +4,7 @@
 #include <ctl.h>
 
 //Macros for watchdog interaction
-#define WDT_KICK()        (WDTCTL=WDTPW|WDTCNTCL|WDTSSEL)
+#define WDT_KICK()        (WDTCTL=WDTPW|WDTCNTCL|WDTSSEL_1|WDTIS_3)
 //#define WDT_KICK          WDT_STOP
 #define WDT_STOP()        (WDTCTL=WDTPW|WDTHOLD|WDTCNTCL)
 

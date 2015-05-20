@@ -20,219 +20,236 @@ CTL_EVENT_SET_t DMA_events;
 //                      [Interrupt Service Routines]
 //=======================================================================================
 
-void UC0_TX(void) __ctl_interrupt[USCIAB0TX_VECTOR]{
-  unsigned char flags=UC0IFG&(UC0IE);
-//==================[SPI TX Handler]==================
-  //SPI communication is handled by DMA, no handler needed
-//===============[I2C data Rx Handler]================
-  if(flags&UCB0RXIFG){
-    //receive data
-    arcBus_stat.i2c_stat.rx.ptr[arcBus_stat.i2c_stat.rx.idx++]=UCB0RXBUF;
-    //check mode
-    if(!(UCB0CTL0&UCMST)){//slave mode
+void UC0_TX(void) __ctl_interrupt[USCI_B0_VECTOR]{
+  switch(UCB0IV){
+    case 0x02:    //Arbitration lost
+      //Arbitration lost, resend later?
+      UCB0STAT&=~UCALIFG;
+      //check if running
+      if(arcBus_stat.i2c_stat.mode!=BUS_I2C_IDLE){
+        //set flag to indicate condition
+        ctl_events_set_clear(&BUS_INT_events,BUS_INT_EV_I2C_ARB_LOST,0);
+        //set status to idle
+        arcBus_stat.i2c_stat.mode=BUS_I2C_IDLE;
+      }
+      //reset rx buffer status if in progress
+      if(I2C_rx_buf[I2C_rx_in].stat==I2C_PACKET_STAT_IN_PROGRESS){
+        //reset packet flags
+        I2C_rx_buf[I2C_rx_in].stat=I2C_PACKET_STAT_EMPTY;
+        //decrement packet index
+      }
+    break;
+    case 0x04:    //NACK interrupt  
+      //Acknowledge expected but not received  
+      //generate stop condition
+      UCB0CTL1|=UCTXSTP; 
+      //if running in background a diffrent event must be set to release the mutex
+      if(!arcBus_stat.i2c_stat.mutex_release){
+        //check if we have written more than a byte to the TX buffer
+        //one byte is always written after the start condition is sent
+        if(arcBus_stat.i2c_stat.tx.idx>1){
+            //set ABORT flag
+            ctl_events_set_clear(&arcBus_stat.events,BUS_EV_I2C_ABORT,0);
+        }else{
+            //set NACK flag
+            ctl_events_set_clear(&arcBus_stat.events,BUS_EV_I2C_NACK,0);
+        }
+      }else{
+        //set event
+        ctl_events_set_clear(&BUS_INT_events,BUS_INT_EV_RELEASE_MUTEX,0);
+        //clear flag
+        arcBus_stat.i2c_stat.mutex_release=0;
+      }
+      //set state to idle
+      arcBus_stat.i2c_stat.mode=BUS_I2C_IDLE;
+      //clear interrupt flag
+      UCB0STAT&=~UCNACKIFG;
+      //disable I2C Tx and Rx Interrupts
+      UCB0IE&=~(UCTXIE3|UCRXIE);
+      //clear Tx interrupt flag see USCI25 in "MSP430F261x, MSP430F241x Device Erratasheet (Rev. J)"
+      UCB0IFG&= ~UCTXIFG;
+    break;
+    case 0x06:    //start condition received
+      //check status
+      //This is to fix the issue where the start condition happens before the stop can be processed
+      if(arcBus_stat.i2c_stat.mode==BUS_I2C_RX){
+        //set flag to notify 
+        ctl_events_set_clear(&BUS_INT_events,BUS_INT_EV_I2C_CMD_RX,0);
+        //set state to idle
+        arcBus_stat.i2c_stat.mode=BUS_I2C_IDLE;
+        //disable I2C Tx and Rx Interrupts
+        UCB0IE&=~(UCTXIE3|UCRXIE);
+      }
+      //Check if transmitting or receiving
+      if(UCB0CTL1&UCTR){          
+        //enable I2C Tx Interrupt
+        UCB0IE|=UCTXIE3;
+        //zero index
+        arcBus_stat.i2c_stat.tx.idx=0;
+        //An I2C slave should always be the receiver
+        arcBus_stat.i2c_stat.tx.ptr=NULL;
+        arcBus_stat.i2c_stat.tx.len=-1;
+        //set mode to Tx
+        arcBus_stat.i2c_stat.mode=BUS_I2C_TX;
+        //send first byte to save time
+        UCB0TXBUF=BUS_I2C_DUMMY_DATA;
+      }else{
+        //enable I2C Rx Interrupt
+        UCB0IE|=UCRXIE;
+        //check buffer status
+        if(I2C_rx_buf[I2C_rx_in].stat!=I2C_PACKET_STAT_EMPTY){
+          //buffer is in-use transmit NACK
+          UCB0CTL1|=UCTXNACK;
+          //set flag to indicate an error
+          ctl_events_set_clear(&BUS_INT_events,BUS_INT_EV_I2C_RX_BUSY,0);
+        }else{
+          //setup receive status
+          arcBus_stat.i2c_stat.rx.ptr=I2C_rx_buf[I2C_rx_in].dat;
+          arcBus_stat.i2c_stat.rx.len=sizeof(I2C_rx_buf[0].dat);
+          arcBus_stat.i2c_stat.rx.idx=0;
+          //set mode to Rx
+          arcBus_stat.i2c_stat.mode=BUS_I2C_RX;
+          //set buffer status
+          I2C_rx_buf[I2C_rx_in].stat=I2C_PACKET_STAT_IN_PROGRESS;
+        }
+      }
+      //enable stop interrupt
+      UCB0IE|=UCSTPIE;
+      //clear start flag
+      UCB0STAT&=~UCSTTIFG;
+    break;
+    case 0x08:    //Stop condition received
+      //check if transaction was a command
+      if(arcBus_stat.i2c_stat.mode==BUS_I2C_RX){
+        //set packet length
+        I2C_rx_buf[I2C_rx_in].len=arcBus_stat.i2c_stat.rx.idx;
+        //check for rx IFG
+        if(UCB0IE&UCRXIFG){
+          //read data
+          arcBus_stat.i2c_stat.rx.ptr[I2C_rx_buf[I2C_rx_in].len++]=UCB0RXBUF;
+        }
+        //set buffer status to complete
+        I2C_rx_buf[I2C_rx_in].stat=I2C_PACKET_STAT_COMPLETE;
+        //increment index
+        I2C_rx_in++;
+        //check for wraparound
+        if(I2C_rx_in>=BUS_I2C_PACKET_QUEUE_LEN){
+          I2C_rx_in=0;
+        }
+        //set flag to notify 
+        ctl_events_set_clear(&BUS_INT_events,BUS_INT_EV_I2C_CMD_RX,0);
+      }
+      //set state to idle
+      arcBus_stat.i2c_stat.mode=BUS_I2C_IDLE;
+      //disable I2C Tx and Rx Interrupts
+      UCB0IE&=~(UCTXIE3|UCRXIE);
+      //disable stop interrupt
+      UCB0IE&=~UCSTPIE;
+    break;
+    case 0x0A:    //Slave 3 RXIFG
+      //receive data
+      arcBus_stat.i2c_stat.rx.ptr[arcBus_stat.i2c_stat.rx.idx++]=UCB0RXBUF;
       //check buffer size
       if(arcBus_stat.i2c_stat.rx.idx>=sizeof(I2C_rx_buf[0].dat)){
         //receive buffer is full, send NACK
         UCB0CTL1|=UCTXNACK;
       }
-    }else{//master mode
-      /*//check if this is the 2nd to last byte
-      if(arcBus_stat.i2c_stat.rx.len==(arcBus_stat.i2c_stat.rx.idx+1)){
+    break;
+    case 0x0C:    //Slave 3 TXIFG
+        //no data to send so send dummy data
+        UCB0TXBUF=BUS_I2C_DUMMY_DATA;
+    break;
+    break;
+    case 0x0E:    //Slave 2 RXIFG
+    break;
+    case 0x10:    //Slave 2 TXIFG
+    break;
+    break;
+    case 0x12:    //Slave 1 RXIFG
+    break;
+    case 0x14:    //Slave 1 TXIFG
+    break;
+    case 0x16:    //Data receive in master mode and Slave 0 RXIFG
+    break;
+    case 0x18:    //Data transmit in master mode and Slave 0 TXIFG
+      //check if there are more bytes
+      if(arcBus_stat.i2c_stat.tx.len>arcBus_stat.i2c_stat.tx.idx){
+        //transmit data
+        UCB0TXBUF=arcBus_stat.i2c_stat.tx.ptr[arcBus_stat.i2c_stat.tx.idx++];
+      }else{//nothing left to send
+        if(!(UCB0CTLW0&UCMST)){//slave mode
+          //no more data to send so send dummy data
+          UCB0TXBUF=BUS_I2C_DUMMY_DATA;
+        }else{//Master Mode
           //generate stop condition
           UCB0CTL1|=UCTXSTP;
-        //one more interrupt to go
-      }
-      //check if this was the last byte
-      if(arcBus_stat.i2c_stat.rx.idx>=arcBus_stat.i2c_stat.rx.len){
-        //signal that packet has been sent
-        ctl_events_set_clear(&arcBus_stat.events,BUS_EV_I2C_COMPLETE,0);
-        //set state to idle
-        arcBus_stat.i2c_stat.mode=BUS_I2C_IDLE;
-        //disable I2C Rx Interrupts
-        UC0IE&=~(UCB0RXIE);
-      }*/
-    }
-  }
-//===============[I2C data Tx Handler]================
-  if(flags&UCB0TXIFG){
-    //check if there are more bytes
-    if(arcBus_stat.i2c_stat.tx.len>arcBus_stat.i2c_stat.tx.idx){
-      //transmit data
-      UCB0TXBUF=arcBus_stat.i2c_stat.tx.ptr[arcBus_stat.i2c_stat.tx.idx++];
-    }else{//nothing left to send
-      if(!(UCB0CTL0&UCMST)){//slave mode
-        //no more data to send so send dummy data
-        UCB0TXBUF=BUS_I2C_DUMMY_DATA;
-      }else{//Master Mode
-        //generate stop condition
-        UCB0CTL1|=UCTXSTP;
-        //if running in background a diffrent event must be set to release the mutex
-        if(!arcBus_stat.i2c_stat.mutex_release){
-          //set event
-          ctl_events_set_clear(&arcBus_stat.events,BUS_EV_I2C_COMPLETE,0);
-        }else{
-          //set event
-          ctl_events_set_clear(&BUS_INT_events,BUS_INT_EV_RELEASE_MUTEX,0);
-          //clear flag
-          arcBus_stat.i2c_stat.mutex_release=0;
+          //if running in background a diffrent event must be set to release the mutex
+          if(!arcBus_stat.i2c_stat.mutex_release){
+            //set event
+            ctl_events_set_clear(&arcBus_stat.events,BUS_EV_I2C_COMPLETE,0);
+          }else{
+            //set event
+            ctl_events_set_clear(&BUS_INT_events,BUS_INT_EV_RELEASE_MUTEX,0);
+            //clear flag
+            arcBus_stat.i2c_stat.mutex_release=0;
+          }
+          //set state to idle
+          arcBus_stat.i2c_stat.mode=BUS_I2C_IDLE;
+          //disable I2C Tx Interrupts
+          UCB0IE&=~(UCTXIE3);
+          //clear interrupt flag
+          UCB0IFG&= ~UCTXIFG;
         }
-        //set state to idle
-        arcBus_stat.i2c_stat.mode=BUS_I2C_IDLE;
-        //disable I2C Tx Interrupts
-        UC0IE&=~(UCB0TXIE);
-        //clear interrupt flag
-        UC0IFG&= ~UCB0TXIFG;
       }
-    }
-  }
+    break;
+    case 0x1A:    //Byte Counter Zero
+    break;
+    case 0x1C:    //Cock low timeout
 
+    break;
+    case 0x1E:    //9th bit interrupt
+    break;
+  }
 }
 
-
-void UC0_rx(void) __ctl_interrupt[USCIAB0RX_VECTOR]{
-  unsigned char flags=UC0IFG&(UC0IE);
-  unsigned char len;
-  int i;
-//==================[SPI RX Handler]==================
-  //SPI communication is handled by DMA, no handler needed
-//=================[I2C Status Handler]=============================
-  //NACK received
-  if(UCB0STAT&UCNACKIFG){
-    //Acknowledge expected but not received  
-    //generate stop condition
-    UCB0CTL1|=UCTXSTP; 
-    //if running in background a diffrent event must be set to release the mutex
-    if(!arcBus_stat.i2c_stat.mutex_release){
-      //check if we have written more than a byte to the TX buffer
-      //one byte is always written after the start condition is sent
-      if(arcBus_stat.i2c_stat.tx.idx>1){
-          //set ABORT flag
-          ctl_events_set_clear(&arcBus_stat.events,BUS_EV_I2C_ABORT,0);
-      }else{
-          //set NACK flag
-          ctl_events_set_clear(&arcBus_stat.events,BUS_EV_I2C_NACK,0);
-      }
-    }else{
-      //set event
-      ctl_events_set_clear(&BUS_INT_events,BUS_INT_EV_RELEASE_MUTEX,0);
-      //clear flag
-      arcBus_stat.i2c_stat.mutex_release=0;
-    }
-    //set state to idle
-    arcBus_stat.i2c_stat.mode=BUS_I2C_IDLE;
-    //clear interrupt flag
-    UCB0STAT&=~UCNACKIFG;
-    //disable I2C Tx and Rx Interrupts
-    UC0IE&=~(UCB0TXIE|UCB0RXIE);
-    //clear Tx interrupt flag see USCI25 in "MSP430F261x, MSP430F241x Device Erratasheet (Rev. J)"
-    UC0IFG&= ~UCB0TXIFG;
-  }
-  //Stop condition received, end of command 
-  if(UCB0STAT&UCSTPIFG){
-    //check if transaction was a command
-    if(arcBus_stat.i2c_stat.mode==BUS_I2C_RX){
-      //set packet length
-      I2C_rx_buf[I2C_rx_in].len=arcBus_stat.i2c_stat.rx.idx;
-      //check for rx IFG
-      if(flags&UCB0RXIFG){
-        //read data
-        arcBus_stat.i2c_stat.rx.ptr[I2C_rx_buf[I2C_rx_in].len++]=UCB0RXBUF;
-      }
-      //set buffer status to complete
-      I2C_rx_buf[I2C_rx_in].stat=I2C_PACKET_STAT_COMPLETE;
-      //increment index
-      I2C_rx_in++;
-      //check for wraparound
-      if(I2C_rx_in>=BUS_I2C_PACKET_QUEUE_LEN){
-        I2C_rx_in=0;
-      }
-      //set flag to notify 
-      ctl_events_set_clear(&BUS_INT_events,BUS_INT_EV_I2C_CMD_RX,0);
-    }
-    //set state to idle
-    arcBus_stat.i2c_stat.mode=BUS_I2C_IDLE;
-    //disable I2C Tx and Rx Interrupts
-    UC0IE&=~(UCB0TXIE|UCB0RXIE);
-    //disable stop interrupt
-    UCB0I2CIE&=~UCSTPIE;
-  }
-  //arbitration lost, no longer master
-  if(UCB0STAT&UCALIFG){
-    //Arbitration lost, resend later?
-    UCB0STAT&=~UCALIFG;
-    //check if running
-    if(arcBus_stat.i2c_stat.mode!=BUS_I2C_IDLE){
-      //set flag to indicate condition
-      ctl_events_set_clear(&BUS_INT_events,BUS_INT_EV_I2C_ARB_LOST,0);
-      //set status to idle
-      arcBus_stat.i2c_stat.mode=BUS_I2C_IDLE;
-    }
-    //reset rx buffer status if in progress
-    if(I2C_rx_buf[I2C_rx_in].stat==I2C_PACKET_STAT_IN_PROGRESS){
-      //reset packet flags
-      I2C_rx_buf[I2C_rx_in].stat=I2C_PACKET_STAT_EMPTY;
-      //decrement packet index
-    }
-  }
-  //start condition and slave address received, setup for command
-  if(UCB0STAT&UCSTTIFG){
-    //check status
-    //This is to fix the issue where the start condition happens before the stop can be processed
-    if(arcBus_stat.i2c_stat.mode==BUS_I2C_RX){
-      //set flag to notify 
-      ctl_events_set_clear(&BUS_INT_events,BUS_INT_EV_I2C_CMD_RX,0);
-      //set state to idle
-      arcBus_stat.i2c_stat.mode=BUS_I2C_IDLE;
-      //disable I2C Tx and Rx Interrupts
-      UC0IE&=~(UCB0TXIE|UCB0RXIE);
-    }
-    //Check if transmitting or receiving
-    if(UCB0CTL1&UCTR){          
-      //enable I2C Tx Interrupt
-      UC0IE|=UCB0TXIE;
-      //zero index
-      arcBus_stat.i2c_stat.tx.idx=0;
-      //An I2C slave should always be the receiver
-      arcBus_stat.i2c_stat.tx.ptr=NULL;
-      arcBus_stat.i2c_stat.tx.len=-1;
-      //set mode to Tx
-      arcBus_stat.i2c_stat.mode=BUS_I2C_TX;
-      //send first byte to save time
-      UCB0TXBUF=BUS_I2C_DUMMY_DATA;
-    }else{
-      //enable I2C Rx Interrupt
-      UC0IE|=UCB0RXIE;
-      //check buffer status
-      if(I2C_rx_buf[I2C_rx_in].stat!=I2C_PACKET_STAT_EMPTY){
-        //buffer is in-use transmit NACK
-        UCB0CTL1|=UCTXNACK;
-        //set flag to indicate an error
-        ctl_events_set_clear(&BUS_INT_events,BUS_INT_EV_I2C_RX_BUSY,0);
-      }else{
-        //setup receive status
-        arcBus_stat.i2c_stat.rx.ptr=I2C_rx_buf[I2C_rx_in].dat;
-        arcBus_stat.i2c_stat.rx.len=sizeof(I2C_rx_buf[0].dat);
-        arcBus_stat.i2c_stat.rx.idx=0;
-        //set mode to Rx
-        arcBus_stat.i2c_stat.mode=BUS_I2C_RX;
-        //set buffer status
-        I2C_rx_buf[I2C_rx_in].stat=I2C_PACKET_STAT_IN_PROGRESS;
-      }
-    }
-    //enable stop interrupt
-    UCB0I2CIE|=UCSTPIE;
-    //clear start flag
-    UCB0STAT&=~UCSTTIFG;
-  }
-}
 
 //=================[Port pin Handler]=============================
-void bus_int(void) __ctl_interrupt[PORT1_VECTOR]{
-  unsigned char flags=P1IFG&P1IE;
-  //clear flags
-  P1IFG&=~flags;
-  //set events for flags
-  ctl_events_set_clear(&SUB_events,(SUB_EV_INT)&(((unsigned short)flags)<<(SUB_EV_INT_SHIFT)),0);
+void bus_int(void) __ctl_interrupt[PORT2_VECTOR]{
+  switch(P2IV){
+    case P1IV_P1IFG0:
+      //set events for flags
+      ctl_events_set_clear(&SUB_events,SUB_EV_INT_0,0);
+    return;
+    case P1IV_P1IFG1:
+      //set events for flags
+      ctl_events_set_clear(&SUB_events,SUB_EV_INT_1,0);
+    return;
+    case P1IV_P1IFG2:
+      //set events for flags
+      ctl_events_set_clear(&SUB_events,SUB_EV_INT_2,0);
+    return;
+    case P1IV_P1IFG3:
+      //set events for flags
+      ctl_events_set_clear(&SUB_events,SUB_EV_INT_3,0);
+    return;
+    case P1IV_P1IFG4:
+      //set events for flags
+      ctl_events_set_clear(&SUB_events,SUB_EV_INT_4,0);
+    return;
+    case P1IV_P1IFG5:
+      //set events for flags
+      ctl_events_set_clear(&SUB_events,SUB_EV_INT_5,0);
+    return;
+    case P1IV_P1IFG6:
+      //set events for flags
+      ctl_events_set_clear(&SUB_events,SUB_EV_INT_6,0);
+    return;
+    case P1IV_P1IFG7:
+      //set events for flags
+      ctl_events_set_clear(&SUB_events,SUB_EV_INT_7,0);
+    return;
+  }
+  //unknown interrupt
 }
 
 
@@ -252,10 +269,10 @@ void DMA_int(void) __ctl_interrupt[DMA_VECTOR]{
 }
 
 //================[Time Tick interrupt]=========================
-void task_tick(void) __ctl_interrupt[TIMERA0_VECTOR]{
+void task_tick(void) __ctl_interrupt[TIMER1_A0_VECTOR]{
   extern ticker ticker_time;
   //set rate to 1024Hz
-  TACCR0+=32;
+  TA1CCR0+=32;
   //update ticker time
   ticker_time++;
   //increment timer
