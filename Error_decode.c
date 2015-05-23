@@ -166,7 +166,7 @@ char *err_decode_arcbus(char buf[150], unsigned short source,int err, unsigned s
           return "Startup Code : Main Returned";
         case STARTUP_ERR_WDT_RESET:
           return "Startup Code : Watch Dog reset";
-        case STARTUP_ERR_POR:
+        case STARTUP_ERR_BOR:
           return "Startup Code : Power On Reset";
         case STARTUP_ERR_RESET_PIN:
           return "Startup Code : Reset Pin Reset";
@@ -174,8 +174,10 @@ char *err_decode_arcbus(char buf[150], unsigned short source,int err, unsigned s
           return "Startup Code : Flash Security Key Violation";
         case STARTUP_ERR_RESET_UNKNOWN:
           return "Startup Code : Unknown Reset Cause";
-        case STARTUP_ERR_RESET_SVS:
-          return "Startup Code : Supply Voltage Supervisor Reset";
+        case STARTUP_ERR_RESET_SVSL:
+          return "Startup Code : Supply Voltage Supervisor Reset (Low)";
+        case STARTUP_ERR_RESET_SVSH:
+          return "Startup Code : Supply Voltage Supervisor Reset (High)";
       }
     break; 
     case BUS_ERR_SRC_ASYNC:

@@ -218,7 +218,10 @@ void async_setup_close_event(CTL_EVENT_SET_t *e,CTL_EVENT_SET_t closed);
 //send a chunk of async data from the queue
 int async_send_data(void);
 
-void reset(unsigned char level,unsigned short source,int err, unsigned short argument);
+void reset_bor(unsigned char level,unsigned short source,int err, unsigned short argument);
+void reset_por(unsigned char level,unsigned short source,int err, unsigned short argument);
+#define reset reset_bor
+
 
 //get error string for bus errors
 const char *BUS_error_str(int error);

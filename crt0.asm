@@ -45,18 +45,8 @@ __reset proc
 ; Set up stack.
         mov.w   #___RAM_Address+___RAM_Size, sp
 
-;check saved error magic number
-        cmp     #RESET_MAGIC_PRE,&_saved_error
-        jne     other_reset
-;update magic number
-        mov.w   #RESET_MAGIC_POST,&_saved_error
-;clear IFG1 of errors
-        clr.b   &IFG1_
-        jmp     saved_error_end
-other_reset:
-        mov.w   #RESET_MAGIC_EMPTY,&_saved_error
+;Determine reset cause
         callx   #_startup_error_check
-saved_error_end:
 
 ;Save contents of saved_error so that they can be restored after initialization
         mov.w   #5,r15
