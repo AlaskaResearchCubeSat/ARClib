@@ -199,7 +199,7 @@ void startup_error_check(void){
   saved_error.level=ERR_LEV_CRITICAL;
   saved_error.source=BUS_ERR_SRC_STARTUP;
   saved_error.err=STARTUP_ERR_RESET_UNHANDLED;
-  saved_error.argument=0;
+  saved_error.argument=sysrstiv_save;
   //set magic value
   saved_error.magic=RESET_MAGIC_POST;
 }

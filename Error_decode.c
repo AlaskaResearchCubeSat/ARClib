@@ -178,6 +178,26 @@ char *err_decode_arcbus(char buf[150], unsigned short source,int err, unsigned s
           return "Startup Code : Supply Voltage Supervisor Reset (Low)";
         case STARTUP_ERR_RESET_SVSH:
           return "Startup Code : Supply Voltage Supervisor Reset (High)";
+        case STARTUP_ERR_WDT_PW_RESET:
+          return "Startup Code : Watch Dog Password Violation";
+        case STARTUP_ERR_RESET_FLLUL:
+          return "Startup Code : FLL lock lost";
+        case STARTUP_ERR_RESET_PERF:
+          return "Startup Code : Peripheral area fetch";
+        case STARTUP_ERR_RESET_PMMKEY:
+          return "Startup Code : PMM key violation";
+        case STARTUP_ERR_RESET_SECYV:
+          return "Startup Code : Security violation";
+        case STARTUP_ERR_RESET_INVALID:
+          sprintf(buf,"Startup Code : invalid reset code %02X",argument);
+          return buf;
+        case STARTUP_ERR_RESET_UNHANDLED:
+          sprintf(buf,"Startup Code : unhandled reset code %02X",argument);
+          return buf;
+        case STARTUP_ERR_UNEXPECTED_DOBOR:
+          return "Startup Code : unexpected software BOR";
+        case STARTUP_ERR_UNEXPECTED_DOPOR:
+          return "Startup Code : unexpected software POR";
       }
     break; 
     case BUS_ERR_SRC_ASYNC:
