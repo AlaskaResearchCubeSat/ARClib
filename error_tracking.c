@@ -64,7 +64,7 @@ void startup_error_check(void){
       saved_error.argument=0;
       //set magic value
       saved_error.magic=RESET_MAGIC_POST;
-    break;
+    return;
     case SYSRSTIV_BOR:         //BOR
       saved_error.level=BUS_ERR_LEV_ROUTINE_RST;
       saved_error.source=BUS_ERR_SRC_STARTUP;
