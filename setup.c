@@ -217,10 +217,8 @@ void initARCbus(unsigned char addr){
   P3SEL0|=BUS_PINS_I2C;
   //bring UCB0 out of reset state
   UCB0CTLW0&=~UCSWRST;
-  //enable state change interrupts
-  UCB0IE|=UCNACKIE|UCSTTIE|UCALIE;
-  //enable Tx and Rx interrupts
-  UCB0IE|=UCRXIE|UCTXIE3;
+  //enable I2C interrupts
+  UCB0IE|=UCNACKIE|UCSTTIE|UCSTPIE|UCALIE|UCCLTOIE|UCBIT9IFG|UCRXIE|UCTXIE3|UCTXIE0|UCRXIE0;
   //============[setup SPI]============
   //put UCA0 into reset state
   UCA0CTL1=UCSWRST;
