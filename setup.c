@@ -32,12 +32,11 @@ void initCLK(void){
   PMM_setVCore(PMM_CORE_LEVEL_3);
   
   //setup clocks
-
   //set frequency range
-  UCSCTL1=DCORSEL_6;
-  //setup FLL for 24.97 MHz operation
-  UCSCTL2=FLLD_2|(380);
-  UCSCTL3=SELREF_0|FLLREFDIV_1;
+  UCSCTL1=DCORSEL_5;
+  //setup FLL for 19.99 MHz operation
+  UCSCTL2=FLLD__4|(609);
+  UCSCTL3=SELREF__XT1CLK|FLLREFDIV__4;
   //use XT1 for ACLK and DCO for MCLK and SMCLK
   UCSCTL4=SELA_0|SELS_3|SELM_3;
 
