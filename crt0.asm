@@ -31,6 +31,7 @@
 ; Create sections
         .data
         .bss
+        dsect "THREAD"
 
 ; Go to code section.
         .psect  "ISR"
@@ -39,8 +40,8 @@
 ; Executed upon reset
 __reset proc
 
-; Kick Watchdog
-        mov.w   #WDTPW+WDTCNTCL+WDTSSEL, &WDTCTL
+; Kick Watchdog use VLO for clock source so we can reset if crystal is not present
+        mov.w   #WDTPW+WDTCNTCL+WDTSSEL_2+WDTIS_2, &WDTCTL
 
 ; Set up stack.
         mov.w   #___RAM_Address+___RAM_Size, sp
@@ -64,8 +65,16 @@ save_lp:
         callx   #_memcpy
         ENDLINKIF
 
+; Copy from initialised thread section to thread section.
+        LINKIF  SIZEOF(THREAD)
+        mov.w   #SFB(THREAD), r15
+        mov.w   #thread_init_begin, r14
+        mov.w   #thread_init_end-thread_init_begin, r13
+        callx   #_memcpy
+        ENDLINKIF
+
 ; Kick Watchdog
-        mov.w #WDTPW+WDTCNTCL+WDTSSEL, &WDTCTL
+        mov.w   #WDTPW+WDTCNTCL+WDTSSEL_2+WDTIS_2, &WDTCTL
 
 ; Zero the bss.  Ensure the stack is not allocated in the bss!
         LINKIF  SIZEOF(UDATA0)
@@ -76,7 +85,7 @@ save_lp:
         ENDLINKIF
 
 ; Kick Watchdog
-        mov.w #WDTPW+WDTCNTCL+WDTSSEL, &WDTCTL
+        mov.w   #WDTPW+WDTCNTCL+WDTSSEL_2+WDTIS_2, &WDTCTL
 
 ;Restore contents of saved_error
         mov.w #5,r15
@@ -134,6 +143,11 @@ ___heap_start__::
 data_init_begin:
         .init  "IDATA0"
 data_init_end:
+        .even
+thread_init_begin::
+        .init    "THREAD"
+thread_init_end::
+        .even
 
 #ifdef FULL_LIBRARY
         .bss

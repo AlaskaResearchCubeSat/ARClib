@@ -54,7 +54,7 @@ void startup_error_check(void){
   unsigned int sysrstiv_save;
   //save reset interrupt vector register
   sysrstiv_save=SYSRSTIV;
-  //TODO: handle all errors with unique error codes
+  //determine the reason for the reset
   switch(sysrstiv_save){
     case SYSRSTIV_NONE:        //No Interrupt pending
       //Unknown error encountered

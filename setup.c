@@ -9,6 +9,7 @@
 #include "ARCbus_internal.h"
 //needed to access reset error
 #include "Magic.h"
+#include "vcore.h"
 
 //record error function, used to save an error without it cluttering up the terminal
 //use the unprotected version because we are in startup code
@@ -28,7 +29,8 @@ void initCLK(void){
   //kick watchdog
   WDT_KICK();
   //set higher core voltage
-  #warning TODO: add code for to raise core voltage
+  PMM_setVCore(PMM_CORE_LEVEL_3);
+  
   //setup clocks
 
   //set frequency range
