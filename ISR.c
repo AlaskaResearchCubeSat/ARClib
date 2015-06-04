@@ -20,11 +20,10 @@ CTL_EVENT_SET_t DMA_events;
 //                      [Interrupt Service Routines]
 //=======================================================================================
 
-void UC0_TX(void) __ctl_interrupt[USCI_B0_VECTOR]{
+void bus_I2C_isr(void) __ctl_interrupt[USCI_B0_VECTOR]{
   switch(UCB0IV){
     case 0x02:    //Arbitration lost
       //Arbitration lost, resend later?
-      UCB0STAT&=~UCALIFG;
       //check if running
       if(arcBus_stat.i2c_stat.mode!=BUS_I2C_IDLE){
         //set flag to indicate condition
@@ -62,12 +61,6 @@ void UC0_TX(void) __ctl_interrupt[USCI_B0_VECTOR]{
       }
       //set state to idle
       arcBus_stat.i2c_stat.mode=BUS_I2C_IDLE;
-      //clear interrupt flag
-      UCB0STAT&=~UCNACKIFG;
-      //disable I2C Tx and Rx Interrupts
-      UCB0IE&=~(UCTXIE3|UCRXIE);
-      //clear Tx interrupt flag see USCI25 in "MSP430F261x, MSP430F241x Device Erratasheet (Rev. J)"
-      UCB0IFG&= ~UCTXIFG;
     break;
     case 0x06:    //start condition received
       //check status
@@ -77,13 +70,9 @@ void UC0_TX(void) __ctl_interrupt[USCI_B0_VECTOR]{
         ctl_events_set_clear(&BUS_INT_events,BUS_INT_EV_I2C_CMD_RX,0);
         //set state to idle
         arcBus_stat.i2c_stat.mode=BUS_I2C_IDLE;
-        //disable I2C Tx and Rx Interrupts
-        UCB0IE&=~(UCTXIE3|UCRXIE);
       }
       //Check if transmitting or receiving
-      if(UCB0CTL1&UCTR){          
-        //enable I2C Tx Interrupt
-        UCB0IE|=UCTXIE3;
+      if(UCB0CTL1&UCTR){   
         //zero index
         arcBus_stat.i2c_stat.tx.idx=0;
         //An I2C slave should always be the receiver
@@ -94,8 +83,6 @@ void UC0_TX(void) __ctl_interrupt[USCI_B0_VECTOR]{
         //send first byte to save time
         UCB0TXBUF=BUS_I2C_DUMMY_DATA;
       }else{
-        //enable I2C Rx Interrupt
-        UCB0IE|=UCRXIE;
         //check buffer status
         if(I2C_rx_buf[I2C_rx_in].stat!=I2C_PACKET_STAT_EMPTY){
           //buffer is in-use transmit NACK
@@ -113,10 +100,6 @@ void UC0_TX(void) __ctl_interrupt[USCI_B0_VECTOR]{
           I2C_rx_buf[I2C_rx_in].stat=I2C_PACKET_STAT_IN_PROGRESS;
         }
       }
-      //enable stop interrupt
-      UCB0IE|=UCSTPIE;
-      //clear start flag
-      UCB0STAT&=~UCSTTIFG;
     break;
     case 0x08:    //Stop condition received
       //check if transaction was a command
@@ -127,6 +110,8 @@ void UC0_TX(void) __ctl_interrupt[USCI_B0_VECTOR]{
         if(UCB0IE&UCRXIFG){
           //read data
           arcBus_stat.i2c_stat.rx.ptr[I2C_rx_buf[I2C_rx_in].len++]=UCB0RXBUF;
+          //clear IFG
+          UCB0IE&=~UCRXIFG;
         }
         //set buffer status to complete
         I2C_rx_buf[I2C_rx_in].stat=I2C_PACKET_STAT_COMPLETE;
@@ -141,10 +126,6 @@ void UC0_TX(void) __ctl_interrupt[USCI_B0_VECTOR]{
       }
       //set state to idle
       arcBus_stat.i2c_stat.mode=BUS_I2C_IDLE;
-      //disable I2C Tx and Rx Interrupts
-      UCB0IE&=~(UCTXIE3|UCRXIE);
-      //disable stop interrupt
-      UCB0IE&=~UCSTPIE;
     break;
     case 0x0A:    //Slave 3 RXIFG
       //receive data
@@ -195,10 +176,6 @@ void UC0_TX(void) __ctl_interrupt[USCI_B0_VECTOR]{
           }
           //set state to idle
           arcBus_stat.i2c_stat.mode=BUS_I2C_IDLE;
-          //disable I2C Tx Interrupts
-          UCB0IE&=~(UCTXIE3);
-          //clear interrupt flag
-          UCB0IFG&= ~UCTXIFG;
         }
       }
     break;

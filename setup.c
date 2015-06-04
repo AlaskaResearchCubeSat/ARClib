@@ -204,10 +204,8 @@ void initARCbus(unsigned char addr){
   //set baud rate to 100kB/s off of 16MHz SMCLK
   //UCB0BR0=0xA0;
   //UCB0BR1=0x00;
-  //set baud rate to 50kB/s off of 16MHz SMCLK
-  //TODO: use UCBxBRW
-  UCB0BR0=0x40;
-  UCB0BR1=0x01;
+  //set baud rate to 50kB/s off of 20MHz SMCLK
+  UCB0BRW=400;
   //set baud rate to 1kB/s off of 16MHz SMCLK
   //UCB0BR0=0x80;
   //UCB0BR1=0x3E;
@@ -222,7 +220,7 @@ void initARCbus(unsigned char addr){
   //enable state change interrupts
   UCB0IE|=UCNACKIE|UCSTTIE|UCALIE;
   //enable Tx and Rx interrupts
-  //UCB0IE|=UCB0RXIE|UCB0TXIE3;
+  UCB0IE|=UCRXIE|UCTXIE3;
   //============[setup SPI]============
   //put UCA0 into reset state
   UCA0CTL1=UCSWRST;

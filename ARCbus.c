@@ -131,18 +131,10 @@ int BUS_cmd_tx(unsigned char addr,void *buff,unsigned short len,unsigned short f
   arcBus_stat.i2c_stat.tx.len=len;
   //set data
   arcBus_stat.i2c_stat.tx.ptr=(unsigned char*)buff;
-  //reset peripheral to switch to master mode
-  UCB0CTL1|=UCSWRST;
   //set master mode
-  UCB0CTL0|=UCMST;
-  //set transmit mode
-  UCB0CTL1|=UCTR;
-  //take peripheral out of reset
-  UCB0CTL1&=~UCSWRST;
+  UCB0CTLW0|=UCMST|UCTR;
   //clear master I2C flags
   ctl_events_set_clear(&arcBus_stat.events,0,BUS_EV_I2C_MASTER);
-  //enable I2C Tx Interrupt
-  UCB0IE|=UCTXIE3;
   //generate start condition
   UCB0CTL1|=UCTXSTT;
   //if transmitting in the background, return
