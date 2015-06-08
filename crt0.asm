@@ -204,3 +204,39 @@ ___crt_res1    equ RES1_
 ___crt_res2    equ RES2_
 ___crt_res3    equ RES3_
 #endif
+
+#ifdef SIGNATURES
+        .csect  "SIGNATURES"
+        .keep
+___JTAG_SIGNATURE_1::
+        dw      0xffff
+___JTAG_SIGNATURE_2::
+        dw      0xffff        
+___BSL_SIGNATURE_1::
+        dw      0xffff
+___BSL_SIGNATURE_2::
+        dw      0xffff
+___IP_ENCAPSULATION_SIGNATURE_1::
+        dw      0xffff
+___IP_ENCAPSULATION_SIGNATURE_2::
+        dw      0xffff
+#endif
+
+#ifdef ZAREA
+__BSL_Protect:
+      mov.w #2, r12
+      ret
+
+      .csect  "ZAREA"
+      .keep
+_BSLPROTVEC::
+      dw        __BSL_Protect
+BSLUNLOCK_SIGNATURE_2::
+      dw        0x3ca5
+BSLUNLOCK_SIGNATURE_1::
+      dw        0xc35a
+Reserved:
+      dw        0xffff
+_BSLSTARTVEC::
+      dw        __reset
+#endif
