@@ -3,8 +3,11 @@
   <project Name="BUSlib">
     <configuration
       Name="Common"
+      build_use_hardware_multiplier="32-Bit Multiplier"
       batch_build_configurations="MSP430 Debug;MSP430 Debug CDH;MSP430 Release;MSP430 Release CDH"
       c_preprocessor_definitions="CTL_TASKING"
+      msp430_insn_set="MSP430X"
+      msp430_memory_size="1M"
       c_system_include_directories="$(ProjectDir);$(StudioDir)/include;$(PackagesDir)/include"
       project_directory=""
       project_type="Library" />
@@ -47,14 +50,10 @@
   <configuration
     Name="MSP430 Debug"
     Target="MSP430F6779A"
-    build_use_hardware_multiplier="32-Bit Multiplier"
     inherited_configurations="MSP430;Debug"
     link_use_multi_threaded_libraries="Yes"
     linker_memory_map_file="$(PackagesDir)/targets/msp430/MSP430F6779A.xml"
-    linker_section_placement_file="$(StudioDir)/targets/section_placement_info_abcd_iv64.xml"
-    msp430_debug_interface="JTAG"
-    msp430_identify_string="MSP430F6779A"
-    msp430_insn_set="MSP430X" />
+    linker_section_placement_file="$(StudioDir)/targets/section_placement_info_abcd_iv64.xml" />
   <configuration Name="MSP430" Platform="MSP430" hidden="Yes" />
   <configuration Name="Debug" build_debug_information="Yes" hidden="Yes" />
   <configuration
