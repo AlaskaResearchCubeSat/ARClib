@@ -41,7 +41,10 @@
 __reset proc
 
 ; Kick Watchdog use VLO for clock source so we can reset if crystal is not present
-        mov.w   #WDTPW+WDTCNTCL+WDTSSEL_2+WDTIS_2, &WDTCTL
+        ;mov.w   #WDTPW+WDTCNTCL+WDTSSEL_2+WDTIS_2, &WDTCTL
+      
+; TESTING: disable watchdog
+        mov.w #WDTPW+WDTHOLD, &WDTCTL
 
 ; Set up stack.
         mov.w   #___RAM_Address+___RAM_Size, sp
@@ -74,7 +77,7 @@ save_lp:
         ENDLINKIF
 
 ; Kick Watchdog
-        mov.w   #WDTPW+WDTCNTCL+WDTSSEL_2+WDTIS_2, &WDTCTL
+        ;mov.w   #WDTPW+WDTCNTCL+WDTSSEL_2+WDTIS_2, &WDTCTL
 
 ; Zero the bss.  Ensure the stack is not allocated in the bss!
         LINKIF  SIZEOF(UDATA0)
@@ -85,7 +88,7 @@ save_lp:
         ENDLINKIF
 
 ; Kick Watchdog
-        mov.w   #WDTPW+WDTCNTCL+WDTSSEL_2+WDTIS_2, &WDTCTL
+        ;mov.w   #WDTPW+WDTCNTCL+WDTSSEL_2+WDTIS_2, &WDTCTL
 
 ;Restore contents of saved_error
         mov.w #5,r15
