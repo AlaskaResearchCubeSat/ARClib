@@ -190,6 +190,14 @@ void bus_I2C_isr(void) __ctl_interrupt[USCI_B0_VECTOR]{
 }
 
 
+
+//=================[SPI handler]=============================
+void bus_SPI_isr(void) __ctl_interrupt[USCI_A0_VECTOR]{
+  int tmp;
+  //DUMMY ISR, not used
+  tmp=UCA0IV;
+}
+
 //=================[Port pin Handler]=============================
 void bus_int(void) __ctl_interrupt[PORT2_VECTOR]{
   switch(P2IV){
