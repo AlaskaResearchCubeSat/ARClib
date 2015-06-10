@@ -176,8 +176,6 @@ void initARCbus(unsigned char addr){
   //========[setup port mapping]=======
   //unlock registers
   PMAPKEYID=PMAPKEY;
-  //allow reconfiguration
-  PMAPCTL|=PMAPRECFG;
   //setup BUS I2C SCL
   P3MAP0=PM_UCB0SCL;
   //setup BUS I2C SDA
@@ -193,6 +191,7 @@ void initARCbus(unsigned char addr){
   P2MAP6=PM_NONE;
   P2MAP7=PM_NONE;
   //lock the Port map module
+  //do not allow reconfiguration
   PMAPKEYID=0;
   //============[setup I2C]============ 
   //put UCB0 into reset state
