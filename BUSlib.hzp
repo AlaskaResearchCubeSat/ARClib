@@ -4,13 +4,13 @@
     <configuration
       Name="Common"
       Target="MSP430F6779A"
-      build_use_hardware_multiplier="32-Bit Multiplier"
       batch_build_configurations="MSP430 Debug;MSP430 Debug CDH;MSP430 Release;MSP430 Release CDH"
+      build_use_hardware_multiplier="32-Bit Multiplier"
       c_preprocessor_definitions="CTL_TASKING"
+      c_system_include_directories="$(ProjectDir);$(StudioDir)/include;$(PackagesDir)/include"
       link_use_multi_threaded_libraries="Yes"
       msp430_insn_set="MSP430X"
       msp430_memory_size="1M"
-      c_system_include_directories="$(ProjectDir);$(StudioDir)/include;$(PackagesDir)/include"
       project_directory=""
       project_type="Library" />
     <folder Name="Source Files">
@@ -51,7 +51,7 @@
   </project>
   <configuration
     Name="MSP430 Debug"
-    inherited_configurations="MSP430;Debug"/>
+    inherited_configurations="MSP430;Debug" />
   <configuration Name="MSP430" Platform="MSP430" hidden="Yes" />
   <configuration Name="Debug" build_debug_information="Yes" hidden="Yes" />
   <configuration
