@@ -26,7 +26,9 @@
       <file file_name="mainLoop.c" />
       <file file_name="ISR.c" />
       <file file_name="ARCbus_internal.h" />
-      <file file_name="buffer.c" />
+      <file file_name="buffer.c">
+        <configuration Name="MSP430 Debug" build_exclude_from_build="Yes" />
+      </file>
       <file file_name="DMA.h" />
       <file file_name="async.c" />
       <file file_name="version.c">
