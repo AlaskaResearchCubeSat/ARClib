@@ -619,7 +619,7 @@ void mainLoop(void) __toplevel{
   //initialize events
   ctl_events_init(&BUS_INT_events,0);
   //start ARCbus task
-  ctl_task_run(&ARC_bus_task,BUS_PRI_ARCBUS,ARC_bus_run,NULL,"ARC_Bus",sizeof(BUS_stack)/sizeof(BUS_stack[0])-2,BUS_stack+1,0);
+  //ctl_task_run(&ARC_bus_task,BUS_PRI_ARCBUS,ARC_bus_run,NULL,"ARC_Bus",sizeof(BUS_stack)/sizeof(BUS_stack[0])-2,BUS_stack+1,0);
   //kick WDT to give us some time
   WDT_KICK();
   // drop to lowest priority to start created tasks running.
