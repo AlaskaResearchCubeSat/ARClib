@@ -151,6 +151,13 @@ void bus_I2C_isr(void) __ctl_interrupt[USCI_B0_VECTOR]{
     case USCI_I2C_UCTXIFG1:    //Slave 1 TXIFG
     break;
     case USCI_I2C_UCRXIFG0:    //Data receive in master mode and Slave 0 RXIFG
+      //receive data
+      arcBus_stat.i2c_stat.rx.ptr[arcBus_stat.i2c_stat.rx.idx++]=UCB0RXBUF;
+      //check buffer size
+      if(arcBus_stat.i2c_stat.rx.idx>=sizeof(I2C_rx_buf[0].dat)){
+        //receive buffer is full, send NACK
+        UCB0CTL1|=UCTXNACK;
+      }
     break;
     case USCI_I2C_UCTXIFG0:    //Data transmit in master mode and Slave 0 TXIFG
       //check if there are more bytes
