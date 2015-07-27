@@ -22,7 +22,7 @@ CTL_EVENT_SET_t DMA_events;
 
 void bus_I2C_isr(void) __ctl_interrupt[USCI_B0_VECTOR]{
   switch(UCB0IV){
-    case 0x02:    //Arbitration lost
+    case USCI_I2C_UCALIFG:    //Arbitration lost
       //Arbitration lost, resend later?
       //check if running
       if(arcBus_stat.i2c_stat.mode!=BUS_I2C_IDLE){
@@ -38,7 +38,7 @@ void bus_I2C_isr(void) __ctl_interrupt[USCI_B0_VECTOR]{
         //decrement packet index
       }
     break;
-    case 0x04:    //NACK interrupt  
+    case USCI_I2C_UCNACKIFG:    //NACK interrupt  
       //Acknowledge expected but not received  
       //generate stop condition
       UCB0CTL1|=UCTXSTP; 
@@ -62,7 +62,7 @@ void bus_I2C_isr(void) __ctl_interrupt[USCI_B0_VECTOR]{
       //set state to idle
       arcBus_stat.i2c_stat.mode=BUS_I2C_IDLE;
     break;
-    case 0x06:    //start condition received
+    case USCI_I2C_UCSTTIFG:    //start condition received
       //check status
       //This is to fix the issue where the start condition happens before the stop can be processed
       if(arcBus_stat.i2c_stat.mode==BUS_I2C_RX){
@@ -101,7 +101,7 @@ void bus_I2C_isr(void) __ctl_interrupt[USCI_B0_VECTOR]{
         }
       }
     break;
-    case 0x08:    //Stop condition received
+    case USCI_I2C_UCSTPIFG:    //Stop condition received
       //check if transaction was a command
       if(arcBus_stat.i2c_stat.mode==BUS_I2C_RX){
         //set packet length
@@ -127,7 +127,7 @@ void bus_I2C_isr(void) __ctl_interrupt[USCI_B0_VECTOR]{
       //set state to idle
       arcBus_stat.i2c_stat.mode=BUS_I2C_IDLE;
     break;
-    case 0x0A:    //Slave 3 RXIFG
+    case USCI_I2C_UCRXIFG3:    //Slave 3 RXIFG
       //receive data
       arcBus_stat.i2c_stat.rx.ptr[arcBus_stat.i2c_stat.rx.idx++]=UCB0RXBUF;
       //check buffer size
@@ -136,23 +136,23 @@ void bus_I2C_isr(void) __ctl_interrupt[USCI_B0_VECTOR]{
         UCB0CTL1|=UCTXNACK;
       }
     break;
-    case 0x0C:    //Slave 3 TXIFG
+    case USCI_I2C_UCTXIFG3:    //Slave 3 TXIFG
         //no data to send so send dummy data
         UCB0TXBUF=BUS_I2C_DUMMY_DATA;
     break;
     break;
-    case 0x0E:    //Slave 2 RXIFG
+    case USCI_I2C_UCRXIFG2:    //Slave 2 RXIFG
     break;
-    case 0x10:    //Slave 2 TXIFG
+    case USCI_I2C_UCTXIFG2:    //Slave 2 TXIFG
     break;
     break;
-    case 0x12:    //Slave 1 RXIFG
+    case USCI_I2C_UCRXIFG1:    //Slave 1 RXIFG
     break;
-    case 0x14:    //Slave 1 TXIFG
+    case USCI_I2C_UCTXIFG1:    //Slave 1 TXIFG
     break;
-    case 0x16:    //Data receive in master mode and Slave 0 RXIFG
+    case USCI_I2C_UCRXIFG0:    //Data receive in master mode and Slave 0 RXIFG
     break;
-    case 0x18:    //Data transmit in master mode and Slave 0 TXIFG
+    case USCI_I2C_UCTXIFG0:    //Data transmit in master mode and Slave 0 TXIFG
       //check if there are more bytes
       if(arcBus_stat.i2c_stat.tx.len>arcBus_stat.i2c_stat.tx.idx){
         //transmit data
@@ -179,12 +179,12 @@ void bus_I2C_isr(void) __ctl_interrupt[USCI_B0_VECTOR]{
         }
       }
     break;
-    case 0x1A:    //Byte Counter Zero
+    case USCI_I2C_UCBCNTIFG:    //Byte Counter Zero
     break;
-    case 0x1C:    //Cock low timeout
+    case USCI_I2C_UCCLTOIFG:    //Cock low timeout
 
     break;
-    case 0x1E:    //9th bit interrupt
+    case USCI_I2C_UCBIT9IFG:    //9th bit interrupt
     break;
   }
 }
