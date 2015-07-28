@@ -109,6 +109,11 @@ void bus_I2C_isr(void) __ctl_interrupt[USCI_B0_VECTOR]{
       }
     break;
     case USCI_I2C_UCSTPIFG:    //Stop condition received
+      //check if we are master
+      if(UCB0CTLW0&UCMST){
+        //no processing necessary
+        break;
+      }
       //check if transaction was a command
       if(arcBus_stat.i2c_stat.mode==BUS_I2C_RX){
         //set packet length
