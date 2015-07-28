@@ -210,7 +210,7 @@ void initARCbus(unsigned char addr){
   //UCB0BR0=0x80;
   //UCB0BR1=0x3E;
   //set own address
-  UCB0I2COA3=UCOAEN|addr;
+  UCB0I2COA0=UCOAEN|addr;
   //enable general call address
   UCB0I2COA0|=UCGCEN;
   //configure ports
