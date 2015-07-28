@@ -21,7 +21,9 @@ CTL_EVENT_SET_t DMA_events;
 //=======================================================================================
 
 void bus_I2C_isr(void) __ctl_interrupt[USCI_B0_VECTOR]{
-  switch(UCB0IV){
+  unsigned short vec=UCB0IV;
+  P6OUT=vec;
+  switch(vec){
     case USCI_I2C_UCALIFG:    //Arbitration lost
       //Arbitration lost, resend later?
       //check if running
@@ -209,6 +211,8 @@ void bus_I2C_isr(void) __ctl_interrupt[USCI_B0_VECTOR]{
     case USCI_I2C_UCBIT9IFG:    //9th bit interrupt
     break;
   }
+  //set P6.0 high at the end of the ISR
+  P6OUT|=BIT0;
 }
 
 
