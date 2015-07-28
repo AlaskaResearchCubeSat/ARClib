@@ -196,7 +196,10 @@ void bus_I2C_isr(void) __ctl_interrupt[USCI_B0_VECTOR]{
     case USCI_I2C_UCBCNTIFG:    //Byte Counter Zero
     break;
     case USCI_I2C_UCCLTOIFG:    //Cock low timeout
-
+      //generate stop condition
+      UCB0CTL1|=UCTXSTP;
+      //set event
+      ctl_events_set_clear(&arcBus_stat.events,BUS_EV_I2C_ERR_CCL,0);
     break;
     case USCI_I2C_UCBIT9IFG:    //9th bit interrupt
     break;

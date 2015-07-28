@@ -162,6 +162,9 @@ int BUS_cmd_tx(unsigned char addr,void *buff,unsigned short len,unsigned short f
     case 0:
       //no event happened, so time out
       return ERR_TIMEOUT;
+    case BUS_EV_I2C_ERR_CCL:
+      //Clock low timeout
+      return ERR_I2C_CLL;
     default:
       //error is not defined
       return ERR_UNKNOWN;
