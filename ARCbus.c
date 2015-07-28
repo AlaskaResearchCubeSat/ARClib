@@ -131,10 +131,13 @@ int BUS_cmd_tx(unsigned char addr,void *buff,unsigned short len,unsigned short f
   arcBus_stat.i2c_stat.tx.len=len;
   //set data
   arcBus_stat.i2c_stat.tx.ptr=(unsigned char*)buff;
-  //set master mode
-  UCB0CTLW0|=UCMST|UCTR;
+  //set to transmit mode
+  UCB0CTLW0|=UCTR;
   //clear master I2C flags
   ctl_events_set_clear(&arcBus_stat.events,0,BUS_EV_I2C_MASTER);
+  //set master mode
+  UCB0CTLW0|=UCMST;
+  //UCB0CTLW0|=UCMST|UCTR;
   //generate start condition
   UCB0CTL1|=UCTXSTT;
   //if transmitting in the background, return
