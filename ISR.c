@@ -45,7 +45,7 @@ void bus_I2C_isr(void) __ctl_interrupt[USCI_B0_VECTOR]{
       //generate stop condition
       UCB0CTL1|=UCTXSTP; 
       //clear flags
-      UCB0IFG&=~UCTXIFG;
+      UCB0IFG&=~(UCTXIFG0|UCTXIFG1|UCTXIFG2|UCTXIFG3);
       //if running in background a diffrent event must be set to release the mutex
       if(!arcBus_stat.i2c_stat.mutex_release){
         //check if we have written more than a byte to the TX buffer
@@ -116,7 +116,7 @@ void bus_I2C_isr(void) __ctl_interrupt[USCI_B0_VECTOR]{
     break;
     case USCI_I2C_UCSTPIFG:    //Stop condition received
       //clear tx and rx flags
-      UCB0IFG&=~(UCTXIFG|UCRXIFG);
+      UCB0IFG&=~(UCTXIFG0|UCTXIFG1|UCTXIFG2|UCTXIFG3|UCRXIFG);
       //check if we are master
       if(UCB0CTLW0&UCMST){
         //no processing necessary
