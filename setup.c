@@ -198,6 +198,7 @@ void initARCbus(unsigned char addr){
   UCB0CTLW0=UCSWRST;
   //setup registers
   UCB0CTLW0|=UCMM|UCMST|UCMODE_3|UCSYNC|UCSSEL_2;
+  UCB0CTLW1=UCCLTO_3|UCASTP_0|UCGLIT_0;
   //set baud rate to 400kB/s off of 16MHz SMCLK
   //UCB0BR0=0x28;
   //UCB0BR1=0x00;
