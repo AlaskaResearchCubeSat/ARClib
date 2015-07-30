@@ -218,8 +218,14 @@ void bus_I2C_isr(void) __ctl_interrupt[USCI_B0_VECTOR]{
     case USCI_I2C_UCBCNTIFG:    //Byte Counter Zero
     break;
     case USCI_I2C_UCCLTOIFG:    //Cock low timeout
-      //generate stop condition
-      UCB0CTL1|=UCTXSTP;
+      //check if master or slave
+      if(UCB0CTLW0&UCMST){
+        //master mode, generate stop condition
+        UCB0CTL1|=UCTXSTP;
+      }else{
+        //slave mode, send NACK
+        UCB0CTL1|=UCTXNACK;
+      }
       //set event
       ctl_events_set_clear(&arcBus_stat.events,BUS_EV_I2C_ERR_CCL,0);
     break;
