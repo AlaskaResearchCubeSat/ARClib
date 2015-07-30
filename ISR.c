@@ -21,6 +21,7 @@ CTL_EVENT_SET_t DMA_events;
 //=======================================================================================
 
 void bus_I2C_isr(void) __ctl_interrupt[USCI_B0_VECTOR]{
+  static unsigned short end_e=0;
   unsigned short vec=UCB0IV;
   P6OUT=vec;
   switch(vec){
@@ -46,25 +47,15 @@ void bus_I2C_isr(void) __ctl_interrupt[USCI_B0_VECTOR]{
       UCB0CTL1|=UCTXSTP; 
       //clear flags
       UCB0IFG&=~(UCTXIFG0|UCTXIFG1|UCTXIFG2|UCTXIFG3);
-      //if running in background a diffrent event must be set to release the mutex
-      if(!arcBus_stat.i2c_stat.mutex_release){
-        //check if we have written more than a byte to the TX buffer
-        //one byte is always written after the start condition is sent
-        if(arcBus_stat.i2c_stat.tx.idx>1){
-            //set ABORT flag
-            ctl_events_set_clear(&arcBus_stat.events,BUS_EV_I2C_ABORT,0);
-        }else{
-            //set NACK flag
-            ctl_events_set_clear(&arcBus_stat.events,BUS_EV_I2C_NACK,0);
-        }
+      //check if we have written more than a byte to the TX buffer
+      //one byte is always written after the start condition is sent
+      if(arcBus_stat.i2c_stat.tx.idx>1){
+          //set ABORT as the end event
+          end_e=BUS_EV_I2C_ABORT;
       }else{
-        //set event
-        ctl_events_set_clear(&BUS_INT_events,BUS_INT_EV_RELEASE_MUTEX,0);
-        //clear flag
-        arcBus_stat.i2c_stat.mutex_release=0;
+          //set NACK as end event
+          end_e=BUS_EV_I2C_NACK;
       }
-      //set state to idle
-      arcBus_stat.i2c_stat.mode=BUS_I2C_IDLE;
     break;
     case USCI_I2C_UCSTTIFG:    //start condition received
       //check if we are master
@@ -119,35 +110,50 @@ void bus_I2C_isr(void) __ctl_interrupt[USCI_B0_VECTOR]{
       UCB0IFG&=~(UCTXIFG0|UCTXIFG1|UCTXIFG2|UCTXIFG3|UCRXIFG);
       //check if we are master
       if(UCB0CTLW0&UCMST){
-        //no processing necessary
-        break;
-      }
-      //clear start condition interrupt
-      UCB0IFG&=~UCSTTIFG;
-      //check if transaction was a command
-      if(arcBus_stat.i2c_stat.mode==BUS_I2C_RX){
-        //set packet length
-        I2C_rx_buf[I2C_rx_in].len=arcBus_stat.i2c_stat.rx.idx;
-        //check for rx IFG
-        if(UCB0IE&UCRXIFG){
-          //read data
-          arcBus_stat.i2c_stat.rx.ptr[I2C_rx_buf[I2C_rx_in].len++]=UCB0RXBUF;
-          //clear IFG
-          UCB0IE&=~UCRXIFG;
+        //check if mutex release event should be sent
+        if(!arcBus_stat.i2c_stat.mutex_release){
+          //set saved event
+          ctl_events_set_clear(&arcBus_stat.events,end_e,0);
+        }else{
+          //set event
+          ctl_events_set_clear(&BUS_INT_events,BUS_INT_EV_RELEASE_MUTEX,0);
+          //clear flag
+          arcBus_stat.i2c_stat.mutex_release=0;
         }
-        //set buffer status to complete
-        I2C_rx_buf[I2C_rx_in].stat=I2C_PACKET_STAT_COMPLETE;
-        //increment index
-        I2C_rx_in++;
-        //check for wraparound
-        if(I2C_rx_in>=BUS_I2C_PACKET_QUEUE_LEN){
-          I2C_rx_in=0;
+        //clear saved event
+        end_e=0;
+        //set state to idle
+        arcBus_stat.i2c_stat.mode=BUS_I2C_IDLE;
+        //set P6OUT to zero to signal completion
+        P6OUT=0;
+      }else{
+        //clear start condition interrupt
+        UCB0IFG&=~UCSTTIFG;
+        //check if transaction was a command
+        if(arcBus_stat.i2c_stat.mode==BUS_I2C_RX){
+          //set packet length
+          I2C_rx_buf[I2C_rx_in].len=arcBus_stat.i2c_stat.rx.idx;
+          //check for rx IFG
+          if(UCB0IE&UCRXIFG){
+            //read data
+            arcBus_stat.i2c_stat.rx.ptr[I2C_rx_buf[I2C_rx_in].len++]=UCB0RXBUF;
+            //clear IFG
+            UCB0IE&=~UCRXIFG;
+          }
+          //set buffer status to complete
+          I2C_rx_buf[I2C_rx_in].stat=I2C_PACKET_STAT_COMPLETE;
+          //increment index
+          I2C_rx_in++;
+          //check for wraparound
+          if(I2C_rx_in>=BUS_I2C_PACKET_QUEUE_LEN){
+            I2C_rx_in=0;
+          }
+          //set flag to notify 
+          ctl_events_set_clear(&BUS_INT_events,BUS_INT_EV_I2C_CMD_RX,0);
         }
-        //set flag to notify 
-        ctl_events_set_clear(&BUS_INT_events,BUS_INT_EV_I2C_CMD_RX,0);
+        //set state to idle
+        arcBus_stat.i2c_stat.mode=BUS_I2C_IDLE;
       }
-      //set state to idle
-      arcBus_stat.i2c_stat.mode=BUS_I2C_IDLE;
     break;
     case USCI_I2C_UCRXIFG3:    //Slave 3 RXIFG
       //receive data
@@ -202,17 +208,8 @@ void bus_I2C_isr(void) __ctl_interrupt[USCI_B0_VECTOR]{
           UCB0CTL1|=UCTXSTP;
           //if running in background a diffrent event must be set to release the mutex
           if(!arcBus_stat.i2c_stat.mutex_release){
-            //set event
-            ctl_events_set_clear(&arcBus_stat.events,BUS_EV_I2C_COMPLETE,0);
-            //set P6OUT to zero to signal completion
-            P6OUT=0;
-          }else{
-            //set event
-            ctl_events_set_clear(&BUS_INT_events,BUS_INT_EV_RELEASE_MUTEX,0);
-            //clear flag
-            arcBus_stat.i2c_stat.mutex_release=0;
-            //set P6OUT to one to signal completion and mutex release
-            P6OUT=1;
+            //set end event
+            end_e=BUS_EV_I2C_COMPLETE;
           }
           //set state to idle
           arcBus_stat.i2c_stat.mode=BUS_I2C_IDLE;
