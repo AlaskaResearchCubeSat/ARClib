@@ -24,8 +24,17 @@ unsigned char *BUS_cmd_init(unsigned char *buf,unsigned char id){
 
 //function to check I2C addresses
 int addr_chk(unsigned char addr){
-  if(addr==UCB0I2COA3){
-    return ERR_BAD_ADDR;
+  int i;
+  //base address for own I2C addresses
+  volatile unsigned int * const oa_base=&UCB0I2COA0;
+  //check if addr matches any slave address
+  for(i=0;i<4;i++){
+    //skip if address disabled
+    if(oa_base[i]&UCOAEN)continue;
+    //check for address match
+    if(addr==((~(UCGCEN|UCOAEN))&oa_base[i])){
+      return ERR_BAD_ADDR;
+    }
   }
   if(addr&0x80){
     return ERR_BAD_ADDR;
