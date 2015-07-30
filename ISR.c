@@ -204,11 +204,15 @@ void bus_I2C_isr(void) __ctl_interrupt[USCI_B0_VECTOR]{
           if(!arcBus_stat.i2c_stat.mutex_release){
             //set event
             ctl_events_set_clear(&arcBus_stat.events,BUS_EV_I2C_COMPLETE,0);
+            //set P6OUT to zero to signal completion
+            P6OUT=0;
           }else{
             //set event
             ctl_events_set_clear(&BUS_INT_events,BUS_INT_EV_RELEASE_MUTEX,0);
             //clear flag
             arcBus_stat.i2c_stat.mutex_release=0;
+            //set P6OUT to one to signal completion and mutex release
+            P6OUT=1;
           }
           //set state to idle
           arcBus_stat.i2c_stat.mode=BUS_I2C_IDLE;
