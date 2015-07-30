@@ -205,7 +205,9 @@ void initARCbus(unsigned char addr){
   //UCB0BR0=0xA0;
   //UCB0BR1=0x00;
   //set baud rate to 50kB/s off of 20MHz SMCLK
-  UCB0BRW=400;
+  //UCB0BRW=400;
+  //set baud rate to 1kB/s off of 20MHz SMCLK
+  UCB0BRW=20000;
   //set baud rate to 1kB/s off of 16MHz SMCLK
   //UCB0BR0=0x80;
   //UCB0BR1=0x3E;
