@@ -181,11 +181,11 @@ void initARCbus(unsigned char addr){
   //setup BUS I2C SDA
   P3MAP1=PM_UCB0SDA;
   //setup BUS SPI CLK
-  P3MAP2=PM_UCB0SCL;
+  P3MAP2=PM_UCA0CLK;
   //setup BUS SPI SOMI
-  P3MAP3=PM_UCB0SOMI;
+  P3MAP3=PM_UCA0SOMI;
   //setup BUS SPI SIMO
-  P3MAP4=PM_UCB0SOMI;
+  P3MAP4=PM_UCA0SIMO;
   //set old definitions to unused
   P2MAP5=PM_NONE;
   P2MAP6=PM_NONE;
