@@ -17,7 +17,7 @@
 unsigned char *BUS_cmd_init(unsigned char *buf,unsigned char id){
   buf[1]=id;
   //set originator address
-  buf[0]=UCB0I2COA3;
+  buf[0]=UCB0I2COA0;
   //start of payload
   return buf+2;
 }
