@@ -30,7 +30,7 @@ int addr_chk(unsigned char addr){
   //check if addr matches any slave address
   for(i=0;i<4;i++){
     //skip if address disabled
-    if(oa_base[i]&UCOAEN)continue;
+    if(!(oa_base[i]&UCOAEN))continue;
     //check for address match
     if(addr==((~(UCGCEN|UCOAEN))&oa_base[i])){
       return ERR_BAD_ADDR;
