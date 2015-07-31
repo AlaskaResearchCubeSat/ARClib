@@ -217,6 +217,8 @@ void bus_I2C_isr(void) __ctl_interrupt[USCI_B0_VECTOR]{
       if(UCB0CTLW0&UCMST){
         //master mode, generate stop condition
         UCB0CTL1|=UCTXSTP;
+        //set end event
+        end_e=ERR_I2C_CLL;
       }else{
         //slave mode, send NACK
         UCB0CTL1|=UCTXNACK;
