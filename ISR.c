@@ -22,9 +22,7 @@ CTL_EVENT_SET_t DMA_events;
 
 void bus_I2C_isr(void) __ctl_interrupt[USCI_B0_VECTOR]{
   static unsigned short end_e=0;
-  unsigned short vec=UCB0IV;
-  P6OUT=vec;
-  switch(vec){
+  switch(UCB0IV){
     case USCI_I2C_UCALIFG:    //Arbitration lost
       //Arbitration lost, resend later?
       //check if running
@@ -118,8 +116,6 @@ void bus_I2C_isr(void) __ctl_interrupt[USCI_B0_VECTOR]{
         end_e=0;
         //set state to idle
         arcBus_stat.i2c_stat.mode=BUS_I2C_IDLE;
-        //set P6OUT to zero to signal completion
-        P6OUT=0;
       }else{
         //clear start condition interrupt
         UCB0IFG&=~UCSTTIFG;
@@ -195,18 +191,8 @@ void bus_I2C_isr(void) __ctl_interrupt[USCI_B0_VECTOR]{
           UCB0CTL1|=UCTXSTP;
           //if running in background a diffrent event must be set to release the mutex
           if(!arcBus_stat.i2c_stat.mutex_release){
-<<<<<<< HEAD
             //set end event
             end_e=BUS_EV_I2C_COMPLETE;
-=======
-            //set event
-            ctl_events_set_clear(&arcBus_stat.events,BUS_EV_I2C_COMPLETE,0);
-          }else{
-            //set event
-            ctl_events_set_clear(&BUS_INT_events,BUS_INT_EV_RELEASE_MUTEX,0);
-            //clear flag
-            arcBus_stat.i2c_stat.mutex_release=0;
->>>>>>> parent of ccf7830... Set P6 to indicate I2C message completion
           }
           //set state to idle
           arcBus_stat.i2c_stat.mode=BUS_I2C_IDLE;
@@ -232,8 +218,6 @@ void bus_I2C_isr(void) __ctl_interrupt[USCI_B0_VECTOR]{
     case USCI_I2C_UCBIT9IFG:    //9th bit interrupt
     break;
   }
-  //set P6.0 high at the end of the ISR
-  P6OUT|=BIT0;
 }
 
 

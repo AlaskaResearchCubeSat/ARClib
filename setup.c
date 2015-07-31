@@ -271,13 +271,6 @@ void initARCbus(unsigned char addr){
   //enable interrupts
   P2IE=0xFF;
 
-  //TESTING: setup P6OUT for I2C interrupt testing
-  P6OUT=0;
-  P6REN=0;
-  P6SEL0=0;
-  P6SEL1=0;
-  P6DIR=0xFF;
-
    //create a main task with maximum priority so other tasks can be created without interruption
   //this should be called before other tasks are created
   ctl_task_init(&idle_task, 255, "idle");  
