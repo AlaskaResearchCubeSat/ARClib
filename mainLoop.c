@@ -161,16 +161,6 @@ static void ARC_bus_run(void *p) __toplevel{
         len=I2C_rx_buf[I2C_rx_out].len;
         //compute crc
         crc=crc7(I2C_rx_buf[I2C_rx_out].dat,len-1);
-        
-        //TESTING: print out packet
-        //print header
-        printf("Packet CRC = 0x%02X\r\n""Packet Recived : ",crc);
-        for(i=0;i<len;i++){
-          printf("0x%02X, ",I2C_rx_buf[I2C_rx_out].dat[i]);
-        }
-        //print out line end
-        printf("\r\n");
-
         //get length of payload
         len=len-BUS_I2C_CRC_LEN-BUS_I2C_HDR_LEN;
         //get sender address
