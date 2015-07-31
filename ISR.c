@@ -127,13 +127,6 @@ void bus_I2C_isr(void) __ctl_interrupt[USCI_B0_VECTOR]{
         if(arcBus_stat.i2c_stat.mode==BUS_I2C_RX){
           //set packet length
           I2C_rx_buf[I2C_rx_in].len=arcBus_stat.i2c_stat.rx.idx;
-          //check for rx IFG
-          if(UCB0IE&UCRXIFG){
-            //read data
-            arcBus_stat.i2c_stat.rx.ptr[I2C_rx_buf[I2C_rx_in].len++]=UCB0RXBUF;
-            //clear IFG
-            UCB0IE&=~UCRXIFG;
-          }
           //set buffer status to complete
           I2C_rx_buf[I2C_rx_in].stat=I2C_PACKET_STAT_COMPLETE;
           //increment index
