@@ -45,8 +45,6 @@ void bus_I2C_isr(void) __ctl_interrupt[USCI_B0_VECTOR]{
       //Acknowledge expected but not received  
       //generate stop condition
       UCB0CTL1|=UCTXSTP; 
-      //clear flags
-      UCB0IFG&=~(UCTXIFG0|UCTXIFG1|UCTXIFG2|UCTXIFG3);
       //check if we have written more than a byte to the TX buffer
       //one byte is always written after the start condition is sent
       if(arcBus_stat.i2c_stat.tx.idx>1){
@@ -65,8 +63,6 @@ void bus_I2C_isr(void) __ctl_interrupt[USCI_B0_VECTOR]{
         //no processing necessary
         break;
       }
-      //clear stop condition interrupt
-      UCB0IFG&=~UCSTPIFG;
       //check status
       //This is to fix the issue where the start condition happens before the stop can be processed
       if(arcBus_stat.i2c_stat.mode==BUS_I2C_RX){
@@ -106,8 +102,6 @@ void bus_I2C_isr(void) __ctl_interrupt[USCI_B0_VECTOR]{
       }
     break;
     case USCI_I2C_UCSTPIFG:    //Stop condition received
-      //clear tx and rx flags
-      UCB0IFG&=~(UCTXIFG0|UCTXIFG1|UCTXIFG2|UCTXIFG3|UCRXIFG);
       //check if we are master
       if(UCB0CTLW0&UCMST){
         //check if mutex release event should be sent
