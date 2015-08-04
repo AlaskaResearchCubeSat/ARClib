@@ -35,9 +35,10 @@ int async_open(unsigned char addr){
     return ERR_BAD_ADDR;
   }
   //check for own address
-  if(addr==((~(UCGCEN|UCOAEN))&UCB0I2COA3)){
+  resp=OA_check(addr);
+  if(resp!=RET_SUCCESS){
     //Error : can't open communication with own address
-    return ERR_BAD_ADDR;
+    return resp;
   }
   if(async_isOpen()){
     //Error: async is already open
@@ -62,6 +63,7 @@ int async_open(unsigned char addr){
 
 //Open asynchronous when asked to by a board
 void async_open_remote(unsigned char addr){
+  int resp;
   //check for general call address
   if(addr==BUS_ADDR_GC){
     //Error : can't open communication with GC address
@@ -69,7 +71,8 @@ void async_open_remote(unsigned char addr){
     return;
   }
   //check for own address
-  if(addr==((~(UCGCEN|UCOAEN))&UCB0I2COA3)){
+  resp=OA_check(addr);
+  if(resp!=RET_SUCCESS){
     //Error : can't open communication with own address
     report_error(ERR_LEV_ERROR,BUS_ERR_SRC_ASYNC,ASYNC_ERR_OPEN_ADDR,addr);
     return;

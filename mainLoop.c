@@ -185,7 +185,7 @@ static void ARC_bus_run(void *p) __toplevel{
             break;
             case CMD_SUB_OFF:
               //check to make sure that the command is directed to this subsystem
-              if(len==1 && ptr[0]==UCB0I2COA3){
+              if(len==1 && OA_check(ptr[0])==RET_SUCCESS){
                 //set new power status
                 powerState=SUB_PWR_OFF;
                 //inform subsystem

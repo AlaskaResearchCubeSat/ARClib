@@ -247,6 +247,9 @@ void BUS_int_set(unsigned char set);
 //de-assert one or more interrupts on the bus
 void BUS_int_clear(unsigned char clear);
 
+//check for own address
+int OA_check(unsigned char addr);
+
 //return which build is used
 int BUS_build(void);
 //change test mode

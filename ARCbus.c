@@ -22,8 +22,8 @@ unsigned char *BUS_cmd_init(unsigned char *buf,unsigned char id){
   return buf+2;
 }
 
-//function to check I2C addresses
-int addr_chk(unsigned char addr){
+//check for own address
+int OA_check(unsigned char addr){
   int i;
   //base address for own I2C addresses
   volatile unsigned int * const oa_base=&UCB0I2COA0;
@@ -36,9 +36,23 @@ int addr_chk(unsigned char addr){
       return ERR_BAD_ADDR;
     }
   }
+  //not a match success!
+  return RET_SUCCESS;
+}
+
+//function to check I2C addresses
+int addr_chk(unsigned char addr){
+  int resp;
+  //check for own address
+  if((resp=OA_check(addr))!=RET_SUCCESS){
+    //return error if it occured
+    return resp;
+  }
+  //check if 8th bit is set
   if(addr&0x80){
     return ERR_BAD_ADDR;
   }
+  //success!
   return RET_SUCCESS;
 }
 
