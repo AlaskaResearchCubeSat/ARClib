@@ -22,7 +22,9 @@ CTL_EVENT_SET_t DMA_events;
 
 void bus_I2C_isr(void) __ctl_interrupt[USCI_B0_VECTOR]{
   static unsigned short end_e=0;
-  switch(UCB0IV){
+  unsigned short vec=UCB0IV;
+  P6OUT=vec;
+  switch(vec){
     case USCI_I2C_UCALIFG:    //Arbitration lost
       //Arbitration lost, resend later?
       //check if running
@@ -114,6 +116,8 @@ void bus_I2C_isr(void) __ctl_interrupt[USCI_B0_VECTOR]{
         }
         //clear saved event
         end_e=0;
+        //set P6OUT to zero to signal completion
+        P6OUT=0;
         //set state to idle
         arcBus_stat.i2c_stat.mode=BUS_I2C_IDLE;
       }else{
@@ -134,6 +138,8 @@ void bus_I2C_isr(void) __ctl_interrupt[USCI_B0_VECTOR]{
           //set flag to notify 
           ctl_events_set_clear(&BUS_INT_events,BUS_INT_EV_I2C_CMD_RX,0);
         }
+        //set P6OUT to zero to signal completion
+        P6OUT=0;
         //set state to idle
         arcBus_stat.i2c_stat.mode=BUS_I2C_IDLE;
       }
@@ -217,6 +223,11 @@ void bus_I2C_isr(void) __ctl_interrupt[USCI_B0_VECTOR]{
     break;
     case USCI_I2C_UCBIT9IFG:    //9th bit interrupt
     break;
+  }
+  //check if P6 is cleared
+  if(P6OUT){
+    //set P6.0 high at the end of the ISR
+    P6OUT|=BIT0;
   }
 }
 
