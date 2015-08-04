@@ -249,6 +249,8 @@ void BUS_int_clear(unsigned char clear);
 
 //check for own address
 int BUS_OA_check(unsigned char addr);
+//return own address
+unsigned char BUS_get_OA(void);
 
 //return which build is used
 int BUS_build(void);

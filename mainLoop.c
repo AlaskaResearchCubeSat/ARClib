@@ -569,7 +569,7 @@ static void ARC_bus_helper(void *p) __toplevel{
               //set data type
               ptr[0]=SPI_ERROR_DAT;
               //set own address
-              ptr[1]=UCB0I2COA3;
+              ptr[1]=BUS_get_OA();
               //get maximum size for data packet. part of the buffer is used to read errors into
               maxsize=BUS_get_buffer_size()-512-2;
               //check if requested size is greater then max

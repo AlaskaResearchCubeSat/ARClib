@@ -9,15 +9,36 @@
 #include "ARCbus_internal.h"
 
 
+
+
 //=======================================================================================
 //                                 [BUS Functions]
 //=======================================================================================
+
+//return own address
+unsigned char BUS_get_OA(void){
+  int i;
+  //base address for own I2C addresses
+  volatile unsigned int * const oa_base=&UCB0I2COA0;
+  //loop through addresses and return the first one that matches
+  //TODO: perhaps there is a better way to do this (on a per task basis?)
+  for(i=0;i<4;i++){
+    //check if address enabled
+    if(oa_base[i]&UCOAEN){
+      //return address
+      return (~(UCGCEN|UCOAEN))&oa_base[i];
+    }
+  }
+  //no match! return OA0
+  //TODO: report error? do something else?
+  return UCB0I2COA0;
+}
 
 //Setup buffer for command 
 unsigned char *BUS_cmd_init(unsigned char *buf,unsigned char id){
   buf[1]=id;
   //set originator address
-  buf[0]=UCB0I2COA0;
+  buf[0]=BUS_get_OA();
   //start of payload
   return buf+2;
 }
