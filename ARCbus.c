@@ -42,12 +42,6 @@ int OA_check(unsigned char addr){
 
 //function to check I2C addresses
 int addr_chk(unsigned char addr){
-  int resp;
-  //check for own address
-  if((resp=OA_check(addr))!=RET_SUCCESS){
-    //return error if it occured
-    return resp;
-  }
   //check if 8th bit is set
   if(addr&0x80){
     return ERR_BAD_ADDR;
@@ -196,6 +190,11 @@ int BUS_SPI_txrx(unsigned char addr,void *tx,void *rx,unsigned short len){
   unsigned short crc;
   //check address
   if((resp=addr_chk(addr))!=RET_SUCCESS){
+    //return error if it occured
+    return resp;
+  }
+  //reject own address
+  if((resp=OA_check(addr))!=RET_SUCCESS){
     //return error if it occured
     return resp;
   }
