@@ -23,7 +23,7 @@ unsigned char *BUS_cmd_init(unsigned char *buf,unsigned char id){
 }
 
 //check for own address
-int OA_check(unsigned char addr){
+int BUS_OA_check(unsigned char addr){
   int i;
   //base address for own I2C addresses
   volatile unsigned int * const oa_base=&UCB0I2COA0;
@@ -194,7 +194,7 @@ int BUS_SPI_txrx(unsigned char addr,void *tx,void *rx,unsigned short len){
     return resp;
   }
   //reject own address
-  if((resp=OA_check(addr))!=RET_SUCCESS){
+  if((resp=BUS_OA_check(addr))!=RET_SUCCESS){
     //return error if it occured
     return resp;
   }
