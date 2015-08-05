@@ -166,6 +166,8 @@ int BUS_cmd_tx(unsigned char addr,void *buff,unsigned short len,unsigned short f
   //set master mode
   UCB0CTLW0|=UCMST;
   //UCB0CTLW0|=UCMST|UCTR;
+  //set P6 to 0xFF to denote the start of a transaction
+  P6OUT=0xFF;
   //generate start condition
   UCB0CTL1|=UCTXSTT;
   //if transmitting in the background, return
