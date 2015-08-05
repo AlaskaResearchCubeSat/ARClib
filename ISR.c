@@ -125,6 +125,9 @@ void bus_I2C_isr(void) __ctl_interrupt[USCI_B0_VECTOR]{
         UCB0IFG&=~UCSTTIFG;
         //check if transaction was a command
         if(arcBus_stat.i2c_stat.mode==BUS_I2C_RX){
+          if(UCB0IFG&(UCRXIFG0|UCRXIFG1|UCRXIFG2|UCRXIFG3)){
+            __no_operation();
+          }
           //set packet length
           I2C_rx_buf[I2C_rx_in].len=arcBus_stat.i2c_stat.rx.idx;
           //set buffer status to complete
