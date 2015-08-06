@@ -246,9 +246,9 @@ int BUS_SPI_txrx(unsigned char addr,void *tx,void *rx,unsigned short len){
   //check for omitted receive buffer
   if(rx!=NULL){
     // Source DMA address: receive register.
-    DMA0SA = (unsigned short)(&UCA0RXBUF);
+    *((unsigned int*)&DMA0SA) = (unsigned short)(&UCA0RXBUF);
     // Destination DMA address: rx buffer.
-    DMA0DA = (unsigned short)rx;
+    *((unsigned int*)&DMA0DA) = (unsigned short)rx;
     // The size of the block to be transferred
     DMA0SZ = len+BUS_SPI_CRC_LEN;
     // Configure the DMA transfer, single byte transfer with source increment
@@ -256,11 +256,11 @@ int BUS_SPI_txrx(unsigned char addr,void *tx,void *rx,unsigned short len){
   }
   //====[DMA channel1 used for transmit]====
   // Destination DMA address: the transmit buffer.
-  DMA1DA = (unsigned int)(&UCA0TXBUF);
+  *((unsigned int*)&DMA1DA) = (unsigned int)(&UCA0TXBUF);
   //check for omitted transmit buffer
   if(tx!=NULL){
     // Source DMA address: tx buffer
-    DMA1SA =((unsigned int)tx)+1;
+    *((unsigned int*)&DMA1SA) =((unsigned int)tx)+1;
     // The size of the block to be transferred
     DMA1SZ = len+BUS_SPI_CRC_LEN-1;
     // Configure the DMA transfer, single byte transfer with destination increment
@@ -270,7 +270,7 @@ int BUS_SPI_txrx(unsigned char addr,void *tx,void *rx,unsigned short len){
     UCA0TXBUF=*((unsigned char*)tx);
   }else{
     //need to send something to receive something so setup TX for dummy bytes
-    DMA1SA = (unsigned int)(&UCA0TXBUF);
+    *((unsigned int*)&DMA1SA) = (unsigned int)(&UCA0TXBUF);
     // The size of the block to be transferred
     DMA1SZ = len+BUS_SPI_CRC_LEN-1;
     // Configure the DMA transfer, single byte transfer with no increment
