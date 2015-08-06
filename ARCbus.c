@@ -307,7 +307,7 @@ int BUS_SPI_txrx(unsigned char addr,void *tx,void *rx,unsigned short len){
     time=10;
   }
   //wait for SPI complete signal from master
-  e=ctl_events_wait(CTL_EVENT_WAIT_ANY_EVENTS_WITH_AUTO_CLEAR,&arcBus_stat.events,BUS_EV_SPI_MASTER,CTL_TIMEOUT_DELAY,time);
+  e=ctl_events_wait(CTL_EVENT_WAIT_ANY_EVENTS_WITH_AUTO_CLEAR,&arcBus_stat.events,BUS_EV_SPI_MASTER,CTL_TIMEOUT_DELAY,time*1000);
   //disable DMA
   DMA0CTL&=~DMAEN;
   DMA1CTL&=~DMAEN; 
