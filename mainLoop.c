@@ -280,17 +280,17 @@ static void ARC_bus_run(void *p) __toplevel{
               DMACTL0 &=~(DMA0TSEL_15|DMA1TSEL_15);
               DMACTL0 |= (DMA0TSEL_3|DMA1TSEL_4);
               // Source DMA address: receive register.
-              DMA0SA = (unsigned short)(&UCA0RXBUF);
+              *((unsigned int*)&DMA0SA) = (unsigned short)(&UCA0RXBUF);
               // Destination DMA address: rx buffer.
-              DMA0DA = (unsigned short)SPI_buf;
+              *((unsigned int*)&DMA0DA) = (unsigned short)SPI_buf;
               // The size of the block to be transferred
               DMA0SZ = arcBus_stat.spi_stat.len+BUS_SPI_CRC_LEN;
               // Configure the DMA transfer, single byte transfer with destination increment
               DMA0CTL = DMAIE|DMADT_0|DMASBDB|DMAEN|DMADSTINCR1|DMADSTINCR0;
               // Source DMA address: SPI transmit buffer, constant data will be sent
-              DMA1DA = (unsigned int)(&UCA0TXBUF);
+              *((unsigned int*)&DMA1DA) = (unsigned int)(&UCA0TXBUF);
               // Destination DMA address: the transmit buffer.
-              DMA1DA = (unsigned int)(&UCA0TXBUF);
+              *((unsigned int*)&DMA1DA) = (unsigned int)(&UCA0TXBUF);
               // The size of the block to be transferred
               DMA1SZ = arcBus_stat.spi_stat.len+BUS_SPI_CRC_LEN-1;
               // Configure the DMA transfer, single byte transfer with no increment
