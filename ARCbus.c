@@ -278,6 +278,8 @@ int BUS_SPI_txrx(unsigned char addr,void *tx,void *rx,unsigned short len){
     //start things off with an initial transfer
     UCA0TXBUF=BUS_SPI_DUMMY_DATA;
   }
+  //TESTING: set P6
+  P6OUT=0xFD;
   //send SPI setup command
   ptr=BUS_cmd_init(buf,CMD_SPI_RDY);
   //send MSB first
@@ -297,6 +299,8 @@ int BUS_SPI_txrx(unsigned char addr,void *tx,void *rx,unsigned short len){
     //TODO: better error code here
     return resp;
   }
+  //TESTING: set P6
+  P6OUT=0xFC;
   //calculate wait time based on packet length
   time=len/10;
   if(time<=10){
@@ -309,6 +313,8 @@ int BUS_SPI_txrx(unsigned char addr,void *tx,void *rx,unsigned short len){
   DMA1CTL&=~DMAEN; 
   //SPI pins back to GPIO
   SPI_deactivate();
+  //TESTING: set P6
+  P6OUT=0;
   //Check if SPI complete event received
   if(e&BUS_EV_SPI_COMPLETE){
     //if RX is null then don't calculate CRC

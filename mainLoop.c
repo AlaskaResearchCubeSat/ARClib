@@ -248,9 +248,13 @@ static void ARC_bus_run(void *p) __toplevel{
               report_error(ERR_LEV_CRITICAL,BUS_ERR_SRC_MAIN_LOOP,MAIN_LOOP_RESET_FAIL,0);
               break;
             case CMD_SPI_RDY:
+              //TESTING: set P6
+              P6OUT=0xFB;
               //check length
               if(len!=2){
-                resp=ERR_PK_LEN;
+                resp=ERR_PK_LEN;            
+                //TESTING: set P6
+                P6OUT=0;
                 break;
               }
               //assemble length
@@ -260,12 +264,16 @@ static void ARC_bus_run(void *p) __toplevel{
               if(arcBus_stat.spi_stat.len+2>BUS_get_buffer_size()){
                 //length is too long
                 //cause NACK to be sent
-                resp=ERR_SPI_LEN;
+                resp=ERR_SPI_LEN;        
+                //TESTING: set P6
+                P6OUT=0;
                 break;
               }
               //check if already transmitting
               if(SPI_buf!=NULL){
-                resp=ERR_SPI_BUSY;
+                resp=ERR_SPI_BUSY;        
+                //TESTING: set P6
+                P6OUT=0;
                 break;
               }
               SPI_buf=BUS_get_buffer(CTL_TIMEOUT_NOW,0);
@@ -274,10 +282,14 @@ static void ARC_bus_run(void *p) __toplevel{
                 //buffer locked, set event
                 ctl_events_set_clear(&SUB_events,SUB_EV_SPI_ERR_BUSY,0);
                 //set response
-                resp=ERR_BUFFER_BUSY;
+                resp=ERR_BUFFER_BUSY;        
+                //TESTING: set P6
+                P6OUT=0;
                 //stop SPI setup
                 break;
               }
+              //TESTING: set P6
+              P6OUT=0xFA;
               //save address of SPI slave
               SPI_addr=addr;
               //setup SPI structure
@@ -307,12 +319,16 @@ static void ARC_bus_run(void *p) __toplevel{
               DMA1CTL=DMADT_0|DMASBDB|DMAEN|DMASRCINCR0|DMASRCINCR0;
               //write the Tx buffer to start transfer
               UCA0TXBUF=BUS_SPI_DUMMY_DATA;
+              //TESTING: set P6
+              P6OUT=0xFB;
             break;
             
             case CMD_SPI_COMPLETE:
               //check length
               if(len!=0){
-                resp=ERR_PK_LEN;
+                resp=ERR_PK_LEN;        
+                //TESTING: set P6
+                P6OUT=0xFE;
                 break;
               }
 #ifndef CDH_LIB
@@ -338,6 +354,8 @@ static void ARC_bus_run(void *p) __toplevel{
               //turn off SPI
               SPI_deactivate();
               //SPI transfer is done
+              //TESTING: set P6
+              P6OUT=0;
               //notify CDH board
 #ifndef CDH_LIB
               ctl_events_set_clear(&BUS_helper_events,BUS_HELPER_EV_SPI_CLEAR_CMD,0);

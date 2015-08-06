@@ -284,12 +284,18 @@ void bus_int(void) __ctl_interrupt[PORT2_VECTOR]{
 void DMA_int(void) __ctl_interrupt[DMA_VECTOR]{
   switch(DMAIV){
     case DMAIV_DMA0IFG:
+      //TESTING: set P6
+      P6OUT=0xF1;
       ctl_events_set_clear(&BUS_INT_events,BUS_INT_EV_SPI_COMPLETE,0);
     break;
     case DMAIV_DMA1IFG:
+      //TESTING: set P6
+      P6OUT=0xF2;
       ctl_events_set_clear(&DMA_events,DMA_EV_SD_SPI,0);
     break;
     case DMAIV_DMA2IFG:
+      //TESTING: set P6
+      P6OUT=0xF3;
       ctl_events_set_clear(&DMA_events,DMA_EV_USER,0);
     break;
   }
