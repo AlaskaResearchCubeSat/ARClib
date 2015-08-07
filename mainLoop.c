@@ -300,7 +300,7 @@ static void ARC_bus_run(void *p) __toplevel{
               //============[setup DMA for transfer]============
               //setup source trigger
               DMACTL0 &=~(DMA0TSEL_15|DMA1TSEL_15);
-              DMACTL0 |= (DMA0TSEL_3|DMA1TSEL_4);
+              DMACTL0 |= (DMA0TSEL__USCIA0RX|DMA1TSEL__USCIA0TX);
               // Source DMA address: receive register.
               *((unsigned int*)&DMA0SA) = (unsigned short)(&UCA0RXBUF);
               // Destination DMA address: rx buffer.
