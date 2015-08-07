@@ -239,7 +239,7 @@ int BUS_SPI_txrx(unsigned char addr,void *tx,void *rx,unsigned short len){
   SPI_slave_setup();
   //setup DMA for transfer
   DMACTL0 &=~(DMA0TSEL_15|DMA1TSEL_15);
-  DMACTL0 |= (DMA0TSEL_3|DMA1TSEL_4);
+  DMACTL0 |= (DMA0TSEL__USCIA0RX|DMA1TSEL__USCIA0TX);
   //====[DMA channel0 used for receive]====
   //check for omitted receive buffer
   if(rx!=NULL){
