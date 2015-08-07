@@ -252,7 +252,7 @@ int BUS_SPI_txrx(unsigned char addr,void *tx,void *rx,unsigned short len){
     // The size of the block to be transferred
     DMA0SZ = len+BUS_SPI_CRC_LEN;
     // Configure the DMA transfer, single byte transfer with source increment
-    DMA0CTL =DMADT_0|DMASBDB|DMAEN|DMADSTINCR1|DMADSTINCR0;
+    DMA0CTL =DMADT_0|DMASBDB|DMAEN|DMADSTINCR1|DMADSTINCR0|DMAIE;
   }
   //====[DMA channel1 used for transmit]====
   // Destination DMA address: the transmit buffer.
@@ -274,7 +274,7 @@ int BUS_SPI_txrx(unsigned char addr,void *tx,void *rx,unsigned short len){
     // The size of the block to be transferred
     DMA1SZ = len+BUS_SPI_CRC_LEN-1;
     // Configure the DMA transfer, single byte transfer with no increment
-    DMA1CTL=DMADT_0|DMASBDB|DMASRCINCR0|DMASRCINCR0|DMAEN;
+    DMA1CTL=DMADT_0|DMASBDB|DMASRCINCR0|DMASRCINCR0|DMAEN|DMAIE;
     //start things off with an initial transfer
     UCA0TXBUF=BUS_SPI_DUMMY_DATA;
   }
