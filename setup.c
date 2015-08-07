@@ -224,14 +224,12 @@ void initARCbus(unsigned char addr){
   UCB0IE|=UCNACKIE|UCSTTIE|UCSTPIE|UCALIE|UCCLTOIE|UCTXIE0|UCRXIE0|UCTXIE1|UCRXIE1|UCTXIE2|UCRXIE2|UCTXIE3|UCRXIE3;
   //============[setup SPI]============
   //put UCA0 into reset state
-  UCA0CTL1=UCSWRST;
-  //set MSB first, 3 wire SPI mod, 8 bit words
-  UCA0CTL0=UCMSB|UCMODE_0|UCSYNC;
+  UCA0CTLW0|=UCSWRST;
+  //set MSB first, 3 wire SPI mod, 8 bit words, clock off of SMCLK, keep reset
+  UCA0CTLW0=UCMSB|UCMODE_0|UCSYNC|UCSSEL__SMCLK|UCSWRST;
   //clock UCA0 off of SMCLK
-  UCA0CTL1|=UCSSEL_2;
   //set SPI clock to 3.2MHz
-  UCA0BR0=0x05;
-  UCA0BR1=0;
+  UCA0BRW=5;
   //set SPI clock to 1MHz
   //UCA0BR0=0x10;
   //UCA0BR1=0;
