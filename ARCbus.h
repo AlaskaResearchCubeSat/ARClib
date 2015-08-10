@@ -82,7 +82,7 @@ enum{BUS_TM_OFF,BUS_TM_NO_TIMESLICE};
 #define BUS_I2C_DUMMY_DATA  (0xFF)
 
 //data to be sent over SPI when there is no data to transmit
-#define BUS_SPI_DUMMY_DATA  (0xFF)
+#define BUS_SPI_DUMMY_DATA  (0x55)
 
 //flags for BUS_cmd_tx
 enum{BUS_CMD_FL_NACK=0x02};
