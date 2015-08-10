@@ -316,7 +316,7 @@ static void ARC_bus_run(void *p) __toplevel{
               // The size of the block to be transferred
               DMA1SZ = arcBus_stat.spi_stat.len+BUS_SPI_CRC_LEN-1;
               // Configure the DMA transfer, single byte transfer with no increment
-              DMA1CTL=DMADT_0|DMASBDB|DMAEN|DMASRCINCR0|DMASRCINCR0;
+              DMA1CTL= DMAIE|DMADT_0|DMASBDB|DMAEN|DMASRCINCR0|DMASRCINCR0;
               //write the Tx buffer to start transfer
               UCA0TXBUF=BUS_SPI_DUMMY_DATA;
               //TESTING: set P6
