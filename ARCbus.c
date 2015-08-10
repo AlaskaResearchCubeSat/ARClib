@@ -241,7 +241,9 @@ int BUS_SPI_txrx(unsigned char addr,void *tx,void *rx,unsigned short len){
   SPI_slave_setup();
   //setup DMA for transfer
   DMACTL0 &=~(DMA0TSEL_15|DMA1TSEL_15);
+  DMACTL1 &=~(DMA2TSEL_15);
   DMACTL0 |= (DMA0TSEL__USCIA0RX|DMA1TSEL__USCIA0TX);
+  DMACTL1 |= (DMA2TSEL__USCIA0TX);
   //====[DMA channel0 used for receive]====
   //check for omitted receive buffer
   if(rx!=NULL){
@@ -255,6 +257,30 @@ int BUS_SPI_txrx(unsigned char addr,void *tx,void *rx,unsigned short len){
     DMA0CTL =DMADT_0|DMASBDB|DMAEN|DMADSTINCR1|DMADSTINCR0|DMAIE;
   }
   //====[DMA channel1 used for transmit]====
+  // Destination DMA address: the transmit buffer.
+  *((unsigned int*)&DMA2DA) = (unsigned int)(&UCA0TXBUF);
+  //check for omitted transmit buffer
+  if(tx!=NULL){
+    // Source DMA address: tx buffer
+    *((unsigned int*)&DMA2SA) =((unsigned int)tx)+1;
+    // The size of the block to be transferred
+    DMA2SZ = len+BUS_SPI_CRC_LEN-1;
+    // Configure the DMA transfer, single byte transfer with destination increment
+    //enable interrupt to notify code when transfer is complete
+    DMA2CTL=DMADT_0|DMASBDB|DMASRCINCR1|DMASRCINCR0|DMAEN;
+    //start things off with an initial transfer
+    UCA0TXBUF=*((unsigned char*)tx);
+  }else{
+    //need to send something to receive something so setup TX for dummy bytes
+    *((unsigned int*)&DMA2SA) = (unsigned int)(&UCA0TXBUF);
+    // The size of the block to be transferred
+    DMA2SZ = len+BUS_SPI_CRC_LEN-1;
+    // Configure the DMA transfer, single byte transfer with no increment
+    DMA2CTL=DMADT_0|DMASBDB|DMASRCINCR0|DMASRCINCR0|DMAEN|DMAIE;
+    //start things off with an initial transfer
+    UCA0TXBUF=BUS_SPI_DUMMY_DATA;
+  }
+  //====[DMA channel2 used for redundant transmit]====
   // Destination DMA address: the transmit buffer.
   *((unsigned int*)&DMA1DA) = (unsigned int)(&UCA0TXBUF);
   //check for omitted transmit buffer
