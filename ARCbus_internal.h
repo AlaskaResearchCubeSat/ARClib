@@ -72,9 +72,6 @@
   //task structure for idle task and ARC bus task
   extern CTL_TASK_t idle_task,ARC_bus_task;
   
-  //test mode status
-  extern int bus_test_mode;
-  
     //type for keeping track of errors
   typedef struct{
     int magic;

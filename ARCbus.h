@@ -75,9 +75,6 @@ enum{ERR_PK_LEN=1,ERR_UNKNOWN_CMD=2,ERR_SPI_LEN=3,ERR_BAD_PK=4,ERR_SPI_BUSY=5,ER
 //BUS_ADDR_GC is general call address which every board will acknowledge for receiving
 enum{BUS_ADDR_LEDL=0x11,BUS_ADDR_ACDS=0x12,BUS_ADDR_COMM=0x13,BUS_ADDR_IMG=0x14,BUS_ADDR_CDH=0x15,BUS_ADDR_GC=0};
     
-//test modes
-enum{BUS_TM_OFF,BUS_TM_NO_TIMESLICE};
-
 //data to be sent over I2C when there is no data to transmit
 #define BUS_I2C_DUMMY_DATA  (0xFF)
 
@@ -254,8 +251,6 @@ unsigned char BUS_get_OA(void);
 
 //return which build is used
 int BUS_build(void);
-//change test mode
-int BUS_set_test_mode(int mode);
 
 #endif
   

@@ -370,22 +370,4 @@ int BUS_build(void){
     return BUS_BUILD_SUBSYSTEM;
 #endif
 }
-
-#ifndef CDH_LIB
-int BUS_set_test_mode(int mode){
-    //check which test mode to use
-    switch(mode){
-        case BUS_TM_OFF:
-            bus_test_mode=BUS_TM_OFF;
-        break;
-        case BUS_TM_NO_TIMESLICE:
-            bus_test_mode=BUS_TM_NO_TIMESLICE;
-        break;
-        default:
-            return ERR_INVALID_ARGUMENT;
-        break;                        
-    }
-    return RET_SUCCESS;
-}
-#endif
     
