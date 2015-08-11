@@ -123,6 +123,9 @@ int async_close(void){
       report_error(ERR_LEV_ERROR,BUS_ERR_SRC_ASYNC,ASYNC_ERR_CLOSE_FAIL,resp);
     }
   }
+  //closing failed TODO: better handling/reporting
+  //clear address
+  async_addr=0;
   return resp;
 }
 
