@@ -208,15 +208,17 @@ void bus_I2C_isr(void) __ctl_interrupt[USCI_B0_VECTOR]{
     case USCI_I2C_UCBCNTIFG:    //Byte Counter Zero
     break;
     case USCI_I2C_UCCLTOIFG:    //Cock low timeout
-      //check if master or slave
-      if(UCB0CTLW0&UCMST){
-        //master mode, generate stop condition
-        UCB0CTL1|=UCTXSTP;
-        //set end event
-        end_e=ERR_I2C_CLL;
-      }else{
-        //slave mode, send NACK
-        UCB0CTL1|=UCTXNACK;
+      //the nuclear approch: restart everything
+      UCB0CTLW0|=UCSWRST;
+      UCB0CTLW0&=~UCSWRST;
+      //set state to idle
+      arcBus_stat.i2c_stat.mode=BUS_I2C_IDLE;
+      //set end event
+      end_e=BUS_EV_I2C_COMPLETE;
+      //reset rx buffer status if in progress
+      if(I2C_rx_buf[I2C_rx_in].stat==I2C_PACKET_STAT_IN_PROGRESS){
+        //reset packet flags
+        I2C_rx_buf[I2C_rx_in].stat=I2C_PACKET_STAT_EMPTY;
       }
       //set event
       ctl_events_set_clear(&arcBus_stat.events,BUS_EV_I2C_ERR_CCL,0);
