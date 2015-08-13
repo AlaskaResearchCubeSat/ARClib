@@ -63,8 +63,21 @@ void start_timerA(void){
   TA1CTL|=MC_2;
 }
 
+//setup Supply voltage supervisor and monitor levels and interrupts
 void initSVS(void){
-  #warning TODO : setup supply voltage monitoring
+  //check voltage level
+  switch(PMMCTL0&PMMCOREV_3){
+    //settings for highest core voltage settings
+    case PMMCOREV_3:
+      //unlock PMM
+      PMMCTL0_H=PMMPW_H;
+      //setup high side supervisor and monitor
+      SVSMHCTL=SVMHE|SVSHE|SVSHRVL_3|SVSMHRRL_7;
+      //lock PMM
+      PMMCTL0_H=0;
+    break;
+  }
+  //TODO: setup interrupts
 }
 
 //low level setup code
