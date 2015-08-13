@@ -465,6 +465,16 @@ static void ARC_bus_run(void *p) __toplevel{
     if(e&BUS_INT_EV_I2C_ARB_LOST){
       report_error(ERR_LEV_DEBUG,BUS_ERR_SRC_MAIN_LOOP,MAIN_LOOP_ERR_I2C_ARB_LOST,0);
     }
+    //Low side supply error
+    if(e&BUS_INT_EV_SVML){
+      //report error
+      report_error(ERR_LEV_CRITICAL,BUS_ERR_SRC_MAIN_LOOP,MAIN_LOOP_ERR_SVML,0);
+    }
+    //high side supply error
+    if(e&BUS_INT_EV_SVMH){
+      //report error
+      report_error(ERR_LEV_CRITICAL,BUS_ERR_SRC_MAIN_LOOP,MAIN_LOOP_ERR_SVMH,0);
+    }
   }
 }
     

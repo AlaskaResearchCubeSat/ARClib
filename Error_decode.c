@@ -158,6 +158,10 @@ char *err_decode_arcbus(char buf[150], unsigned short source,int err, unsigned s
           return "ARCbus Main Loop : Arbitration Lost";
         case MAIN_LOOP_RESET_FAIL:
           return "ARCbus Main Loop : Reset Function Failed";
+        case MAIN_LOOP_ERR_SVML:
+          return "ARCbus Main Loop : Core Supply Low Error";
+        case MAIN_LOOP_ERR_SVMH:
+          return "ARCbus Main Loop : Input Supply Low Error";
       }
     break; 
     case BUS_ERR_SRC_STARTUP:

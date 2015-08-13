@@ -77,7 +77,8 @@ void initSVS(void){
       PMMCTL0_H=0;
     break;
   }
-  //TODO: setup interrupts
+  //setup interrupts
+  PMMRIE|=SVMLIE|SVMHIE;
 }
 
 //low level setup code

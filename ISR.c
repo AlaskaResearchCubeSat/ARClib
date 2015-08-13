@@ -302,3 +302,43 @@ void task_tick(void) __ctl_interrupt[TIMER1_A0_VECTOR]{
   }
   BUS_timer_timeout_check();
 }
+
+//================[System NMI Interrupt]=========================
+void SYS_NMI(void){
+  switch(SYSSNIV){
+    //core supply voltage monitor interrupt
+    case SYSSNIV_SVMLIFG:
+      //event to report error
+      ctl_events_set_clear(&BUS_INT_events,BUS_INT_EV_SVML,0);
+    break;
+    //input supply voltage monitor interrupt
+    case SYSSNIV_SVMHIFG:
+      //event to report error
+      ctl_events_set_clear(&BUS_INT_events,BUS_INT_EV_SVMH,0);
+    break;
+    //core supply voltage monitor delay interrupt
+    case SYSSNIV_DLYLIFG:
+    break;
+    //interrupt supply voltage monitor delay interrupt
+    case SYSSNIV_DLYHIFG:
+    break;
+    //Vacant memory access interrupt
+    case SYSSNIV_VMAIFG:
+    break;
+    //JTAG mailbox in interrupt
+    case SYSSNIV_JMBINIFG:
+    break;
+    //JTAG mailbox out interrupt
+    case SYSSNIV_JMBOUTIFG:
+    break;
+    //SVMLVLRIFGSVMHVLRIFG
+    case SYSSNIV_VLRLIFG:
+    break;
+    //SVMHVLRIFGSVMHVLRIFG
+    case SYSSNIV_VLRHIFG:
+    break;
+  }
+}
+
+
+
