@@ -78,10 +78,10 @@ void ARC_setup(void){
     //clear magic so we are not confused in the future
     saved_error.magic=RESET_MAGIC_EMPTY;
   } 
-  //setup SVS
-  initSVS();
   //setup clocks
   initCLK();
+  //setup SVS
+  initSVS();
   //setup timerA
   init_timerA();
   //set timer to increment by 1
