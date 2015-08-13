@@ -304,7 +304,7 @@ void task_tick(void) __ctl_interrupt[TIMER1_A0_VECTOR]{
 }
 
 //================[System NMI Interrupt]=========================
-void SYS_NMI(void){
+void SYS_NMI(void)__ctl_interrupt[SYSNMI_VECTOR]{
   switch(SYSSNIV){
     //core supply voltage monitor interrupt
     case SYSSNIV_SVMLIFG:
