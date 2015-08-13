@@ -333,9 +333,23 @@ void SYS_NMI(void)__ctl_interrupt[SYSNMI_VECTOR]{
     break;
     //SVMLVLRIFGSVMHVLRIFG
     case SYSSNIV_VLRLIFG:
+      //clear interrupt flag bits
+      //unlock PMM
+      PMMCTL0_H=PMMPW_H;
+      //clear interrupt flags
+      PMMIFG&=~(SVMLIFG|SVMLVLRIFG);
+      //lock PMM
+      PMMCTL0_H=0;
     break;
     //SVMHVLRIFGSVMHVLRIFG
     case SYSSNIV_VLRHIFG:
+      //clear interrupt flag bits
+      //unlock PMM
+      PMMCTL0_H=PMMPW_H;
+      //clear interrupt flags
+      PMMIFG&=~(SVMHIFG|SVMHVLRIFG);
+      //lock PMM
+      PMMCTL0_H=0;
     break;
   }
 }

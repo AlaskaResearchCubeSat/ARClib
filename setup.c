@@ -75,8 +75,10 @@ void initSVS(void){
       SVSMHCTL=SVMHE|SVSHE|SVSHRVL_3|SVSMHRRL_7;
     break;
   }
+  //clear interrupt flags
+  PMMIFG&=~(SVMLIFG|SVMHIFG|SVMHVLRIFG|SVMLVLRIFG);
   //setup interrupts
-  PMMRIE|=SVMLIE|SVMHIE;
+  PMMRIE|=SVMLIE|SVMHIE|SVMHVLRIE|SVMLVLRIE;
   //lock PMM
   PMMCTL0_H=0;
 }
