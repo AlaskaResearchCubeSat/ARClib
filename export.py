@@ -7,8 +7,8 @@ import sys
 import time
 import re
 
-inputDir="./"
-prefix="Z:\Software"
+inputDir=os.path.dirname(os.path.realpath(sys.argv[0]))
+prefix=os.path.realpath(os.path.join(inputDir,"../../"))
 lib=os.path.join(prefix,"lib")
 include=os.path.join(prefix,"include")
 basename="BUSlib"
