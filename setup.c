@@ -29,19 +29,18 @@ void initCLK(void){
   //kick watchdog
   WDT_KICK();
   //set higher core voltage
-  PMM_setVCore(PMM_CORE_LEVEL_3);
-  
-  //setup clocks
-  //set frequency range
-  UCSCTL1=DCORSEL_5;
-  //setup FLL for 19.99 MHz operation
-  UCSCTL2=FLLD__4|(609);
-  UCSCTL3=SELREF__XT1CLK|FLLREFDIV__4;
+  if(!PMM_setVCore(PMM_CORE_LEVEL_3)){
+    //Voltage changed succeeded, set frequency
+    //setup clocks
+    //set frequency range
+    UCSCTL1=DCORSEL_5;
+    //setup FLL for 19.99 MHz operation
+    UCSCTL2=FLLD__4|(609);
+    UCSCTL3=SELREF__XT1CLK|FLLREFDIV__4;
+  }
   //use XT1 for ACLK and DCO for MCLK and SMCLK
   UCSCTL4=SELA_0|SELS_3|SELM_3;
-
  
-  
   //set time ticker to zero
   ticker_time=0;
   //TODO: Maybe wait for LFXT to startup?
