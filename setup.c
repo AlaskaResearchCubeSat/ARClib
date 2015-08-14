@@ -76,6 +76,10 @@ void initSVS(void){
       //setup high side supervisor and monitor
       SVSMHCTL=SVMHE|SVSHE|SVSHRVL_3|SVSMHRRL_7;
     break;
+    default :
+      //unexpected core voltage, did not set SVM
+      _record_error(ERR_LEV_CRITICAL,BUS_ERR_SRC_STARTUP,STARTUP_ERR_SVM_UNEXPECTED_VCORE,PMMCTL0,0);
+    break;
   }
   //clear interrupt flags
   PMMIFG&=~(SVMLIFG|SVMHIFG|SVMHVLRIFG|SVMLVLRIFG);
