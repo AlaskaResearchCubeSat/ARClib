@@ -37,6 +37,9 @@ void initCLK(void){
     //setup FLL for 19.99 MHz operation
     UCSCTL2=FLLD__4|(609);
     UCSCTL3=SELREF__XT1CLK|FLLREFDIV__4;
+  }else{
+    //core voltage could not be set, report error
+    _record_error(ERR_LEV_CRITICAL,BUS_ERR_SRC_STARTUP,STARTUP_ERR_PMM_VCORE,PMMCTL0,0);
   }
   //use XT1 for ACLK and DCO for MCLK and SMCLK
   UCSCTL4=SELA_0|SELS_3|SELM_3;

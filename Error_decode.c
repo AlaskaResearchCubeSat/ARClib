@@ -202,6 +202,9 @@ char *err_decode_arcbus(char buf[150], unsigned short source,int err, unsigned s
           return "Startup Code : unexpected software BOR";
         case STARTUP_ERR_UNEXPECTED_DOPOR:
           return "Startup Code : unexpected software POR";
+        case STARTUP_ERR_PMM_VCORE:
+          sprintf(buf,"Startup Code : failed to set Vcore PMMCTL0 = 0x%04X",argument);
+          return buf;
       }
     break; 
     case BUS_ERR_SRC_ASYNC:
