@@ -338,6 +338,8 @@ void SYS_NMI(void)__ctl_interrupt[SYSNMI_VECTOR]{
       PMMCTL0_H=PMMPW_H;
       //clear interrupt flags
       PMMIFG&=~(SVMLIFG|SVMLVLRIFG);
+      //setup interrupt enables
+      PMMRIE|=SVMLIE|SVMHIE|SVMHVLRIE|SVMLVLRIE;
       //lock PMM
       PMMCTL0_H=0;
     break;
@@ -348,6 +350,8 @@ void SYS_NMI(void)__ctl_interrupt[SYSNMI_VECTOR]{
       PMMCTL0_H=PMMPW_H;
       //clear interrupt flags
       PMMIFG&=~(SVMHIFG|SVMHVLRIFG);
+      //setup interrupt enables
+      PMMRIE|=SVMLIE|SVMHIE|SVMHVLRIE|SVMLVLRIE;
       //lock PMM
       PMMCTL0_H=0;
     break;
