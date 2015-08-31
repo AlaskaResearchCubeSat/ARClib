@@ -31,6 +31,7 @@
 ; Create sections
         .data
         .bss
+        dsect "THREAD"
 
 ; Go to code section.
         .psect  "ISR"
@@ -71,6 +72,14 @@ save_lp:
         mov.w   #SFB(IDATA0), r15
         mov.w   #data_init_begin, r14
         mov.w   #data_init_end-data_init_begin, r13
+        callx   #_memcpy
+        ENDLINKIF
+
+; Copy from initialised thread section to thread section.
+        LINKIF  SIZEOF(THREAD)
+        mov.w   #SFB(THREAD), r15
+        mov.w   #thread_init_begin, r14
+        mov.w   #thread_init_end-thread_init_begin, r13
         callx   #_memcpy
         ENDLINKIF
 
@@ -144,6 +153,11 @@ ___heap_start__::
 data_init_begin:
         .init  "IDATA0"
 data_init_end:
+        .even
+thread_init_begin::
+        .init    "THREAD"
+thread_init_end::
+        .even
 
 #ifdef FULL_LIBRARY
         .bss
@@ -199,4 +213,40 @@ ___crt_res0    equ RES0_
 ___crt_res1    equ RES1_
 ___crt_res2    equ RES2_
 ___crt_res3    equ RES3_
+#endif
+
+#ifdef SIGNATURES
+        .csect  "SIGNATURES"
+        .keep
+___JTAG_SIGNATURE_1::
+        dw      0xffff
+___JTAG_SIGNATURE_2::
+        dw      0xffff        
+___BSL_SIGNATURE_1::
+        dw      0xffff
+___BSL_SIGNATURE_2::
+        dw      0xffff
+___IP_ENCAPSULATION_SIGNATURE_1::
+        dw      0xffff
+___IP_ENCAPSULATION_SIGNATURE_2::
+        dw      0xffff
+#endif
+
+#ifdef ZAREA
+__BSL_Protect:
+      mov.w #2, r12
+      ret
+
+      .csect  "ZAREA"
+      .keep
+_BSLPROTVEC::
+      dw        __BSL_Protect
+BSLUNLOCK_SIGNATURE_2::
+      dw        0x3ca5
+BSLUNLOCK_SIGNATURE_1::
+      dw        0xc35a
+Reserved:
+      dw        0xffff
+_BSLSTARTVEC::
+      dw        __reset
 #endif
