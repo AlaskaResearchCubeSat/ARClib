@@ -99,7 +99,12 @@ void ARC_setup(void){
     _record_error(saved_error.level,saved_error.source,saved_error.err,saved_error.argument,0);
     //clear magic so we are not confused in the future
     saved_error.magic=RESET_MAGIC_EMPTY;
-  } 
+  }else{
+    //for some reason there is no error
+    _record_error(ERR_LEV_CRITICAL,BUS_ERR_SRC_STARTUP,STARTUP_ERR_NO_ERROR,0,0);
+    //clear magic so we are not confused in the future
+    saved_error.magic=RESET_MAGIC_EMPTY;
+  }
   //setup clocks
   initCLK();
   //setup SVS

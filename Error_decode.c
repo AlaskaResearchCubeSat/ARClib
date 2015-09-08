@@ -208,6 +208,8 @@ char *err_decode_arcbus(char buf[150], unsigned short source,int err, unsigned s
         case STARTUP_ERR_SVM_UNEXPECTED_VCORE:
           sprintf(buf,"Startup Code : failed to set SVM: unexpected Vcore PMMCTL0 = 0x%04X",argument);
           return buf;
+        case STARTUP_ERR_NO_ERROR:
+          return "Startup Code : Internal error, no stored startup error";
       }
     break; 
     case BUS_ERR_SRC_ASYNC:
