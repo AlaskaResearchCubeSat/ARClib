@@ -25,10 +25,10 @@ void bus_I2C_isr(void) __ctl_interrupt[USCI_B0_VECTOR]{
   switch(UCB0IV){
     case USCI_I2C_UCALIFG:    //Arbitration lost
       //Arbitration lost, resend later?
+      //set flag to indicate condition
+      ctl_events_set_clear(&BUS_INT_events,BUS_INT_EV_I2C_ARB_LOST,0);
       //check if running
       if(arcBus_stat.i2c_stat.mode!=BUS_I2C_IDLE){
-        //set flag to indicate condition
-        ctl_events_set_clear(&BUS_INT_events,BUS_INT_EV_I2C_ARB_LOST,0);
         //set status to idle
         arcBus_stat.i2c_stat.mode=BUS_I2C_IDLE;
       }
