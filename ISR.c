@@ -87,6 +87,13 @@ void bus_I2C_isr(void) __ctl_interrupt[USCI_B0_VECTOR]{
           UCB0CTL1|=UCTXNACK;
           //set flag to indicate an error
           ctl_events_set_clear(&BUS_INT_events,BUS_INT_EV_I2C_RX_BUSY,0);
+          //if packet is in progress, dump packet and set mode to idle
+          if(I2C_rx_buf[I2C_rx_in].stat==I2C_PACKET_STAT_IN_PROGRESS){
+            //set packet status to empty
+            I2C_rx_buf[I2C_rx_in].stat=I2C_PACKET_STAT_EMPTY;
+            //set state to idle
+            arcBus_stat.i2c_stat.mode=BUS_I2C_IDLE;
+          }
         }else{
           //setup receive status
           arcBus_stat.i2c_stat.rx.ptr=I2C_rx_buf[I2C_rx_in].dat;
