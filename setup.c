@@ -189,6 +189,8 @@ void initARCbus(unsigned char addr){
   ctl_mutex_init(&arcBus_stat.i2c_stat.mutex);
   //set I2C to idle mode
   arcBus_stat.i2c_stat.mode=BUS_I2C_IDLE;
+  //set I2C master to idle mode
+  arcBus_stat.i2c_stat.tx.stat=BUS_I2C_MASTER_IDLE;
   //initialize I2C packet queue to empty state
   for(i=0;i<BUS_I2C_PACKET_QUEUE_LEN;i++){
     I2C_rx_buf[i].stat=I2C_PACKET_STAT_EMPTY;

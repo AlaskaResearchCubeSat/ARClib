@@ -153,8 +153,8 @@ int BUS_cmd_tx(unsigned char addr,void *buff,unsigned short len,unsigned short f
   UCB0I2CSA=addr;
   //set index
   arcBus_stat.i2c_stat.tx.idx=0;
-  //set mode
-  arcBus_stat.i2c_stat.mode=BUS_I2C_TX;
+  //set I2C master state
+  arcBus_stat.i2c_stat.tx.stat=BUS_I2C_MASTER_PENDING;
   //set length
   arcBus_stat.i2c_stat.tx.len=len;
   //set data
@@ -179,6 +179,8 @@ int BUS_cmd_tx(unsigned char addr,void *buff,unsigned short len,unsigned short f
   packet_time=get_ticker_time();
   //release I2C bus
   BUS_I2C_release();
+  //set I2C master state
+  arcBus_stat.i2c_stat.tx.stat=BUS_I2C_MASTER_IDLE;
   //check which event(s) happened
   switch(e&BUS_EV_I2C_MASTER){
     case BUS_EV_I2C_COMPLETE:
