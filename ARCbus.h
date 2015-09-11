@@ -93,6 +93,9 @@ enum{BUS_I2C_SEND_BGND=1,BUS_I2C_SEND_FOREGROUND=0};
 //I2C modes
 enum {BUS_I2C_IDLE=0,BUS_I2C_TX=1,BUS_I2C_RX};
 
+//I2C master states
+enum{BUS_I2C_MASTER_IDLE=0,BUS_I2C_MASTER_PENDING=1,BUS_I2C_MASTER_IN_PROGRESS};
+
 //SPI modes
 enum{BUS_SPI_IDLE=0,BUS_SPI_SLAVE,BUS_SPI_MASTER};
     
@@ -123,6 +126,7 @@ typedef struct{
   struct {
     const unsigned char *ptr;
     short len,idx;
+    unsigned short stat;
   }tx;
   unsigned short mode;
   CTL_MUTEX_t mutex;

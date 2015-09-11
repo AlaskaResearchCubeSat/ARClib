@@ -178,6 +178,13 @@ void bus_I2C_isr(void) __ctl_interrupt[USCI_B0_VECTOR]{
       }
     break;
     case USCI_I2C_UCTXIFG0:    //Data transmit in master mode and Slave 0 TXIFG
+      //check master status 
+      if(arcBus_stat.i2c_stat.tx.stat==BUS_I2C_MASTER_PENDING){
+        //set I2C master state
+        arcBus_stat.i2c_stat.tx.stat=BUS_I2C_MASTER_IN_PROGRESS;
+        //set state to tx
+        arcBus_stat.i2c_stat.mode=BUS_I2C_TX;
+      }
       //check if there are more bytes
       if(arcBus_stat.i2c_stat.tx.len>arcBus_stat.i2c_stat.tx.idx){
         //transmit data
