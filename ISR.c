@@ -197,6 +197,8 @@ void bus_I2C_isr(void) __ctl_interrupt[USCI_B0_VECTOR]{
         arcBus_stat.i2c_stat.tx.stat=BUS_I2C_MASTER_IN_PROGRESS;
         //set state to tx
         arcBus_stat.i2c_stat.mode=BUS_I2C_TX;
+        //set flag to notify 
+        ctl_events_set_clear(&arcBus_stat.events,BUS_EV_I2C_MASTER_STARTED,0);
       }
       //check if there are more bytes
       if(arcBus_stat.i2c_stat.tx.len>arcBus_stat.i2c_stat.tx.idx){
