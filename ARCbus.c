@@ -173,6 +173,27 @@ int BUS_cmd_tx(unsigned char addr,void *buff,unsigned short len,unsigned short f
     //return success
     return RET_SUCCESS;
   }
+  //wait for packet to start
+  e=ctl_events_wait(CTL_EVENT_WAIT_ANY_EVENTS_WITH_AUTO_CLEAR,&arcBus_stat.events,BUS_EV_I2C_MASTER_START,CTL_TIMEOUT_DELAY,104);
+  //check to see if there was a problem
+  if(!(e&BUS_EV_I2C_MASTER_STARTED)){
+    //release I2C bus
+    BUS_I2C_release();
+    //set I2C master state
+    arcBus_stat.i2c_stat.tx.stat=BUS_I2C_MASTER_IDLE;
+    //chech which error happened
+    switch(e&BUS_EV_I2C_MASTER_START){
+      case 0:
+        //no event happened so timeout
+        return ERR_I2C_START_TIMEOUT;
+      case BUS_EV_I2C_NACK:
+        //I2C device did not acknowledge
+        return ERR_I2C_NACK;
+      default:
+        //error is not defined
+        return ERR_UNKNOWN;
+    }
+  }
   //wait for transaction to complete
   e=ctl_events_wait(CTL_EVENT_WAIT_ANY_EVENTS_WITH_AUTO_CLEAR,&arcBus_stat.events,BUS_EV_I2C_MASTER,CTL_TIMEOUT_DELAY,104);
   //save transaction time
