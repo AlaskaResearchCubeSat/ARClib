@@ -136,6 +136,16 @@ void bus_I2C_isr(void) __ctl_interrupt[USCI_B0_VECTOR]{
         }
         //set state to idle
         arcBus_stat.i2c_stat.mode=BUS_I2C_IDLE;
+        //check master status to see if a command is pending
+        if(arcBus_stat.i2c_stat.tx.stat==BUS_I2C_MASTER_PENDING){          
+          //transmision interrupted, start again
+          //set to transmit mode
+          UCB0CTLW0|=UCTR;
+          //clear master I2C flags
+          ctl_events_set_clear(&arcBus_stat.events,0,BUS_EV_I2C_MASTER|BUS_EV_I2C_MASTER_START);
+          //set master mode
+          UCB0CTLW0|=UCMST;
+        }
       }
     break;
     case USCI_I2C_UCRXIFG3:    //Slave 3 RXIFG
