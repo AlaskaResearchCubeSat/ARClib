@@ -158,6 +158,10 @@ char *err_decode_arcbus(char buf[150], unsigned short source,int err, unsigned s
           return "ARCbus Main Loop : Arbitration Lost";
         case MAIN_LOOP_RESET_FAIL:
           return "ARCbus Main Loop : Reset Function Failed";
+        case MAIN_LOOP_ERR_SVML:
+          return "ARCbus Main Loop : Core Supply Low Error";
+        case MAIN_LOOP_ERR_SVMH:
+          return "ARCbus Main Loop : Input Supply Low Error";
       }
     break; 
     case BUS_ERR_SRC_STARTUP:
@@ -198,6 +202,14 @@ char *err_decode_arcbus(char buf[150], unsigned short source,int err, unsigned s
           return "Startup Code : unexpected software BOR";
         case STARTUP_ERR_UNEXPECTED_DOPOR:
           return "Startup Code : unexpected software POR";
+        case STARTUP_ERR_PMM_VCORE:
+          sprintf(buf,"Startup Code : failed to set Vcore PMMCTL0 = 0x%04X",argument);
+          return buf;
+        case STARTUP_ERR_SVM_UNEXPECTED_VCORE:
+          sprintf(buf,"Startup Code : failed to set SVM: unexpected Vcore PMMCTL0 = 0x%04X",argument);
+          return buf;
+        case STARTUP_ERR_NO_ERROR:
+          return "Startup Code : Internal error, no stored startup error";
       }
     break; 
     case BUS_ERR_SRC_ASYNC:

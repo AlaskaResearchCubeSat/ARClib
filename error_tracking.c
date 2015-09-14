@@ -83,7 +83,8 @@ void startup_error_check(void){
     return;
     case SYSRSTIV_DOBOR:       //Software BOR
       if(RESET_MAGIC_PRE==saved_error.magic){
-        saved_error.magic=RESET_MAGIC_PRE;
+        //update magic value
+        saved_error.magic=RESET_MAGIC_POST;
       }else{
         saved_error.level=ERR_LEV_ERROR;
         saved_error.source=BUS_ERR_SRC_STARTUP;
@@ -125,7 +126,8 @@ void startup_error_check(void){
     break;
     case SYSRSTIV_DOPOR:       //Software POR
       if(RESET_MAGIC_PRE==saved_error.magic){
-        saved_error.magic=RESET_MAGIC_PRE;
+        //update magic value
+        saved_error.magic=RESET_MAGIC_POST;
       }else{
         saved_error.level=ERR_LEV_ERROR;
         saved_error.source=BUS_ERR_SRC_STARTUP;

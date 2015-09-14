@@ -34,6 +34,8 @@ const char *BUS_error_str(int error){
       return "ERROR TICKER TIME IS TOO OLD";
     case ERR_I2C_CLL:
       return "ERROR I2C Clock Low Timeout";
+    case ERR_I2C_START_TIMEOUT:
+      return "ERROR I2C start timeout";
     //Error was not found
     default:
       return "UNKNOWN ERROR";

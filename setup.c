@@ -29,20 +29,21 @@ void initCLK(void){
   //kick watchdog
   WDT_KICK();
   //set higher core voltage
-  //PMM_setVCore(PMM_CORE_LEVEL_3);
-  
-  //setup clocks
-  //set frequency range
- /* UCSCTL1=DCORSEL_5;
-  //setup FLL for 19.99 MHz operation
-  UCSCTL2=FLLD__4|(609);
-  UCSCTL3=SELREF__XT1CLK|FLLREFDIV__4;*/
-
+  if(!PMM_setVCore(PMM_CORE_LEVEL_3)){
+    //Voltage changed succeeded, set frequency
+    //setup clocks
+    //set frequency range
+    UCSCTL1=DCORSEL_5;
+    //setup FLL for 19.99 MHz operation
+    UCSCTL2=FLLD__4|(609);
+    UCSCTL3=SELREF__XT1CLK|FLLREFDIV__4;
+  }else{
+    //core voltage could not be set, report error
+    _record_error(ERR_LEV_CRITICAL,BUS_ERR_SRC_STARTUP,STARTUP_ERR_PMM_VCORE,PMMCTL0,0);
+  }
   //use XT1 for ACLK and DCO for MCLK and SMCLK
   UCSCTL4=SELA_0|SELS_3|SELM_3;
-
  
-  
   //set time ticker to zero
   ticker_time=0;
   //TODO: Maybe wait for LFXT to startup?
@@ -64,8 +65,28 @@ void start_timerA(void){
   TA1CTL|=MC_2;
 }
 
+//setup Supply voltage supervisor and monitor levels and interrupts
 void initSVS(void){
-  #warning TODO : setup supply voltage monitoring
+  //unlock PMM
+  PMMCTL0_H=PMMPW_H;
+  //check voltage level
+  switch(PMMCTL0&PMMCOREV_3){
+    //settings for highest core voltage settings
+    case PMMCOREV_3:
+      //setup high side supervisor and monitor
+      SVSMHCTL=SVMHE|SVSHE|SVSHRVL_3|SVSMHRRL_7;
+    break;
+    default :
+      //unexpected core voltage, did not set SVM
+      _record_error(ERR_LEV_CRITICAL,BUS_ERR_SRC_STARTUP,STARTUP_ERR_SVM_UNEXPECTED_VCORE,PMMCTL0,0);
+    break;
+  }
+  //clear interrupt flags
+  PMMIFG&=~(SVMLIFG|SVMHIFG|SVMHVLRIFG|SVMLVLRIFG);
+  //setup interrupts
+  PMMRIE|=SVMLIE|SVMHIE|SVMHVLRIE|SVMLVLRIE;
+  //lock PMM
+  PMMCTL0_H=0;
 }
 
 //low level setup code
@@ -78,11 +99,16 @@ void ARC_setup(void){
     _record_error(saved_error.level,saved_error.source,saved_error.err,saved_error.argument,0);
     //clear magic so we are not confused in the future
     saved_error.magic=RESET_MAGIC_EMPTY;
-  } 
-  //setup SVS
-  initSVS();
+  }else{
+    //for some reason there is no error
+    _record_error(ERR_LEV_CRITICAL,BUS_ERR_SRC_STARTUP,STARTUP_ERR_NO_ERROR,0,0);
+    //clear magic so we are not confused in the future
+    saved_error.magic=RESET_MAGIC_EMPTY;
+  }
   //setup clocks
   initCLK();
+  //setup SVS
+  initSVS();
   //setup timerA
   init_timerA();
   //set timer to increment by 1
@@ -163,6 +189,8 @@ void initARCbus(unsigned char addr){
   ctl_mutex_init(&arcBus_stat.i2c_stat.mutex);
   //set I2C to idle mode
   arcBus_stat.i2c_stat.mode=BUS_I2C_IDLE;
+  //set I2C master to idle mode
+  arcBus_stat.i2c_stat.tx.stat=BUS_I2C_MASTER_IDLE;
   //initialize I2C packet queue to empty state
   for(i=0;i<BUS_I2C_PACKET_QUEUE_LEN;i++){
     I2C_rx_buf[i].stat=I2C_PACKET_STAT_EMPTY;
@@ -199,19 +227,14 @@ void initARCbus(unsigned char addr){
   //setup registers
   UCB0CTLW0|=UCMM|UCMST|UCMODE_3|UCSYNC|UCSSEL_2;
   UCB0CTLW1=UCCLTO_3|UCASTP_0|UCGLIT_0;
-  //set baud rate to 400kB/s off of 16MHz SMCLK
-  //UCB0BR0=0x28;
-  //UCB0BR1=0x00;
-  //set baud rate to 100kB/s off of 16MHz SMCLK
-  //UCB0BR0=0xA0;
-  //UCB0BR1=0x00;
   //set baud rate to 50kB/s off of 20MHz SMCLK
-  //UCB0BRW=40;
-  //set baud rate to 1kB/s off of 20MHz SMCLK
+  //UCB0BRW=400;
+  //set baud rate to 30kB/s off of 20MHz SMCLK
+  //UCB0BRW=666;
+  //set baud rate to 10kB/s off of 20MHz SMCLK
   UCB0BRW=2000;
-  //set baud rate to 1kB/s off of 16MHz SMCLK
-  //UCB0BR0=0x80;
-  //UCB0BR1=0x3E;
+  //set baud rate to 1kB/s off of 20MHz SMCLK
+  //UCB0BRW=20000;
   //set own address
   UCB0I2COA0=UCOAEN|addr;
   //enable general call address

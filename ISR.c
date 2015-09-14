@@ -27,10 +27,10 @@ void bus_I2C_isr(void) __ctl_interrupt[USCI_B0_VECTOR]{
   switch(vec){
     case USCI_I2C_UCALIFG:    //Arbitration lost
       //Arbitration lost, resend later?
+      //set flag to indicate condition
+      ctl_events_set_clear(&BUS_INT_events,BUS_INT_EV_I2C_ARB_LOST,0);
       //check if running
       if(arcBus_stat.i2c_stat.mode!=BUS_I2C_IDLE){
-        //set flag to indicate condition
-        ctl_events_set_clear(&BUS_INT_events,BUS_INT_EV_I2C_ARB_LOST,0);
         //set status to idle
         arcBus_stat.i2c_stat.mode=BUS_I2C_IDLE;
       }
@@ -142,6 +142,16 @@ void bus_I2C_isr(void) __ctl_interrupt[USCI_B0_VECTOR]{
         P6OUT=0;
         //set state to idle
         arcBus_stat.i2c_stat.mode=BUS_I2C_IDLE;
+        //check master status to see if a command is pending
+        if(arcBus_stat.i2c_stat.tx.stat==BUS_I2C_MASTER_PENDING){          
+          //transmision interrupted, start again
+          //set to transmit mode
+          UCB0CTLW0|=UCTR;
+          //clear master I2C flags
+          ctl_events_set_clear(&arcBus_stat.events,0,BUS_EV_I2C_MASTER|BUS_EV_I2C_MASTER_START);
+          //set master mode
+          UCB0CTLW0|=UCMST;
+        }
       }
     break;
     case USCI_I2C_UCRXIFG3:    //Slave 3 RXIFG
@@ -184,6 +194,15 @@ void bus_I2C_isr(void) __ctl_interrupt[USCI_B0_VECTOR]{
       }
     break;
     case USCI_I2C_UCTXIFG0:    //Data transmit in master mode and Slave 0 TXIFG
+      //check master status 
+      if(arcBus_stat.i2c_stat.tx.stat==BUS_I2C_MASTER_PENDING){
+        //set I2C master state
+        arcBus_stat.i2c_stat.tx.stat=BUS_I2C_MASTER_IN_PROGRESS;
+        //set state to tx
+        arcBus_stat.i2c_stat.mode=BUS_I2C_TX;
+        //set flag to notify 
+        ctl_events_set_clear(&arcBus_stat.events,BUS_EV_I2C_MASTER_STARTED,0);
+      }
       //check if there are more bytes
       if(arcBus_stat.i2c_stat.tx.len>arcBus_stat.i2c_stat.tx.idx){
         //transmit data
@@ -321,3 +340,61 @@ void task_tick(void) __ctl_interrupt[TIMER1_A0_VECTOR]{
   }
   BUS_timer_timeout_check();
 }
+
+//================[System NMI Interrupt]=========================
+void SYS_NMI(void)__ctl_interrupt[SYSNMI_VECTOR]{
+  switch(SYSSNIV){
+    //core supply voltage monitor interrupt
+    case SYSSNIV_SVMLIFG:
+      //event to report error
+      ctl_events_set_clear(&BUS_INT_events,BUS_INT_EV_SVML,0);
+    break;
+    //input supply voltage monitor interrupt
+    case SYSSNIV_SVMHIFG:
+      //event to report error
+      ctl_events_set_clear(&BUS_INT_events,BUS_INT_EV_SVMH,0);
+    break;
+    //core supply voltage monitor delay interrupt
+    case SYSSNIV_DLYLIFG:
+    break;
+    //interrupt supply voltage monitor delay interrupt
+    case SYSSNIV_DLYHIFG:
+    break;
+    //Vacant memory access interrupt
+    case SYSSNIV_VMAIFG:
+    break;
+    //JTAG mailbox in interrupt
+    case SYSSNIV_JMBINIFG:
+    break;
+    //JTAG mailbox out interrupt
+    case SYSSNIV_JMBOUTIFG:
+    break;
+    //SVMLVLRIFGSVMHVLRIFG
+    case SYSSNIV_VLRLIFG:
+      //clear interrupt flag bits
+      //unlock PMM
+      PMMCTL0_H=PMMPW_H;
+      //clear interrupt flags
+      PMMIFG&=~(SVMLIFG|SVMLVLRIFG);
+      //setup interrupt enables
+      PMMRIE|=SVMLIE|SVMHIE|SVMHVLRIE|SVMLVLRIE;
+      //lock PMM
+      PMMCTL0_H=0;
+    break;
+    //SVMHVLRIFGSVMHVLRIFG
+    case SYSSNIV_VLRHIFG:
+      //clear interrupt flag bits
+      //unlock PMM
+      PMMCTL0_H=PMMPW_H;
+      //clear interrupt flags
+      PMMIFG&=~(SVMHIFG|SVMHVLRIFG);
+      //setup interrupt enables
+      PMMRIE|=SVMLIE|SVMHIE|SVMHVLRIE|SVMLVLRIE;
+      //lock PMM
+      PMMCTL0_H=0;
+    break;
+  }
+}
+
+
+
