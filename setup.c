@@ -227,19 +227,14 @@ void initARCbus(unsigned char addr){
   //setup registers
   UCB0CTLW0|=UCMM|UCMST|UCMODE_3|UCSYNC|UCSSEL_2;
   UCB0CTLW1=UCCLTO_3|UCASTP_0|UCGLIT_0;
-  //set baud rate to 400kB/s off of 16MHz SMCLK
-  //UCB0BR0=0x28;
-  //UCB0BR1=0x00;
-  //set baud rate to 100kB/s off of 16MHz SMCLK
-  //UCB0BR0=0xA0;
-  //UCB0BR1=0x00;
   //set baud rate to 50kB/s off of 20MHz SMCLK
-  //UCB0BRW=40;
+  //UCB0BRW=400;
+  //set baud rate to 30kB/s off of 20MHz SMCLK
+  //UCB0BRW=666;
+  //set baud rate to 15kB/s off of 20MHz SMCLK
+  UCB0BRW=1333;
   //set baud rate to 1kB/s off of 20MHz SMCLK
-  UCB0BRW=2000;
-  //set baud rate to 1kB/s off of 16MHz SMCLK
-  //UCB0BR0=0x80;
-  //UCB0BR1=0x3E;
+  //UCB0BRW=20000;
   //set own address
   UCB0I2COA0=UCOAEN|addr;
   //enable general call address
