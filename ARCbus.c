@@ -162,7 +162,7 @@ int BUS_cmd_tx(unsigned char addr,void *buff,unsigned short len,unsigned short f
   //set to transmit mode
   UCB0CTLW0|=UCTR;
   //clear master I2C flags
-  ctl_events_set_clear(&arcBus_stat.events,0,BUS_EV_I2C_MASTER);
+  ctl_events_set_clear(&arcBus_stat.events,0,BUS_EV_I2C_MASTER|BUS_EV_I2C_MASTER_START);
   //set master mode
   UCB0CTLW0|=UCMST;
   //UCB0CTLW0|=UCMST|UCTR;
