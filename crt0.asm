@@ -31,6 +31,7 @@
 ; Create sections
         .data
         .bss
+        dsect "THREAD"
 
 ; Go to code section.
         .psect  "ISR"
@@ -39,24 +40,17 @@
 ; Executed upon reset
 __reset proc
 
-; Kick Watchdog
-        mov.w   #WDTPW+WDTCNTCL+WDTSSEL, &WDTCTL
+; Kick Watchdog use VLO for clock source so we can reset if crystal is not present
+        ;mov.w   #WDTPW+WDTCNTCL+WDTSSEL_2+WDTIS_2, &WDTCTL
+      
+; TESTING: disable watchdog
+        mov.w #WDTPW+WDTHOLD, &WDTCTL
 
 ; Set up stack.
         mov.w   #___RAM_Address+___RAM_Size, sp
 
-;check saved error magic number
-        cmp     #RESET_MAGIC_PRE,&_saved_error
-        jne     other_reset
-;update magic number
-        mov.w   #RESET_MAGIC_POST,&_saved_error
-;clear IFG1 of errors
-        clr.b   &IFG1_
-        jmp     saved_error_end
-other_reset:
-        mov.w   #RESET_MAGIC_EMPTY,&_saved_error
+;Determine reset cause
         callx   #_startup_error_check
-saved_error_end:
 
 ;Save contents of saved_error so that they can be restored after initialization
         mov.w   #5,r15
@@ -74,8 +68,16 @@ save_lp:
         callx   #_memcpy
         ENDLINKIF
 
+; Copy from initialised thread section to thread section.
+        LINKIF  SIZEOF(THREAD)
+        mov.w   #SFB(THREAD), r15
+        mov.w   #thread_init_begin, r14
+        mov.w   #thread_init_end-thread_init_begin, r13
+        callx   #_memcpy
+        ENDLINKIF
+
 ; Kick Watchdog
-        mov.w #WDTPW+WDTCNTCL+WDTSSEL, &WDTCTL
+        ;mov.w   #WDTPW+WDTCNTCL+WDTSSEL_2+WDTIS_2, &WDTCTL
 
 ; Zero the bss.  Ensure the stack is not allocated in the bss!
         LINKIF  SIZEOF(UDATA0)
@@ -86,7 +88,7 @@ save_lp:
         ENDLINKIF
 
 ; Kick Watchdog
-        mov.w #WDTPW+WDTCNTCL+WDTSSEL, &WDTCTL
+        ;mov.w   #WDTPW+WDTCNTCL+WDTSSEL_2+WDTIS_2, &WDTCTL
 
 ;Restore contents of saved_error
         mov.w #5,r15
@@ -144,6 +146,11 @@ ___heap_start__::
 data_init_begin:
         .init  "IDATA0"
 data_init_end:
+        .even
+thread_init_begin::
+        .init    "THREAD"
+thread_init_end::
+        .even
 
 #ifdef FULL_LIBRARY
         .bss
@@ -199,4 +206,40 @@ ___crt_res0    equ RES0_
 ___crt_res1    equ RES1_
 ___crt_res2    equ RES2_
 ___crt_res3    equ RES3_
+#endif
+
+#ifdef SIGNATURES
+        .csect  "SIGNATURES"
+        .keep
+___JTAG_SIGNATURE_1::
+        dw      0xffff
+___JTAG_SIGNATURE_2::
+        dw      0xffff        
+___BSL_SIGNATURE_1::
+        dw      0xffff
+___BSL_SIGNATURE_2::
+        dw      0xffff
+___IP_ENCAPSULATION_SIGNATURE_1::
+        dw      0xffff
+___IP_ENCAPSULATION_SIGNATURE_2::
+        dw      0xffff
+#endif
+
+#ifdef ZAREA
+__BSL_Protect:
+      mov.w #2, r12
+      ret
+
+      .csect  "ZAREA"
+      .keep
+_BSLPROTVEC::
+      dw        __BSL_Protect
+BSLUNLOCK_SIGNATURE_2::
+      dw        0x3ca5
+BSLUNLOCK_SIGNATURE_1::
+      dw        0xc35a
+Reserved:
+      dw        0xffff
+_BSLSTARTVEC::
+      dw        __reset
 #endif

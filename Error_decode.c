@@ -37,6 +37,38 @@ const char* cmdtostr(unsigned char cmd){
       return "Async Data";
     case CMD_SPI_DATA_ACTION:
       return "SPI Data Action";
+    case CMD_PING:
+        return "CMD_PING";
+    case CMD_MAG_DATA:
+        return "CMD_MAG_DATA";
+    case CMD_MAG_SAMPLE_CONFIG:
+        return "CMD_MAG_SAMPLE_CONFIG";
+    case CMD_ERR_REQ:
+        return "CMD_ERR_REQ";
+    case CMD_IMG_READ_PIC:
+        return "CMD_IMG_READ_PIC";
+    case CMD_IMG_TAKE_TIMED_PIC:
+        return "CMD_IMG_TAKE_TIMED_PIC";
+    case CMD_IMG_TAKE_PIC_NOW:
+        return "CMD_IMG_TAKE_PIC_NOW";
+    case CMD_GS_DATA:
+        return "CMD_GS_DATA";
+    case CMD_TEST_MODE:
+        return "CMD_TEST_MODE";
+    case CMD_BEACON_ON:
+        return "CMD_BEACON_ON";
+    case CMD_ACDS_CONFIG:
+        return "CMD_ACDS_CONFIG";
+    case CMD_IMG_CLEARPIC:
+        return "CMD_IMG_CLEARPIC";
+    case CMD_LEDL_READ_BLOCK:
+        return "CMD_LEDL_READ_BLOCK";
+    case CMD_ACDS_READ_BLOCK:
+        return "CMD_ACDS_READ_BLOCK";
+    case CMD_EPS_SEND:
+        return "CMD_EPS_SEND";
+    case CMD_LEDL_BLOW_FUSE:
+        return "CMD_LEDL_BLOW_FUSE";
     default:
       return "Unknown";
   }
@@ -58,6 +90,14 @@ const char* cmd_resptostr(unsigned char resp){
       return "Error SPI busy";
     case ERR_BUFFER_BUSY:
       return "Error Buffer Busy";
+    case ERR_ILLEAGLE_COMMAND:
+      return "Error Illeagle Command";
+    case ERR_SPI_NOT_RUNNING:
+      return "Error SPI not running";
+    case ERR_SPI_WRONG_ADDR:
+      return "Error SPI wrong address";
+    case ERR_PK_BAD_PARM:
+      return "Error Bad parameter";
     default:
       return "Unknown";
   }
@@ -110,12 +150,18 @@ char *err_decode_arcbus(char buf[150], unsigned short source,int err, unsigned s
           sprintf(buf,"ARCbus Main Loop : CDH board not found : %s",BUS_error_str(argument));
         return buf;
         case MAIN_LOOP_ERR_RX_BUF_STAT:
-          sprintf(buf,"ARCbus Main Loop : Incorrect I2C RX buffer status : %i",argument);
+          sprintf(buf,"ARCbus Main Loop : Incorrect I2C RX buffer status : %i. Ressetting I2C interface",argument);
           return buf;
         case MAIN_LOOP_ERR_I2C_RX_BUSY:
           return "ARCbus Main Loop : Rx Buffer busy, Packet Discarded";
         case MAIN_LOOP_ERR_I2C_ARB_LOST:
           return "ARCbus Main Loop : Arbitration Lost";
+        case MAIN_LOOP_RESET_FAIL:
+          return "ARCbus Main Loop : Reset Function Failed";
+        case MAIN_LOOP_ERR_SVML:
+          return "ARCbus Main Loop : Core Supply Low Error";
+        case MAIN_LOOP_ERR_SVMH:
+          return "ARCbus Main Loop : Input Supply Low Error";
       }
     break; 
     case BUS_ERR_SRC_STARTUP:
@@ -124,7 +170,7 @@ char *err_decode_arcbus(char buf[150], unsigned short source,int err, unsigned s
           return "Startup Code : Main Returned";
         case STARTUP_ERR_WDT_RESET:
           return "Startup Code : Watch Dog reset";
-        case STARTUP_ERR_POR:
+        case STARTUP_ERR_BOR:
           return "Startup Code : Power On Reset";
         case STARTUP_ERR_RESET_PIN:
           return "Startup Code : Reset Pin Reset";
@@ -132,8 +178,38 @@ char *err_decode_arcbus(char buf[150], unsigned short source,int err, unsigned s
           return "Startup Code : Flash Security Key Violation";
         case STARTUP_ERR_RESET_UNKNOWN:
           return "Startup Code : Unknown Reset Cause";
-        case STARTUP_ERR_RESET_SVS:
-          return "Startup Code : Supply Voltage Supervisor Reset";
+        case STARTUP_ERR_RESET_SVSL:
+          return "Startup Code : Supply Voltage Supervisor Reset (Low)";
+        case STARTUP_ERR_RESET_SVSH:
+          return "Startup Code : Supply Voltage Supervisor Reset (High)";
+        case STARTUP_ERR_WDT_PW_RESET:
+          return "Startup Code : Watch Dog Password Violation";
+        case STARTUP_ERR_RESET_FLLUL:
+          return "Startup Code : FLL lock lost";
+        case STARTUP_ERR_RESET_PERF:
+          return "Startup Code : Peripheral area fetch";
+        case STARTUP_ERR_RESET_PMMKEY:
+          return "Startup Code : PMM key violation";
+        case STARTUP_ERR_RESET_SECYV:
+          return "Startup Code : Security violation";
+        case STARTUP_ERR_RESET_INVALID:
+          sprintf(buf,"Startup Code : invalid reset code %02X",argument);
+          return buf;
+        case STARTUP_ERR_RESET_UNHANDLED:
+          sprintf(buf,"Startup Code : unhandled reset code %02X",argument);
+          return buf;
+        case STARTUP_ERR_UNEXPECTED_DOBOR:
+          return "Startup Code : unexpected software BOR";
+        case STARTUP_ERR_UNEXPECTED_DOPOR:
+          return "Startup Code : unexpected software POR";
+        case STARTUP_ERR_PMM_VCORE:
+          sprintf(buf,"Startup Code : failed to set Vcore PMMCTL0 = 0x%04X",argument);
+          return buf;
+        case STARTUP_ERR_SVM_UNEXPECTED_VCORE:
+          sprintf(buf,"Startup Code : failed to set SVM: unexpected Vcore PMMCTL0 = 0x%04X",argument);
+          return buf;
+        case STARTUP_ERR_NO_ERROR:
+          return "Startup Code : Internal error, no stored startup error";
       }
     break; 
     case BUS_ERR_SRC_ASYNC:
@@ -184,6 +260,33 @@ char *err_decode_arcbus(char buf[150], unsigned short source,int err, unsigned s
         case SETUP_ERR_DCO_MISSING_CAL:
           return "ARClib Setup : Missing DCO Calibration Data";
       }
+    break;
+    case BUS_ERR_SRC_ALARMS:
+        switch(err){
+            case ALARMS_INVALID_TIME_UPDATE:
+                sprintf(buf,"Alarms : Invalid time update, time diffrence %u",argument);
+            return buf;
+            case ALARMS_FWD_TIME_UPDATE:
+                sprintf(buf,"Alarms : forward time update, time diffrence %u",argument);
+            return buf;
+            case ALARMS_REV_TIME_UPDATE:
+                sprintf(buf,"Alarms : reverse time update, time diffrence %u",argument);
+            return buf;
+            case ALARMS_ADJ_TRIGGER:
+                sprintf(buf,"Alarms : Alarm #%i was triggered due to time adjustment",argument);
+            return buf;
+        }
+    break;
+    case BUS_ERR_SRC_ERR_REQ:
+        switch(err){
+            case ERR_REQ_ERR_SPI_SEND:
+              sprintf(buf,"Error Request : Failed to send data : %s",BUS_error_str(argument));
+            return buf;
+            case ERR_REQ_ERR_BUFFER_BUSY:
+                return "Error Request : Buffer busy";
+            case ERR_REQ_ERR_MUTEX_TIMEOUT:
+                return "Error Request : Mutex lock timeout";
+        }
     break;
   }
   sprintf(buf,"source = %i, error = %i, argument = %i",source,err,argument);

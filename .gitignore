@@ -3,10 +3,10 @@
 *.hzs
 
 #build directories
-MSP430 Debug/
-MSP430 Release/
-MSP430 Debug CDH/
-MSP430 Release CDH/
+BUSlib MSP430 Debug/
+BUSlib MSP430 Release/
+BUSlib MSP430 Debug CDH/
+BUSlib MSP430 Release CDH/
 
 #auto generated files
 version.c

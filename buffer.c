@@ -10,7 +10,7 @@ CTL_MUTEX_t buffer_mutex;
 //buffer for SPI transactions
 //static unsigned char Buffer[4096+2];
 //static unsigned char Buffer[2048+2];
-static unsigned char Buffer[1024+2];
+static unsigned char Buffer[1024+4];
 
 //setup stuff for buffer usage
 void BUS_init_buffer(void){

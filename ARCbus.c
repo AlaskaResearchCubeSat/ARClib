@@ -9,30 +9,69 @@
 #include "ARCbus_internal.h"
 
 
+
+
 //=======================================================================================
 //                                 [BUS Functions]
 //=======================================================================================
+
+//return own address
+unsigned char BUS_get_OA(void){
+  int i;
+  //base address for own I2C addresses
+  volatile unsigned int * const oa_base=&UCB0I2COA0;
+  //loop through addresses and return the first one that matches
+  //TODO: perhaps there is a better way to do this (on a per task basis?)
+  for(i=0;i<4;i++){
+    //check if address enabled
+    if(oa_base[i]&UCOAEN){
+      //return address
+      return (~(UCGCEN|UCOAEN))&oa_base[i];
+    }
+  }
+  //no match! return OA0
+  //TODO: report error? do something else?
+  return UCB0I2COA0;
+}
 
 //Setup buffer for command 
 unsigned char *BUS_cmd_init(unsigned char *buf,unsigned char id){
   buf[1]=id;
   //set originator address
-  buf[0]=UCB0I2COA;
+  buf[0]=BUS_get_OA();
   //start of payload
   return buf+2;
 }
 
-//function to check I2C addresses
-int addr_chk(unsigned char addr){
-  if(addr==UCB0I2COA){
-    return ERR_BAD_ADDR;
+//check for own address
+int BUS_OA_check(unsigned char addr){
+  int i;
+  //base address for own I2C addresses
+  volatile unsigned int * const oa_base=&UCB0I2COA0;
+  //check if addr matches any slave address
+  for(i=0;i<4;i++){
+    //skip if address disabled
+    if(!(oa_base[i]&UCOAEN))continue;
+    //check for address match
+    if(addr==((~(UCGCEN|UCOAEN))&oa_base[i])){
+      return ERR_BAD_ADDR;
+    }
   }
-  if(addr&0x80){
-    return ERR_BAD_ADDR;
-  }
+  //not a match success!
   return RET_SUCCESS;
 }
 
+//function to check I2C addresses
+int addr_chk(unsigned char addr){
+  //check if 8th bit is set
+  if(addr&0x80){
+    return ERR_BAD_ADDR;
+  }
+  //success!
+  return RET_SUCCESS;
+}
+
+static ticker packet_time=0;
 
 static unsigned BUS_I2C_lock(void){
   int i;
@@ -40,16 +79,6 @@ static unsigned BUS_I2C_lock(void){
   if(0==ctl_mutex_lock(&arcBus_stat.i2c_stat.mutex,CTL_TIMEOUT_DELAY,10)){
      return ERR_BUSY;
   }
-  //wait for bus to be free
-  for(i=0;UCB1STAT&UCBBUSY && i<10;i++){
-    ctl_timeout_wait(ctl_get_current_time()+3);
-  }
-  if(UCB1STAT&UCBBUSY){
-    //release mutex
-    BUS_I2C_release();
-    //bus is still busy, return error
-    return ERR_BUSY;
-  } 
   return 0;
 } 
 
@@ -59,7 +88,7 @@ void BUS_I2C_release(void){
 }
 
 //send command
-int BUS_cmd_tx(unsigned char addr,unsigned char *buff,unsigned short len,unsigned short flags,short bgnd){
+int BUS_cmd_tx(unsigned char addr,void *buff,unsigned short len,unsigned short flags,short bgnd){
   unsigned int e;
   short ret;
   int i;
@@ -79,13 +108,13 @@ int BUS_cmd_tx(unsigned char addr,unsigned char *buff,unsigned short len,unsigne
   //add NACK flag if requested
   if(flags&BUS_CMD_FL_NACK){
     //request NACK
-    buff[0]|=CMD_TX_NACK;
+    ((unsigned char*)buff)[0]|=CMD_TX_NACK;
   }else{
     //clear NACK request
-    buff[0]&=~CMD_TX_NACK;
+    ((unsigned char*)buff)[0]&=~CMD_TX_NACK;
   }
   //calculate CRC
-  buff[len]=crc7(buff,len);
+  ((unsigned char*)buff)[len]=crc7(buff,len);
   //add a byte for the CRC
   len+=BUS_I2C_CRC_LEN;
   //check for zero length
@@ -124,24 +153,19 @@ int BUS_cmd_tx(unsigned char addr,unsigned char *buff,unsigned short len,unsigne
   UCB0I2CSA=addr;
   //set index
   arcBus_stat.i2c_stat.tx.idx=0;
-  //set mode
-  arcBus_stat.i2c_stat.mode=BUS_I2C_TX;
+  //set I2C master state
+  arcBus_stat.i2c_stat.tx.stat=BUS_I2C_MASTER_PENDING;
   //set length
   arcBus_stat.i2c_stat.tx.len=len;
   //set data
   arcBus_stat.i2c_stat.tx.ptr=(unsigned char*)buff;
-  //reset peripheral to switch to master mode
-  UCB0CTL1|=UCSWRST;
-  //set master mode
-  UCB0CTL0|=UCMST;
-  //set transmit mode
-  UCB0CTL1|=UCTR;
-  //take peripheral out of reset
-  UCB0CTL1&=~UCSWRST;
+  //set to transmit mode
+  UCB0CTLW0|=UCTR;
   //clear master I2C flags
-  ctl_events_set_clear(&arcBus_stat.events,0,BUS_EV_I2C_MASTER);
-  //enable I2C Tx Interrupt
-  UC0IE|=UCB0TXIE;
+  ctl_events_set_clear(&arcBus_stat.events,0,BUS_EV_I2C_MASTER|BUS_EV_I2C_MASTER_START);
+  //set master mode
+  UCB0CTLW0|=UCMST;
+  //UCB0CTLW0|=UCMST|UCTR;
   //generate start condition
   UCB0CTL1|=UCTXSTT;
   //if transmitting in the background, return
@@ -149,11 +173,35 @@ int BUS_cmd_tx(unsigned char addr,unsigned char *buff,unsigned short len,unsigne
     //return success
     return RET_SUCCESS;
   }
+  //wait for packet to start
+  e=ctl_events_wait(CTL_EVENT_WAIT_ANY_EVENTS_WITH_AUTO_CLEAR,&arcBus_stat.events,BUS_EV_I2C_MASTER_START,CTL_TIMEOUT_DELAY,104);
+  //check to see if there was a problem
+  if(!(e&BUS_EV_I2C_MASTER_STARTED)){
+    //release I2C bus
+    BUS_I2C_release();
+    //set I2C master state
+    arcBus_stat.i2c_stat.tx.stat=BUS_I2C_MASTER_IDLE;
+    //chech which error happened
+    switch(e&BUS_EV_I2C_MASTER_START){
+      case 0:
+        //no event happened so timeout
+        return ERR_I2C_START_TIMEOUT;
+      case BUS_EV_I2C_NACK:
+        //I2C device did not acknowledge
+        return ERR_I2C_NACK;
+      default:
+        //error is not defined
+        return ERR_UNKNOWN;
+    }
+  }
   //wait for transaction to complete
-  //TODO: set a good timeout
-  e=ctl_events_wait(CTL_EVENT_WAIT_ANY_EVENTS_WITH_AUTO_CLEAR,&arcBus_stat.events,BUS_EV_I2C_MASTER,CTL_TIMEOUT_DELAY,2048);
+  e=ctl_events_wait(CTL_EVENT_WAIT_ANY_EVENTS_WITH_AUTO_CLEAR,&arcBus_stat.events,BUS_EV_I2C_MASTER,CTL_TIMEOUT_DELAY,104);
+  //save transaction time
+  packet_time=get_ticker_time();
   //release I2C bus
   BUS_I2C_release();
+  //set I2C master state
+  arcBus_stat.i2c_stat.tx.stat=BUS_I2C_MASTER_IDLE;
   //check which event(s) happened
   switch(e&BUS_EV_I2C_MASTER){
     case BUS_EV_I2C_COMPLETE:
@@ -168,6 +216,9 @@ int BUS_cmd_tx(unsigned char addr,unsigned char *buff,unsigned short len,unsigne
     case 0:
       //no event happened, so time out
       return ERR_TIMEOUT;
+    case BUS_EV_I2C_ERR_CCL:
+      //Clock low timeout
+      return ERR_I2C_CLL;
     default:
       //error is not defined
       return ERR_UNKNOWN;
@@ -175,7 +226,7 @@ int BUS_cmd_tx(unsigned char addr,unsigned char *buff,unsigned short len,unsigne
 }
 
 //send/receive SPI data over the bus
-int BUS_SPI_txrx(unsigned char addr,unsigned char *tx,unsigned char *rx,unsigned short len){
+int BUS_SPI_txrx(unsigned char addr,void *tx,void *rx,unsigned short len){
   unsigned char buf[10],*ptr;
   unsigned int e;
   short time;
@@ -186,6 +237,11 @@ int BUS_SPI_txrx(unsigned char addr,unsigned char *tx,unsigned char *rx,unsigned
     //return error if it occured
     return resp;
   }
+  //reject own address
+  if((resp=BUS_OA_check(addr))!=RET_SUCCESS){
+    //return error if it occured
+    return resp;
+  }
   //reject General call address
   if(addr==BUS_ADDR_GC){
     return ERR_BAD_ADDR;
@@ -193,27 +249,27 @@ int BUS_SPI_txrx(unsigned char addr,unsigned char *tx,unsigned char *rx,unsigned
   //calculate CRC
   crc=crc16(tx,len);
   //send CRC in Big endian order
-  tx[len]=crc>>8;
-  tx[len+1]=crc;
+  ((unsigned char*)tx)[len]=crc>>8;
+  ((unsigned char*)tx)[len+1]=crc;
   //setup SPI structure
   arcBus_stat.spi_stat.len=len;
   arcBus_stat.spi_stat.rx=rx;
   arcBus_stat.spi_stat.tx=tx;
-  //Setup SPI
-  SPI_slave_setup();
   //disable DMA
   DMA0CTL&=~DMAEN;
   DMA1CTL&=~DMAEN;
+  //Setup SPI
+  SPI_slave_setup();
   //setup DMA for transfer
   DMACTL0 &=~(DMA0TSEL_15|DMA1TSEL_15);
-  DMACTL0 |= (DMA0TSEL_3|DMA1TSEL_4);
+  DMACTL0 |= (DMA0TSEL__USCIA0RX|DMA1TSEL__USCIA0TX);
   //====[DMA channel0 used for receive]====
   //check for omitted receive buffer
   if(rx!=NULL){
     // Source DMA address: receive register.
-    DMA0SA = (unsigned short)(&UCA0RXBUF);
+    *((unsigned int*)&DMA0SA) = (unsigned short)(&UCA0RXBUF);
     // Destination DMA address: rx buffer.
-    DMA0DA = (unsigned short)rx;
+    *((unsigned int*)&DMA0DA) = (unsigned short)rx;
     // The size of the block to be transferred
     DMA0SZ = len+BUS_SPI_CRC_LEN;
     // Configure the DMA transfer, single byte transfer with source increment
@@ -221,21 +277,21 @@ int BUS_SPI_txrx(unsigned char addr,unsigned char *tx,unsigned char *rx,unsigned
   }
   //====[DMA channel1 used for transmit]====
   // Destination DMA address: the transmit buffer.
-  DMA1DA = (unsigned int)(&UCA0TXBUF);
+  *((unsigned int*)&DMA1DA) = (unsigned int)(&UCA0TXBUF);
   //check for omitted transmit buffer
   if(tx!=NULL){
     // Source DMA address: tx buffer
-    DMA1SA = (unsigned int)tx+1;
+    *((unsigned int*)&DMA1SA) =((unsigned int)tx)+1;
     // The size of the block to be transferred
     DMA1SZ = len+BUS_SPI_CRC_LEN-1;
     // Configure the DMA transfer, single byte transfer with destination increment
     //enable interrupt to notify code when transfer is complete
     DMA1CTL=DMADT_0|DMASBDB|DMASRCINCR1|DMASRCINCR0|DMAEN;
     //start things off with an initial transfer
-    UCA0TXBUF=*tx;
+    UCA0TXBUF=*((unsigned char*)tx);
   }else{
     //need to send something to receive something so setup TX for dummy bytes
-    DMA1SA = (unsigned int)(&UCA0TXBUF);
+    *((unsigned int*)&DMA1SA) = (unsigned int)(&UCA0TXBUF);
     // The size of the block to be transferred
     DMA1SZ = len+BUS_SPI_CRC_LEN-1;
     // Configure the DMA transfer, single byte transfer with no increment
@@ -253,6 +309,9 @@ int BUS_SPI_txrx(unsigned char addr,unsigned char *tx,unsigned char *rx,unsigned
   resp=BUS_cmd_tx(addr,buf,2,BUS_CMD_FL_NACK,BUS_I2C_SEND_FOREGROUND);
   //check if sent correctly
   if(resp!=RET_SUCCESS){
+    //disable DMA
+    DMA0CTL&=~DMAEN;
+    DMA1CTL&=~DMAEN; 
     //SPI pins back to GPIO
     SPI_deactivate();
     //Return Error
@@ -269,13 +328,15 @@ int BUS_SPI_txrx(unsigned char addr,unsigned char *tx,unsigned char *rx,unsigned
   //disable DMA
   DMA0CTL&=~DMAEN;
   DMA1CTL&=~DMAEN; 
+  //SPI pins back to GPIO
+  SPI_deactivate();
   //Check if SPI complete event received
   if(e&BUS_EV_SPI_COMPLETE){
     //if RX is null then don't calculate CRC
     if(rx!=NULL){
         //assemble CRC
-        crc=rx[arcBus_stat.spi_stat.len+1];//LSB
-        crc|=(((unsigned short)rx[arcBus_stat.spi_stat.len])<<8);//MSB
+        crc=((unsigned char*)rx)[arcBus_stat.spi_stat.len+1];//LSB
+        crc|=(((unsigned short)((unsigned char*)rx)[arcBus_stat.spi_stat.len])<<8);//MSB
         //check CRC
         if(crc!=crc16(rx,arcBus_stat.spi_stat.len)){
           //Bad CRC
@@ -324,3 +385,12 @@ void BUS_int_clear(unsigned char clear){
     P1IE|=clear;
 }
 
+//return which build is used
+int BUS_build(void){
+#ifdef CDH_LIB
+    return BUS_BUILD_CDH;
+#else
+    return BUS_BUILD_SUBSYSTEM;
+#endif
+}
+    

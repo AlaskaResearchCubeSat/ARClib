@@ -7,8 +7,8 @@ import sys
 import time
 import re
 
-inputDir="./"
-prefix="Z:\Software"
+inputDir=os.path.dirname(os.path.realpath(sys.argv[0]))
+prefix=os.path.realpath(os.path.join(inputDir,"../../"))
 lib=os.path.join(prefix,"lib")
 include=os.path.join(prefix,"include")
 basename="BUSlib"
@@ -40,15 +40,27 @@ for folder in dirs:
 		if version is None or ver>version:
 			version=ver
 			path=folder
-
+			
 #get bath to crossbuild
 crossbuild=os.path.join(rowleyPath,path,'bin','crossbuild.exe')
-#run crossbuild
-rc=subprocess.call([crossbuild,'-batch','-config','MSP430 Debug','BUSlib.hzp'])
-#check return code
-if rc!=0:
-	print("Error : project did not build exiting")
-	exit(p.returncode)
+
+
+
+for config in ("MSP430 Release","MSP430 Debug","MSP430 Release CDH","MSP430 Debug CDH"):
+
+	#build using crossbuild
+	print("Building "+config);
+	rc=subprocess.call([crossbuild,'-config',config,basename+'.hzp'])
+	#check return code
+	if rc!=0:
+		print("Error : project did not build exiting")
+		exit(rc)
+
+	outname=basename+"_"+"_".join(config.split()[1:])+".hza"
+	outpath=os.path.join(lib,outname)
+	inpath=os.path.join(inputDir,os.path.join(basename+" "+config,basename+".hza"))
+	print("Copying "+inpath+" to "+outpath)
+	shutil.copyfile(inpath,outpath)
 
 #generate tag for export
 #get time
@@ -62,19 +74,13 @@ rc=subprocess.call([gitpath,"tag","--force","-m="+msg,tag])
 
 if rc!=0:
 	print("Error : could not tag export")
-	exit(p.returncode)
-
-for folder in ("MSP430 Release","MSP430 Debug","MSP430 Release CDH","MSP430 Debug CDH"):
-    outname=basename+"_"+"_".join(folder.split()[1:])+".hza"
-    outpath=os.path.join(lib,outname)
-    inpath=os.path.join(inputDir,os.path.join(folder,basename+".hza"))
-    print("Copying "+inpath+" to "+outpath)
-    shutil.copyfile(inpath,outpath)
-
+	exit(rc)
+	
+	
 for file in ("crc.h","ARCbus.h","DMA.h"):
     outpath=os.path.join(include,file)
     inpath=os.path.join(inputDir,file)
     print("Copying "+inpath+" to "+outpath)
     shutil.copyfile(inpath,outpath)
 
-
+print("Export Completed Successfully!");
