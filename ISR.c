@@ -179,6 +179,13 @@ void bus_I2C_isr(void) __ctl_interrupt[USCI_B0_VECTOR]{
     case USCI_I2C_UCTXIFG1:    //Slave 1 TXIFG
     break;
     case USCI_I2C_UCRXIFG0:    //Data receive in master mode and Slave 0 RXIFG
+      //check if master transaction is in progress
+      if(arcBus_stat.i2c_stat.tx.stat==BUS_I2C_MASTER_IN_PROGRESS){
+        //master transaction, nack as a slave
+        UCB0CTL1|=UCTXNACK;
+        //TODO: set event??
+        break;
+      }  
       //receive data
       arcBus_stat.i2c_stat.rx.ptr[arcBus_stat.i2c_stat.rx.idx++]=UCB0RXBUF;
       //check buffer size
