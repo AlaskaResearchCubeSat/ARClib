@@ -36,6 +36,8 @@ const char *BUS_error_str(int error){
       return "ERROR I2C Clock Low Timeout";
     case ERR_I2C_START_TIMEOUT:
       return "ERROR I2C start timeout";
+    case ERR_I2C_TX_SELF:
+      return "ERROR TX to self";
     //Error was not found
     default:
       return "UNKNOWN ERROR";
