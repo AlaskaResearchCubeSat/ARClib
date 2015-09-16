@@ -371,6 +371,8 @@ static void ARC_bus_run(void *p) __toplevel{
               //check which packet was nacked
               switch(ptr[0]){
                   case CMD_SPI_RDY:
+                    //set SPI nack reason
+                    arcBus_stat.spi_stat.nack=ptr[1];
                     //send event to spi code
                     ctl_events_set_clear(&arcBus_stat.events,BUS_EV_SPI_NACK,0);
                   break;

@@ -140,6 +140,7 @@ typedef struct{
   unsigned char *tx,*rx;
   unsigned short len;
   unsigned short mode;
+  unsigned char nack;
 }BUS_SPI_STAT;
 
 //struct for BUS status

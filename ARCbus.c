@@ -258,6 +258,7 @@ int BUS_SPI_txrx(unsigned char addr,void *tx,void *rx,unsigned short len){
   arcBus_stat.spi_stat.len=len;
   arcBus_stat.spi_stat.rx=rx;
   arcBus_stat.spi_stat.tx=tx;
+  arcBus_stat.spi_stat.nack=0;
   //disable DMA
   DMA0CTL&=~DMAEN;
   DMA1CTL&=~DMAEN;
@@ -349,7 +350,27 @@ int BUS_SPI_txrx(unsigned char addr,void *tx,void *rx,unsigned short len){
     //Success!!
     return RET_SUCCESS;
   }else if(e&BUS_EV_SPI_NACK){
-    return ERR_BUSY;
+    char tmp=arcBus_stat.spi_stat.nack;
+    //clear NACK reason
+    arcBus_stat.spi_stat.nack=0;
+    //check why NACK was sent
+    switch(tmp){
+      case ERR_PK_LEN:
+        //not sure why this could have happened
+        return ERR_INVALID_ARGUMENT;
+      break;
+      case ERR_SPI_LEN:
+        //SPI data is bigger than the buffer
+        return ERR_BAD_LEN;
+      break;
+      case ERR_SPI_BUSY:
+      case ERR_BUFFER_BUSY:
+        //the other MSP is busy
+        return ERR_BUSY;
+      break;
+      default:
+        return ERR_UNKNOWN;
+    }
   }else{
     //Return error, timeout occurred
     return ERR_TIMEOUT;
