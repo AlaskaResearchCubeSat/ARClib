@@ -519,8 +519,6 @@ static void ARC_bus_helper(void *p) __toplevel{
       //done with SPI send command
       BUS_cmd_init(pk,CMD_SPI_COMPLETE);
       resp=BUS_cmd_tx(SPI_addr,pk,0,0,BUS_I2C_SEND_FOREGROUND);
-      //transaction complete, clear address
-      SPI_addr=0;
       //check if command was successful and try again if it failed
       if(resp!=RET_SUCCESS){
         resp=BUS_cmd_tx(SPI_addr,pk,0,0,BUS_I2C_SEND_FOREGROUND);
@@ -530,6 +528,8 @@ static void ARC_bus_helper(void *p) __toplevel{
         //report error
         report_error(ERR_LEV_ERROR,BUS_ERR_SRC_MAIN_LOOP,MAIN_LOOP_ERR_SPI_COMPLETE_FAIL,resp);
       }
+      //transaction complete, clear address
+      SPI_addr=0;
     }
     if(e&BUS_HELPER_EV_SPI_CLEAR_CMD){
       //done with SPI send command
