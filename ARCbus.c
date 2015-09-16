@@ -323,8 +323,8 @@ int BUS_SPI_txrx(unsigned char addr,void *tx,void *rx,unsigned short len){
   }
   //calculate wait time based on packet length
   time=len/10;
-  if(time<=10){
-    time=10;
+  if(time<=BUS_SPI_MIN_TIMEOUT){
+    time=BUS_SPI_MIN_TIMEOUT;
   }
   //wait for SPI complete signal from master
   e=ctl_events_wait(CTL_EVENT_WAIT_ANY_EVENTS_WITH_AUTO_CLEAR,&arcBus_stat.events,BUS_EV_SPI_MASTER,CTL_TIMEOUT_DELAY,time);
