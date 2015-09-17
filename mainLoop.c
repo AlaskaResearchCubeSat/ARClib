@@ -263,6 +263,9 @@ static void ARC_bus_run(void *p) __toplevel{
                 //stop SPI setup
                 break;
               }
+              //disable DMA
+              DMA0CTL&=~DMAEN;
+              DMA1CTL&=~DMAEN;
               //save address of SPI slave
               SPI_addr=addr;
               //setup SPI structure
