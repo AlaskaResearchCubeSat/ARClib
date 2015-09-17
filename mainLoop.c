@@ -302,7 +302,7 @@ static void ARC_bus_run(void *p) __toplevel{
               }
 #ifndef CDH_LIB
               //check if a SPI transaction was in progress
-              if(arcBus_stat.spi_stat.mode!=BUS_SPI_MASTER){
+              if(arcBus_stat.spi_stat.mode!=BUS_SPI_SLAVE){
 #else
               //check if a SPI transaction was in progress
               if(arcBus_stat.spi_stat.mode!=BUS_SPI_MASTER && arcBus_stat.spi_stat.mode!=BUS_SPI_SLAVE){
