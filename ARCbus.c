@@ -228,11 +228,21 @@ int BUS_cmd_tx(unsigned char addr,void *buff,unsigned short len,unsigned short f
   }
 }
 
+
+//calculate SPI timeout based on packet length
+int BUS_SPI_timeout(unsigned short len){
+  short time;
+  time=len/10;
+  if(time<=BUS_SPI_MIN_TIMEOUT){
+    time=BUS_SPI_MIN_TIMEOUT;
+  }
+  return time;
+}
+
 //send/receive SPI data over the bus
 int BUS_SPI_txrx(unsigned char addr,void *tx,void *rx,unsigned short len){
   unsigned char buf[10],*ptr;
   unsigned int e;
-  short time;
   int i,resp;
   unsigned short crc;
   //check address
@@ -322,13 +332,8 @@ int BUS_SPI_txrx(unsigned char addr,void *tx,void *rx,unsigned short len){
     //TODO: better error code here
     return resp;
   }
-  //calculate wait time based on packet length
-  time=len/10;
-  if(time<=BUS_SPI_MIN_TIMEOUT){
-    time=BUS_SPI_MIN_TIMEOUT;
-  }
   //wait for SPI complete signal from master
-  e=ctl_events_wait(CTL_EVENT_WAIT_ANY_EVENTS_WITH_AUTO_CLEAR,&arcBus_stat.events,BUS_EV_SPI_MASTER,CTL_TIMEOUT_DELAY,time);
+  e=ctl_events_wait(CTL_EVENT_WAIT_ANY_EVENTS_WITH_AUTO_CLEAR,&arcBus_stat.events,BUS_EV_SPI_MASTER,CTL_TIMEOUT_DELAY,BUS_SPI_timeout(len));
   //disable DMA
   DMA0CTL&=~DMAEN;
   DMA1CTL&=~DMAEN; 

@@ -332,6 +332,16 @@ void task_tick(void) __ctl_interrupt[TIMER1_A0_VECTOR]{
       ctl_events_set_clear(&BUS_helper_events,BUS_HELPER_EV_ASYNC_TIMEOUT,0);
     }
   }
+  //SPI timeout timer
+  if(arcBus_stat.spi_stat.timeout){
+    //decrement timer
+    arcBus_stat.spi_stat.timeout--;
+    //check for timeout
+    if(!arcBus_stat.spi_stat.timeout){
+      //set timeout event
+      ctl_events_set_clear(&BUS_helper_events,BUS_INT_EV_SPI_TIMEOUT,0);
+    }
+  }
   BUS_timer_timeout_check();
 }
 

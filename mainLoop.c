@@ -102,6 +102,12 @@ static void ARC_bus_run(void *p) __toplevel{
     if(e&BUS_INT_EV_SPI_COMPLETE){
       //check if SPI was in progress
       if(SPI_addr){
+        //clear timeout
+        arcBus_stat.spi_stat.timeout=0;
+        //clear timeout flag
+        e&=~BUS_INT_EV_SPI_TIMEOUT;
+        //clear timeout event flag
+        ctl_events_set_clear(&BUS_helper_events,0,BUS_INT_EV_SPI_TIMEOUT);
         //turn off SPI
         SPI_deactivate();
         //tell helper thread to send SPI complete command
@@ -123,6 +129,18 @@ static void ARC_bus_run(void *p) __toplevel{
           //Subsystem must signal to free the buffer
           ctl_events_set_clear(&SUB_events,SUB_EV_SPI_DAT,0);
         }
+      }
+    }
+    //check if the SPI timer expired
+    if(e&BUS_INT_EV_SPI_TIMEOUT){
+      //check if SPI was in progress
+      if(SPI_addr){
+        //clear timeout
+        arcBus_stat.spi_stat.timeout=0;
+        //turn off SPI
+        SPI_deactivate();
+        //tell helper thread to send SPI complete command
+        ctl_events_set_clear(&BUS_helper_events,BUS_HELPER_EV_SPI_TIMEOUT_CMD,0);
       }
     }
     //check if an I2C command has been received
@@ -295,6 +313,8 @@ static void ARC_bus_run(void *p) __toplevel{
               DMA1CTL=DMADT_0|DMASBDB|DMAEN|DMASRCINCR0|DMASRCINCR0;
               //write the Tx buffer to start transfer
               UCA0TXBUF=BUS_SPI_DUMMY_DATA;
+              //============[setup timeout timer]============
+              arcBus_stat.spi_stat.timeout=BUS_SPI_timeout(arcBus_stat.spi_stat.len);
             break;
             
             case CMD_SPI_COMPLETE:
@@ -488,7 +508,7 @@ static void ARC_bus_run(void *p) __toplevel{
 static void ARC_bus_helper(void *p) __toplevel{
   unsigned int e;
   int resp,maxsize;
-  unsigned char *ptr,pk[BUS_I2C_HDR_LEN+0+BUS_I2C_CRC_LEN];
+  unsigned char *ptr,pk[BUS_I2C_HDR_LEN+2+BUS_I2C_CRC_LEN];
   for(;;){
     e=ctl_events_wait(CTL_EVENT_WAIT_ANY_EVENTS_WITH_AUTO_CLEAR,&BUS_helper_events,BUS_HELPER_EV_ALL,CTL_TIMEOUT_NONE,0);
     //async timer timed out, send data
@@ -520,7 +540,7 @@ static void ARC_bus_helper(void *p) __toplevel{
     }
 #endif
     //SPI transaction is complete
-    if(e&BUS_HELPER_EV_SPI_COMPLETE_CMD){      
+    if(e&BUS_HELPER_EV_SPI_COMPLETE_CMD){ 
       //done with SPI send command
       BUS_cmd_init(pk,CMD_SPI_COMPLETE);
       resp=BUS_cmd_tx(SPI_addr,pk,0,0,BUS_I2C_SEND_FOREGROUND);
@@ -535,6 +555,28 @@ static void ARC_bus_helper(void *p) __toplevel{
       }
       //transaction complete, clear address
       SPI_addr=0;
+    }
+    if(e&BUS_HELPER_EV_SPI_TIMEOUT_CMD){
+      //SPI timed out, send NACK
+      ptr=BUS_cmd_init(pk,CMD_NACK);
+      //NACK SPI complete command
+      *ptr++=CMD_SPI_COMPLETE;
+      //reason is DMA timeout
+      *ptr++=ERR_DMA_TIMEOUT;
+      //send packet
+      resp=BUS_cmd_tx(SPI_addr,pk,2,0,BUS_I2C_SEND_FOREGROUND);
+      //check if command was successful and try again if it failed
+      if(resp!=RET_SUCCESS){
+        resp=BUS_cmd_tx(SPI_addr,pk,2,0,BUS_I2C_SEND_FOREGROUND);
+      }
+      //check if command sent successfully
+      if(resp!=RET_SUCCESS){
+        //report error
+        report_error(ERR_LEV_ERROR,BUS_ERR_SRC_MAIN_LOOP,MAIN_LOOP_ERR_SPI_COMPLETE_FAIL,resp);
+      }
+      //transaction complete, clear address
+      SPI_addr=0;
+
     }
     if(e&BUS_HELPER_EV_SPI_CLEAR_CMD){
       //done with SPI send command

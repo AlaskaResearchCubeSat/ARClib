@@ -98,6 +98,8 @@ const char* cmd_resptostr(unsigned char resp){
       return "Error SPI wrong address";
     case ERR_PK_BAD_PARM:
       return "Error Bad parameter";
+    case ERR_DMA_TIMEOUT:
+      return "Error DMA timeout";
     default:
       return "Unknown";
   }
