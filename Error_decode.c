@@ -164,6 +164,9 @@ char *err_decode_arcbus(char buf[150], unsigned short source,int err, unsigned s
           return "ARCbus Main Loop : Core Supply Low Error";
         case MAIN_LOOP_ERR_SVMH:
           return "ARCbus Main Loop : Input Supply Low Error";
+        case MAIN_LOOP_ERR_SPI_TIEMOUT:
+          sprintf(buf,"ARCbus Main Loop : SPI transaction with 0x%02X timed out",argument);
+          return buf;
       }
     break; 
     case BUS_ERR_SRC_STARTUP:

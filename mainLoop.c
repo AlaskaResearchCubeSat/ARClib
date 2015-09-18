@@ -141,6 +141,8 @@ static void ARC_bus_run(void *p) __toplevel{
         SPI_deactivate();
         //tell helper thread to send SPI complete command
         ctl_events_set_clear(&BUS_helper_events,BUS_HELPER_EV_SPI_TIMEOUT_CMD,0);
+        //report error
+        report_error(ERR_LEV_ERROR,BUS_ERR_SRC_MAIN_LOOP,MAIN_LOOP_ERR_SPI_TIEMOUT,SPI_addr);
       }
     }
     //check if an I2C command has been received
