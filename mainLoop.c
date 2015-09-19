@@ -110,6 +110,9 @@ static void ARC_bus_run(void *p) __toplevel{
         ctl_events_set_clear(&BUS_helper_events,0,BUS_INT_EV_SPI_TIMEOUT);
         //turn off SPI
         SPI_deactivate();
+        //disable DMA
+        DMA0CTL&=~DMAEN;
+        DMA1CTL&=~DMAEN; 
         //tell helper thread to send SPI complete command
         ctl_events_set_clear(&BUS_helper_events,BUS_HELPER_EV_SPI_COMPLETE_CMD,0);
         //assemble CRC
@@ -139,6 +142,9 @@ static void ARC_bus_run(void *p) __toplevel{
         arcBus_stat.spi_stat.timeout=0;
         //turn off SPI
         SPI_deactivate();
+        //disable DMA
+        DMA0CTL&=~DMAEN;
+        DMA1CTL&=~DMAEN; 
         //tell helper thread to send SPI complete command
         ctl_events_set_clear(&BUS_helper_events,BUS_HELPER_EV_SPI_TIMEOUT_CMD,0);
         //report error
