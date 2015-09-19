@@ -94,7 +94,7 @@
   extern RESET_ERROR saved_error;
   
   //stack for ARC bus task
-  extern unsigned BUS_stack[256];
+  extern unsigned BUS_stack[];
   
   extern BUS_STAT arcBus_stat;
   
