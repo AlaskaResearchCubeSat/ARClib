@@ -214,10 +214,6 @@ void initARCbus(unsigned char addr){
   P3MAP3=PM_UCA0SOMI;
   //setup BUS SPI SIMO
   P3MAP4=PM_UCA0SIMO;
-  //set old definitions to unused
-  P2MAP5=PM_NONE;
-  P2MAP6=PM_NONE;
-  P2MAP7=PM_NONE;
   //lock the Port map module
   //do not allow reconfiguration
   PMAPKEYID=0;
