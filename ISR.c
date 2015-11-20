@@ -151,7 +151,9 @@ void bus_I2C_isr(void) __ctl_interrupt[USCI_B0_VECTOR]{
           //set master mode
           UCB0CTLW0|=UCMST;
           //clear saved event
-          end_e=0;
+          end_e=0; 
+          //generate start condition
+          UCB0CTL1|=UCTXSTT;
         }
       }
     break;
