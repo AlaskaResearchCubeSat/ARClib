@@ -198,6 +198,39 @@ void bus_I2C_isr(void) __ctl_interrupt[USCI_B0_VECTOR]{
       }  
       //receive data
       arcBus_stat.i2c_stat.rx.ptr[arcBus_stat.i2c_stat.rx.idx++]=UCB0RXBUF;
+      //check if this is the first byte
+      if(arcBus_stat.i2c_stat.rx.idx==1){
+        //check if from ACDS
+        if(arcBus_stat.i2c_stat.rx.ptr[0]==BUS_ADDR_ACDS){
+          //NOP for breakpoint testing
+          __no_operation();
+        }
+        //check if from LEDL
+        if(arcBus_stat.i2c_stat.rx.ptr[0]==BUS_ADDR_LEDL){
+          //NOP for breakpoint testing
+          __no_operation();
+        }
+        //check if from ACDS
+        if(arcBus_stat.i2c_stat.rx.ptr[0]==BUS_ADDR_ACDS){
+          //NOP for breakpoint testing
+          __no_operation();
+        }
+        //check if from COMM
+        if(arcBus_stat.i2c_stat.rx.ptr[0]==BUS_ADDR_COMM){
+          //NOP for breakpoint testing
+          __no_operation();
+        }
+        //check if from IMG
+        if(arcBus_stat.i2c_stat.rx.ptr[0]==BUS_ADDR_IMG){
+          //NOP for breakpoint testing
+          __no_operation();
+        }
+        //check if from CDH
+        if(arcBus_stat.i2c_stat.rx.ptr[0]==BUS_ADDR_CDH){
+          //NOP for breakpoint testing
+          __no_operation();
+        }
+      }
       //check buffer size
       if(arcBus_stat.i2c_stat.rx.idx>=sizeof(I2C_rx_buf[0].dat)){
         //receive buffer is full, send NACK
