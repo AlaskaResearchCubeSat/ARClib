@@ -138,6 +138,36 @@ void bus_I2C_isr(void) __ctl_interrupt[USCI_B0_VECTOR]{
           }
           //set flag to notify 
           ctl_events_set_clear(&BUS_INT_events,BUS_INT_EV_I2C_CMD_RX,0);
+          //check if from ACDS
+          if(arcBus_stat.i2c_stat.rx.ptr[0]==BUS_ADDR_ACDS){
+            //NOP for breakpoint testing
+            __no_operation();
+          }
+          //check if from LEDL
+          if(arcBus_stat.i2c_stat.rx.ptr[0]==BUS_ADDR_LEDL){
+            //NOP for breakpoint testing
+            __no_operation();
+          }
+          //check if from ACDS
+          if(arcBus_stat.i2c_stat.rx.ptr[0]==BUS_ADDR_ACDS){
+            //NOP for breakpoint testing
+            __no_operation();
+          }
+          //check if from COMM
+          if(arcBus_stat.i2c_stat.rx.ptr[0]==BUS_ADDR_COMM){
+            //NOP for breakpoint testing
+            __no_operation();
+          }
+          //check if from IMG
+          if(arcBus_stat.i2c_stat.rx.ptr[0]==BUS_ADDR_IMG){
+            //NOP for breakpoint testing
+            __no_operation();
+          }
+          //check if from CDH
+          if(arcBus_stat.i2c_stat.rx.ptr[0]==BUS_ADDR_CDH){
+            //NOP for breakpoint testing
+            __no_operation();
+          }
         }
         //set state to idle
         arcBus_stat.i2c_stat.mode=BUS_I2C_IDLE;
