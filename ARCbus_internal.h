@@ -66,6 +66,9 @@
   //size of I2C packet queue
   #define BUS_I2C_PACKET_QUEUE_LEN      5
 
+  //minimum timeout for SPI transaction
+  #define  BUS_SPI_MIN_TIMEOUT    (20)
+
   //all helper task events
   #define BUS_HELPER_EV_ALL (BUS_HELPER_EV_ASYNC_TIMEOUT|BUS_HELPER_EV_SPI_COMPLETE_CMD|BUS_HELPER_EV_SPI_CLEAR_CMD|BUS_HELPER_EV_ASYNC_CLOSE|BUS_HELPER_EV_ERR_REQ|BUS_HELPER_EV_SUB_POWERUP)
   
@@ -106,12 +109,6 @@
   
   //task structures
   extern CTL_TASK_t ARC_bus_task;
-  
-  //ticker time that the last time update happened at
-  extern ticker last_time_update;
-
-  //flag to see if time has been updated
-  extern short timesync;
   
   //events for subsystems
   extern CTL_EVENT_SET_t SUB_events,BUS_helper_events,BUS_INT_events;

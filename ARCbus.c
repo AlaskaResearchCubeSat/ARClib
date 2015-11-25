@@ -221,6 +221,9 @@ int BUS_cmd_tx(unsigned char addr,void *buff,unsigned short len,unsigned short f
     case BUS_EV_I2C_ERR_CCL:
       //Clock low timeout
       return ERR_I2C_CLL;
+    case BUS_INT_EV_I2C_TX_SELF:
+      //TX to self and no one else responded
+      return ERR_I2C_TX_SELF;
     default:
       //error is not defined
       return ERR_UNKNOWN;
@@ -257,6 +260,7 @@ int BUS_SPI_txrx(unsigned char addr,void *tx,void *rx,unsigned short len){
   arcBus_stat.spi_stat.len=len;
   arcBus_stat.spi_stat.rx=rx;
   arcBus_stat.spi_stat.tx=tx;
+  arcBus_stat.spi_stat.nack=0;
   //disable DMA
   DMA0CTL&=~DMAEN;
   DMA1CTL&=~DMAEN;
@@ -352,8 +356,8 @@ int BUS_SPI_txrx(unsigned char addr,void *tx,void *rx,unsigned short len){
   P6OUT=0xFC;
   //calculate wait time based on packet length
   time=len/10;
-  if(time<=10){
-    time=10;
+  if(time<=BUS_SPI_MIN_TIMEOUT){
+    time=BUS_SPI_MIN_TIMEOUT;
   }
   //wait for SPI complete signal from master
   e=ctl_events_wait(CTL_EVENT_WAIT_ANY_EVENTS_WITH_AUTO_CLEAR,&arcBus_stat.events,BUS_EV_SPI_MASTER,CTL_TIMEOUT_DELAY,time*1000);
@@ -380,7 +384,27 @@ int BUS_SPI_txrx(unsigned char addr,void *tx,void *rx,unsigned short len){
     //Success!!
     return RET_SUCCESS;
   }else if(e&BUS_EV_SPI_NACK){
-    return ERR_BUSY;
+    char tmp=arcBus_stat.spi_stat.nack;
+    //clear NACK reason
+    arcBus_stat.spi_stat.nack=0;
+    //check why NACK was sent
+    switch(tmp){
+      case ERR_PK_LEN:
+        //not sure why this could have happened
+        return ERR_INVALID_ARGUMENT;
+      break;
+      case ERR_SPI_LEN:
+        //SPI data is bigger than the buffer
+        return ERR_BAD_LEN;
+      break;
+      case ERR_SPI_BUSY:
+      case ERR_BUFFER_BUSY:
+        //the other MSP is busy
+        return ERR_BUSY;
+      break;
+      default:
+        return ERR_UNKNOWN;
+    }
   }else{
     //Return error, timeout occurred
     return ERR_TIMEOUT;

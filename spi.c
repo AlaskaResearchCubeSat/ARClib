@@ -6,6 +6,8 @@
 
 //setup UCA0 for master operation
 void SPI_master_setup(void){
+  //clear NACK status
+  arcBus_stat.spi_stat.nack=0;
   //set mode
   arcBus_stat.spi_stat.mode=BUS_SPI_MASTER;
   //put UCA0 into master mode
@@ -22,6 +24,8 @@ void SPI_master_setup(void){
 
 //setup UCA0 for slave operation
 void SPI_slave_setup(void){
+  //clear NACK status
+  arcBus_stat.spi_stat.nack=0;
   //set mode
   arcBus_stat.spi_stat.mode=BUS_SPI_SLAVE;
   //put UCA0 into slave mode
