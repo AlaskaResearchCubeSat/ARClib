@@ -117,6 +117,17 @@ void ARC_setup(void){
 
   //init buffer
   BUS_init_buffer();
+  //========[setup AUX supplies]=======
+  if(AUXCTL0&LOCKAUX){
+    //unlock AUX registers
+    AUXCTL0_H=AUXKEY_H;
+    //disable all supplies but VCC
+    AUXCTL1=AUX2MD|AUX1MD|AUX0MD|AUX0OK;
+    //clear LOCKAUX bit
+    AUXCTL0=AUXKEY;
+    //lock AUX registers
+    AUXCTL0_H=0;
+  }
 
   //TODO: determine if ctl_timeslice_period should be set to allow preemptive rescheduling
   
