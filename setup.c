@@ -117,6 +117,17 @@ void ARC_setup(void){
 
   //init buffer
   BUS_init_buffer();
+  //========[setup AUX supplies]=======
+  if(AUXCTL0&LOCKAUX){
+    //unlock AUX registers
+    AUXCTL0_H=AUXKEY_H;
+    //disable all supplies but VCC
+    AUXCTL1=AUX2MD|AUX1MD|AUX0MD|AUX0OK;
+    //clear LOCKAUX bit
+    AUXCTL0=AUXKEY;
+    //lock AUX registers
+    AUXCTL0_H=0;
+  }
 
   //TODO: determine if ctl_timeslice_period should be set to allow preemptive rescheduling
   
@@ -214,10 +225,6 @@ void initARCbus(unsigned char addr){
   P3MAP3=PM_UCA0SOMI;
   //setup BUS SPI SIMO
   P3MAP4=PM_UCA0SIMO;
-  //set old definitions to unused
-  P2MAP5=PM_NONE;
-  P2MAP6=PM_NONE;
-  P2MAP7=PM_NONE;
   //lock the Port map module
   //do not allow reconfiguration
   PMAPKEYID=0;

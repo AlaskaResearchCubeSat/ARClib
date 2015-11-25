@@ -126,6 +126,8 @@ void bus_I2C_isr(void) __ctl_interrupt[USCI_B0_VECTOR]{
         if(arcBus_stat.i2c_stat.mode==BUS_I2C_RX){
           //set packet length
           I2C_rx_buf[I2C_rx_in].len=arcBus_stat.i2c_stat.rx.idx;
+          //zero rx index
+          arcBus_stat.i2c_stat.rx.idx=0;
           //set buffer status to complete
           I2C_rx_buf[I2C_rx_in].stat=I2C_PACKET_STAT_COMPLETE;
           //increment index
@@ -154,12 +156,13 @@ void bus_I2C_isr(void) __ctl_interrupt[USCI_B0_VECTOR]{
       }
     break;
     case USCI_I2C_UCRXIFG3:    //Slave 3 RXIFG
-      //receive data
-      arcBus_stat.i2c_stat.rx.ptr[arcBus_stat.i2c_stat.rx.idx++]=UCB0RXBUF;
       //check buffer size
       if(arcBus_stat.i2c_stat.rx.idx>=sizeof(I2C_rx_buf[0].dat)){
         //receive buffer is full, send NACK
         UCB0CTL1|=UCTXNACK;
+      }else{
+        //receive data
+        arcBus_stat.i2c_stat.rx.ptr[arcBus_stat.i2c_stat.rx.idx++]=UCB0RXBUF;
       }
     break;
     case USCI_I2C_UCTXIFG3:    //Slave 3 TXIFG
@@ -168,12 +171,13 @@ void bus_I2C_isr(void) __ctl_interrupt[USCI_B0_VECTOR]{
     break;
     break;
     case USCI_I2C_UCRXIFG2:    //Slave 2 RXIFG
-      //receive data
-      arcBus_stat.i2c_stat.rx.ptr[arcBus_stat.i2c_stat.rx.idx++]=UCB0RXBUF;
       //check buffer size
       if(arcBus_stat.i2c_stat.rx.idx>=sizeof(I2C_rx_buf[0].dat)){
         //receive buffer is full, send NACK
         UCB0CTL1|=UCTXNACK;
+      }else{
+        //receive data
+        arcBus_stat.i2c_stat.rx.ptr[arcBus_stat.i2c_stat.rx.idx++]=UCB0RXBUF;
       }
     break;
     case USCI_I2C_UCTXIFG2:    //Slave 2 TXIFG
@@ -192,12 +196,13 @@ void bus_I2C_isr(void) __ctl_interrupt[USCI_B0_VECTOR]{
         end_e=BUS_INT_EV_I2C_TX_SELF;
         break;
       }  
-      //receive data
-      arcBus_stat.i2c_stat.rx.ptr[arcBus_stat.i2c_stat.rx.idx++]=UCB0RXBUF;
       //check buffer size
       if(arcBus_stat.i2c_stat.rx.idx>=sizeof(I2C_rx_buf[0].dat)){
         //receive buffer is full, send NACK
         UCB0CTL1|=UCTXNACK;
+      }else{
+        //receive data
+        arcBus_stat.i2c_stat.rx.ptr[arcBus_stat.i2c_stat.rx.idx++]=UCB0RXBUF;
       }
     break;
     case USCI_I2C_UCTXIFG0:    //Data transmit in master mode and Slave 0 TXIFG
