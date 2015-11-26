@@ -193,7 +193,7 @@ void bus_I2C_isr(void) __ctl_interrupt[USCI_B0_VECTOR]{
         //master transaction, nack as a slave
         UCB0CTL1|=UCTXNACK;
         //set send to self event
-        end_e=BUS_INT_EV_I2C_TX_SELF;
+        end_e=BUS_EV_I2C_TX_SELF;
         break;
       }  
       //check buffer size

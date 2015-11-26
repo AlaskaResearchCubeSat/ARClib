@@ -219,7 +219,7 @@ int BUS_cmd_tx(unsigned char addr,void *buff,unsigned short len,unsigned short f
     case BUS_EV_I2C_ERR_CCL:
       //Clock low timeout
       return ERR_I2C_CLL;
-    case BUS_INT_EV_I2C_TX_SELF:
+    case BUS_EV_I2C_TX_SELF:
       //TX to self and no one else responded
       return ERR_I2C_TX_SELF;
     default:
