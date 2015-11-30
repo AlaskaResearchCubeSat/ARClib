@@ -325,3 +325,18 @@ void BUS_restart_interrupts(int int_stat){
         ctl_global_interrupts_enable();
     }
 }
+
+//read timer while it is running
+short readTA1(void){
+  //temporary variables for last two TAR's
+  int t1=TA1R,t2;
+  do{
+    //shift values
+    t2=t1;
+    //get new value
+    t1=TA1R;
+  //loop until we get the same value twice
+  }while(t1!=t2);
+  //return timer value
+  return t1;
+}

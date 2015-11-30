@@ -66,6 +66,9 @@
   //size of I2C packet queue
   #define BUS_I2C_PACKET_QUEUE_LEN      5
 
+  //time to wait to retry an I2C packet (about 4.5 ms or about the length of a 4 byte packet)
+  #define BUS_I2C_WAIT_TIME             148
+
   //minimum timeout for SPI transaction
   #define  BUS_SPI_MIN_TIMEOUT    (20)
 
@@ -132,5 +135,7 @@
   void BUS_timer_timeout_check(void);
   //trigger alarms that may have been updated over
   void BUS_alarm_ticker_update(ticker newt,ticker oldt);
+  //read timer while it is running 
+  short readTA1(void);
 
 #endif
