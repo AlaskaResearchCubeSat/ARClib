@@ -66,8 +66,8 @@
   //size of I2C packet queue
   #define BUS_I2C_PACKET_QUEUE_LEN      5
 
-  //time to wait to retry an I2C packet (about 4.5 ms or about the length of a 4 byte packet)
-  #define BUS_I2C_WAIT_TIME             148
+  //time to wait to retry an I2C packet in 32.768 kHz clocks
+  #define BUS_I2C_WAIT_TIME             25          // (about 0.7 ms or about the length of a 4 byte packet at 50kb/s)
 
   //minimum timeout for SPI transaction
   #define  BUS_SPI_MIN_TIMEOUT    (20)
