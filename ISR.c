@@ -24,7 +24,13 @@ void bus_I2C_isr(void) __ctl_interrupt[USCI_B0_VECTOR]{
   static unsigned short end_e=0;
   switch(UCB0IV){
     case USCI_I2C_UCALIFG:    //Arbitration lost
-      //Arbitration lost, resend later?
+      //Check if packet was in progress
+      if(arcBus_stat.i2c_stat.tx.stat==BUS_I2C_MASTER_IN_PROGRESS){
+        //set index
+        arcBus_stat.i2c_stat.tx.idx=0;
+        //set I2C master state
+        arcBus_stat.i2c_stat.tx.stat=BUS_I2C_MASTER_PENDING;
+      }
       //set flag to indicate condition
       ctl_events_set_clear(&BUS_INT_events,BUS_INT_EV_I2C_ARB_LOST,0);
       //check if running
