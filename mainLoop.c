@@ -257,7 +257,7 @@ static void ARC_bus_run(void *p) __toplevel{
               // Configure the DMA transfer, single byte transfer with destination increment
               DMA0CTL = DMAIE|DMADT_0|DMASBDB|DMAEN|DMADSTINCR1|DMADSTINCR0;
               // Source DMA address: SPI transmit buffer, constant data will be sent
-              *((unsigned int*)&DMA1DA) = (unsigned int)(&UCA0TXBUF);
+              *((unsigned int*)&DMA1SA) = (unsigned int)(&UCA0TXBUF);
               // Destination DMA address: the transmit buffer.
               *((unsigned int*)&DMA1DA) = (unsigned int)(&UCA0TXBUF);
               // The size of the block to be transferred
