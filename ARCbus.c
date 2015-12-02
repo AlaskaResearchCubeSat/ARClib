@@ -177,6 +177,8 @@ int BUS_cmd_tx(unsigned char addr,void *buff,unsigned short len,unsigned short f
   e=ctl_events_wait(CTL_EVENT_WAIT_ANY_EVENTS_WITH_AUTO_CLEAR,&arcBus_stat.events,BUS_EV_I2C_MASTER_START,CTL_TIMEOUT_DELAY,50);
   //check to see if there was a problem
   if(!(e&BUS_EV_I2C_MASTER_STARTED)){
+    //clear start bit
+    UCB0CTL1&=~UCTXSTT;
     //release I2C bus
     BUS_I2C_release();
     //set I2C master state
