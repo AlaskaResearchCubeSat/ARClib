@@ -235,11 +235,11 @@ void initARCbus(unsigned char addr){
   UCB0CTLW0|=UCMM|UCMST|UCMODE_3|UCSYNC|UCSSEL_2;
   UCB0CTLW1=UCCLTO_3|UCASTP_0|UCGLIT_0;
   //set baud rate to 50kB/s off of 20MHz SMCLK
-  //UCB0BRW=400;
+  UCB0BRW=400;
   //set baud rate to 30kB/s off of 20MHz SMCLK
   //UCB0BRW=666;
   //set baud rate to 10kB/s off of 20MHz SMCLK
-  UCB0BRW=2000;
+  //UCB0BRW=2000;
   //set baud rate to 1kB/s off of 20MHz SMCLK
   //UCB0BRW=20000;
   //set own address
@@ -324,4 +324,19 @@ void BUS_restart_interrupts(int int_stat){
         //re-enable interrupts
         ctl_global_interrupts_enable();
     }
+}
+
+//read timer while it is running
+short readTA1(void){
+  //temporary variables for last two TAR's
+  int t1=TA1R,t2;
+  do{
+    //shift values
+    t2=t1;
+    //get new value
+    t1=TA1R;
+  //loop until we get the same value twice
+  }while(t1!=t2);
+  //return timer value
+  return t1;
 }

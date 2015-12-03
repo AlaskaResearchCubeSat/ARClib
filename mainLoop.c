@@ -281,15 +281,15 @@ static void ARC_bus_run(void *p) __toplevel{
               // The size of the block to be transferred
               DMA0SZ = arcBus_stat.spi_stat.len+BUS_SPI_CRC_LEN;
               // Configure the DMA transfer, single byte transfer with destination increment
-              DMA0CTL = DMAIE|DMADT_0|DMASBDB|DMAEN|DMADSTINCR1|DMADSTINCR0;
+              DMA0CTL = DMAIE|DMADT_0|DMASBDB|DMAEN|DMASRCINCR_0|DMADSTINCR_3;
               // Source DMA address: SPI transmit buffer, constant data will be sent
-              *((unsigned int*)&DMA1DA) = (unsigned int)(&UCA0TXBUF);
+              *((unsigned int*)&DMA1SA) = (unsigned int)(&UCA0TXBUF);
               // Destination DMA address: the transmit buffer.
               *((unsigned int*)&DMA1DA) = (unsigned int)(&UCA0TXBUF);
               // The size of the block to be transferred
               DMA1SZ = arcBus_stat.spi_stat.len+BUS_SPI_CRC_LEN-1;
               // Configure the DMA transfer, single byte transfer with no increment
-              DMA1CTL=DMADT_0|DMASBDB|DMAEN|DMASRCINCR0|DMASRCINCR0;
+              DMA1CTL=DMADT_0|DMASBDB|DMAEN|DMASRCINCR_0|DMADSTINCR_0;
               //write the Tx buffer to start transfer
               UCA0TXBUF=BUS_SPI_DUMMY_DATA;
               //============[setup timeout timer]============

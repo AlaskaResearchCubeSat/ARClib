@@ -24,7 +24,17 @@ void bus_I2C_isr(void) __ctl_interrupt[USCI_B0_VECTOR]{
   static unsigned short end_e=0;
   switch(UCB0IV){
     case USCI_I2C_UCALIFG:    //Arbitration lost
-      //Arbitration lost, resend later?
+      //Check if packet was in progress
+      if(arcBus_stat.i2c_stat.tx.stat==BUS_I2C_MASTER_IN_PROGRESS){
+        //set index
+        arcBus_stat.i2c_stat.tx.idx=0;
+        //set I2C master state
+        arcBus_stat.i2c_stat.tx.stat=BUS_I2C_MASTER_PENDING;
+        //set timer to attempt to send later
+        TA1CCR1=readTA1()+BUS_I2C_WAIT_TIME;
+        //setup TA1CCR1 interrupt
+        TA1CCTL1=CCIE;
+      }
       //set flag to indicate condition
       ctl_events_set_clear(&BUS_INT_events,BUS_INT_EV_I2C_ARB_LOST,0);
       //check if running
@@ -151,7 +161,9 @@ void bus_I2C_isr(void) __ctl_interrupt[USCI_B0_VECTOR]{
           //set master mode
           UCB0CTLW0|=UCMST;
           //clear saved event
-          end_e=0;
+          end_e=0; 
+          //generate start condition
+          UCB0CTL1|=UCTXSTT;
         }
       }
     break;
@@ -193,7 +205,7 @@ void bus_I2C_isr(void) __ctl_interrupt[USCI_B0_VECTOR]{
         //master transaction, nack as a slave
         UCB0CTL1|=UCTXNACK;
         //set send to self event
-        end_e=BUS_INT_EV_I2C_TX_SELF;
+        end_e=BUS_EV_I2C_TX_SELF;
         break;
       }  
       //check buffer size
@@ -348,6 +360,31 @@ void task_tick(void) __ctl_interrupt[TIMER1_A0_VECTOR]{
     }
   }
   BUS_timer_timeout_check();
+}
+
+//================[I2C timeout interrupt]=========================
+void bus_resend(void) __ctl_interrupt[TIMER1_A1_VECTOR]{
+  switch(TA1IV){
+    case TA1IV_TA1CCR1:
+      //check master status to see if a command is pending
+      if(arcBus_stat.i2c_stat.tx.stat==BUS_I2C_MASTER_PENDING){          
+        //transmision interrupted, start again
+        //set to transmit mode
+        UCB0CTLW0|=UCTR;
+        //clear master I2C flags
+        ctl_events_set_clear(&arcBus_stat.events,0,BUS_EV_I2C_MASTER|BUS_EV_I2C_MASTER_START);
+        //set master mode
+        UCB0CTLW0|=UCMST;
+        //generate start condition
+        UCB0CTL1|=UCTXSTT;
+        //set next timeout
+        TA1CCR1+=BUS_I2C_WAIT_TIME;
+      }else{
+        //disable interrupts
+        TA1CCTL1&=~CCIE;
+      }
+    break;
+  }
 }
 
 //================[System NMI Interrupt]=========================

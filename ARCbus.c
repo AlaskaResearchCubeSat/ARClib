@@ -174,9 +174,11 @@ int BUS_cmd_tx(unsigned char addr,void *buff,unsigned short len,unsigned short f
     return RET_SUCCESS;
   }
   //wait for packet to start
-  e=ctl_events_wait(CTL_EVENT_WAIT_ANY_EVENTS_WITH_AUTO_CLEAR,&arcBus_stat.events,BUS_EV_I2C_MASTER_START,CTL_TIMEOUT_DELAY,104);
+  e=ctl_events_wait(CTL_EVENT_WAIT_ANY_EVENTS_WITH_AUTO_CLEAR,&arcBus_stat.events,BUS_EV_I2C_MASTER_START,CTL_TIMEOUT_DELAY,50);
   //check to see if there was a problem
   if(!(e&BUS_EV_I2C_MASTER_STARTED)){
+    //clear start bit
+    UCB0CTL1&=~UCTXSTT;
     //release I2C bus
     BUS_I2C_release();
     //set I2C master state
@@ -195,7 +197,7 @@ int BUS_cmd_tx(unsigned char addr,void *buff,unsigned short len,unsigned short f
     }
   }
   //wait for transaction to complete
-  e=ctl_events_wait(CTL_EVENT_WAIT_ANY_EVENTS_WITH_AUTO_CLEAR,&arcBus_stat.events,BUS_EV_I2C_MASTER,CTL_TIMEOUT_DELAY,104);
+  e=ctl_events_wait(CTL_EVENT_WAIT_ANY_EVENTS_WITH_AUTO_CLEAR,&arcBus_stat.events,BUS_EV_I2C_MASTER,CTL_TIMEOUT_DELAY,50);
   //save transaction time
   packet_time=get_ticker_time();
   //release I2C bus
@@ -219,7 +221,7 @@ int BUS_cmd_tx(unsigned char addr,void *buff,unsigned short len,unsigned short f
     case BUS_EV_I2C_ERR_CCL:
       //Clock low timeout
       return ERR_I2C_CLL;
-    case BUS_INT_EV_I2C_TX_SELF:
+    case BUS_EV_I2C_TX_SELF:
       //TX to self and no one else responded
       return ERR_I2C_TX_SELF;
     default:
@@ -287,7 +289,7 @@ int BUS_SPI_txrx(unsigned char addr,void *tx,void *rx,unsigned short len){
     // The size of the block to be transferred
     DMA0SZ = len+BUS_SPI_CRC_LEN;
     // Configure the DMA transfer, single byte transfer with source increment
-    DMA0CTL =DMADT_0|DMASBDB|DMAEN|DMADSTINCR1|DMADSTINCR0;
+    DMA0CTL =DMADT_0|DMASBDB|DMAEN|DMASRCINCR_3|DMADSTINCR_0;
   }
   //====[DMA channel1 used for transmit]====
   // Destination DMA address: the transmit buffer.
@@ -300,7 +302,7 @@ int BUS_SPI_txrx(unsigned char addr,void *tx,void *rx,unsigned short len){
     DMA1SZ = len+BUS_SPI_CRC_LEN-1;
     // Configure the DMA transfer, single byte transfer with destination increment
     //enable interrupt to notify code when transfer is complete
-    DMA1CTL=DMADT_0|DMASBDB|DMASRCINCR1|DMASRCINCR0|DMAEN;
+    DMA1CTL=DMADT_0|DMASBDB|DMASRCINCR_3|DMADSTINCR_0|DMAEN;
     //start things off with an initial transfer
     UCA0TXBUF=*((unsigned char*)tx);
   }else{
@@ -309,7 +311,7 @@ int BUS_SPI_txrx(unsigned char addr,void *tx,void *rx,unsigned short len){
     // The size of the block to be transferred
     DMA1SZ = len+BUS_SPI_CRC_LEN-1;
     // Configure the DMA transfer, single byte transfer with no increment
-    DMA1CTL=DMADT_0|DMASBDB|DMASRCINCR0|DMASRCINCR0|DMAEN;
+    DMA1CTL=DMADT_0|DMASBDB|DMASRCINCR_0|DMADSTINCR_0|DMAEN;
     //start things off with an initial transfer
     UCA0TXBUF=BUS_SPI_DUMMY_DATA;
   }
