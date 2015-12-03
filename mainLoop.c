@@ -53,6 +53,8 @@ static void ARC_bus_run(void *p) __toplevel{
   unsigned char *SPI_buf=NULL;
   ticker nt,ot;
   int snd,i;
+  //dummy variable for DMA9 workaround
+  static unsigned char SPI_dummy;
   SPI_addr=0;
   //Initialize ErrorLib
   error_recording_start();
@@ -237,6 +239,7 @@ static void ARC_bus_run(void *p) __toplevel{
               //disable DMA
               DMA0CTL&=~DMAEN;
               DMA1CTL&=~DMAEN;
+              DMA2CTL&=~DMAEN;
               //save address of SPI slave
               SPI_addr=addr;
               //setup SPI structure
@@ -248,6 +251,15 @@ static void ARC_bus_run(void *p) __toplevel{
               //setup source trigger
               DMACTL0 &=~(DMA0TSEL_15|DMA1TSEL_15);
               DMACTL0 |= (DMA0TSEL__USCIA0RX|DMA1TSEL__USCIA0TX);
+              DMACTL1 = DMA2TSEL__USCIA0RX;
+              //setup dummy channel: read and write from dummy byte
+              *((unsigned int*)&DMA2SA) = (unsigned short)(&SPI_dummy);
+              *((unsigned int*)&DMA2DA) = (unsigned short)(&SPI_dummy);
+              // size isn't supposed to really matter
+              DMA2SZ = 10;
+              // Configure the DMA transfer, single byte transfer with no increment
+              DMA2CTL = DMADT_0|DMASBDB|DMAEN|DMASRCINCR_0|DMADSTINCR_0;
+
               // Source DMA address: receive register.
               *((unsigned int*)&DMA0SA) = (unsigned short)(&UCA0RXBUF);
               // Destination DMA address: rx buffer.
@@ -256,6 +268,7 @@ static void ARC_bus_run(void *p) __toplevel{
               DMA0SZ = arcBus_stat.spi_stat.len+BUS_SPI_CRC_LEN;
               // Configure the DMA transfer, single byte transfer with destination increment
               DMA0CTL = DMAIE|DMADT_0|DMASBDB|DMAEN|DMASRCINCR_0|DMADSTINCR_3;
+
               // Source DMA address: SPI transmit buffer, constant data will be sent
               *((unsigned int*)&DMA1SA) = (unsigned int)(&UCA0TXBUF);
               // Destination DMA address: the transmit buffer.
@@ -294,6 +307,10 @@ static void ARC_bus_run(void *p) __toplevel{
                   //send NACK
                   break;
               }
+              //disable DMA
+              DMA0CTL&=~DMAEN;
+              DMA1CTL&=~DMAEN;
+              DMA2CTL&=~DMAEN;
               //turn off SPI
               SPI_deactivate();
               //SPI transfer is done
