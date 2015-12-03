@@ -268,6 +268,37 @@ static void ARC_bus_run(void *p) __toplevel{
               UCA0TXBUF=BUS_SPI_DUMMY_DATA;
             break;
             
+            case CMD_SPI_ABORT:
+              //check length
+              if(len!=0){
+                resp=ERR_PK_LEN;
+                break;
+              }
+              //check SPI mode
+              if(arcBus_stat.spi_stat.mode!=BUS_SPI_MASTER){
+                resp=ERR_SPI_NOT_RUNNING;
+                break;
+              }
+              //check SPI address
+              if(SPI_addr!=addr){
+                resp=ERR_SPI_WRONG_ADDR;
+                break;
+              }
+              //disable DMA
+              DMA0CTL&=~DMAEN;
+              DMA1CTL&=~DMAEN;
+              //turn off SPI
+              SPI_deactivate();              
+              //clear buffer pointer
+              SPI_buf=NULL;
+              //free buffer
+              BUS_free_buffer();
+              //clear address
+              SPI_addr=0;
+              //retport error
+              report_error(ERR_LEV_ERROR,BUS_ERR_SRC_MAIN_LOOP,MAIN_LOOP_SPI_ABORT,addr);
+            break;
+
             case CMD_SPI_COMPLETE:
               //check length
               if(len!=0){
