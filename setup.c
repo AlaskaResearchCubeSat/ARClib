@@ -299,6 +299,10 @@ void initARCbus(unsigned char addr){
   //enable interrupts
   P2IE=0xFF;
 
+  //=======[DMA configuration]========
+  //prevent the DMA from interrupting read-modify-write instructions
+  DMACTL4=DMARMWDIS;
+
    //create a main task with maximum priority so other tasks can be created without interruption
   //this should be called before other tasks are created
   ctl_task_init(&idle_task, 255, "idle");  
