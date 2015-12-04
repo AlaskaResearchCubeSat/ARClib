@@ -255,10 +255,10 @@ static void ARC_bus_run(void *p) __toplevel{
               //setup dummy channel: read and write from dummy byte
               *((unsigned int*)&DMA2SA) = (unsigned short)(&SPI_dummy);
               *((unsigned int*)&DMA2DA) = (unsigned short)(&SPI_dummy);
-              // size isn't supposed to really matter
-              DMA2SZ = 10;
-              // Configure the DMA transfer, single byte transfer with no increment
-              DMA2CTL = DMADT_0|DMASBDB|DMAEN|DMASRCINCR_0|DMADSTINCR_0;
+              // only one byte
+              DMA2SZ = 1;
+              // Configure the DMA transfer, repeated byte transfer with no increment
+              DMA2CTL = DMADT_4|DMASBDB|DMAEN|DMASRCINCR_0|DMADSTINCR_0;
 
               // Source DMA address: receive register.
               *((unsigned int*)&DMA0SA) = (unsigned short)(&UCA0RXBUF);
