@@ -251,7 +251,7 @@ static void ARC_bus_run(void *p) __toplevel{
               //setup source trigger
               DMACTL0 &=~(DMA0TSEL_15|DMA1TSEL_15);
               DMACTL0 |= (DMA0TSEL__USCIA0RX|DMA1TSEL__USCIA0TX);
-              DMACTL1 = DMA2TSEL__USCIA0RX;
+              DMACTL1 = DMA2TSEL__DMA_REQ;
               //setup dummy channel: read and write from dummy byte
               *((unsigned int*)&DMA2SA) = (unsigned short)(&SPI_dummy);
               *((unsigned int*)&DMA2DA) = (unsigned short)(&SPI_dummy);
