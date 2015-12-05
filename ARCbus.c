@@ -374,6 +374,9 @@ int BUS_SPI_txrx(unsigned char addr,void *tx,void *rx,unsigned short len){
         return ERR_UNKNOWN;
     }
   }else{
+    //timeout occurred, send SPI abort packet
+    ptr=BUS_cmd_init(buf,CMD_SPI_ABORT);
+    resp=BUS_cmd_tx(addr,buf,0,BUS_CMD_FL_NACK,BUS_I2C_SEND_FOREGROUND);
     //Return error, timeout occurred
     return ERR_TIMEOUT;
   }
