@@ -298,6 +298,7 @@ static void ARC_bus_run(void *p) __toplevel{
               //disable DMA
               DMA0CTL&=~DMAEN;
               DMA1CTL&=~DMAEN;
+              DMA2CTL&=~DMAEN;
               //turn off SPI
               SPI_deactivate();              
               //clear buffer pointer
