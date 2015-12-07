@@ -53,8 +53,6 @@ static void ARC_bus_run(void *p) __toplevel{
   unsigned char *SPI_buf=NULL;
   ticker nt,ot;
   int snd,i;
-  //dummy variable for DMA9 workaround
-  static unsigned char SPI_dummy;
   SPI_addr=0;
   //Initialize ErrorLib
   error_recording_start();
@@ -252,9 +250,9 @@ static void ARC_bus_run(void *p) __toplevel{
               DMACTL0 &=~(DMA0TSEL_15|DMA1TSEL_15);
               DMACTL0 |= (DMA0TSEL__USCIA0RX|DMA1TSEL__USCIA0TX);
               DMACTL1 = DMA2TSEL__DMA_REQ;
-              //setup dummy channel: read and write from dummy byte
-              *((unsigned int*)&DMA2SA) = (unsigned short)(&SPI_dummy);
-              *((unsigned int*)&DMA2DA) = (unsigned short)(&SPI_dummy);
+              //setup dummy channel: read and write from unused space on the USCI registers
+              *((unsigned int*)&DMA2SA) = EUSCI_A0_BASE + 0x04;
+              *((unsigned int*)&DMA2DA) = EUSCI_A1_BASE + 0x04;
               // only one byte
               DMA2SZ = 1;
               // Configure the DMA transfer, repeated byte transfer with no increment
