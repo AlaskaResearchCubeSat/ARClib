@@ -247,7 +247,7 @@ static void ARC_bus_run(void *p) __toplevel{
               SPI_master_setup();
               //============[setup DMA for transfer]============
               //setup source trigger
-              DMACTL0 &=~(DMA0TSEL_15|DMA1TSEL_15);
+              DMACTL0 &=~(DMA0TSEL_31|DMA1TSEL_31);
               DMACTL0 |= (DMA0TSEL__USCIA0RX|DMA1TSEL__USCIA0TX);
               DMACTL1 = DMA2TSEL__DMA_REQ;
               //setup dummy channel: read and write from unused space on the USCI registers
