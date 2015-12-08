@@ -250,9 +250,9 @@ static void ARC_bus_run(void *p) __toplevel{
               DMACTL0 &=~(DMA0TSEL_31|DMA1TSEL_31);
               DMACTL0 |= (DMA0TSEL__USCIA0RX|DMA1TSEL__USCIA0TX);
               DMACTL1 = DMA2TSEL__USCIA0RX;
-              //setup dummy channel: read and write from unused space on the USCI registers
-              *((unsigned int*)&DMA2SA) = EUSCI_A0_BASE + 0x04;
-              *((unsigned int*)&DMA2DA) = EUSCI_A1_BASE + 0x04;
+              //setup dummy channel: read and write from unused space in the SPI registers
+              *((unsigned int*)&DMA2SA) = EUSCI_A0_BASE + 0x02;
+              *((unsigned int*)&DMA2DA) = EUSCI_A0_BASE + 0x04;
               // only one byte
               DMA2SZ = 1;
               // Configure the DMA transfer, repeated byte transfer with no increment
