@@ -264,11 +264,13 @@ int BUS_SPI_txrx(unsigned char addr,void *tx,void *rx,unsigned short len){
   //disable DMA
   DMA0CTL&=~DMAEN;
   DMA1CTL&=~DMAEN;
+  DMA2CTL&=~DMAEN;
   //Setup SPI
   SPI_slave_setup();
   //setup DMA for transfer
   DMACTL0 &=~(DMA0TSEL_31|DMA1TSEL_31);
   DMACTL0 |= (DMA0TSEL__USCIA0RX|DMA1TSEL__USCIA0TX);
+  DMACTL1 = DMA2TSEL__USCIA0TX;
   //====[DMA channel0 used for receive]====
   //check for omitted receive buffer
   if(rx!=NULL){
@@ -281,6 +283,14 @@ int BUS_SPI_txrx(unsigned char addr,void *tx,void *rx,unsigned short len){
     // Configure the DMA transfer, single byte transfer with source increment
     DMA0CTL =DMADT_0|DMASBDB|DMAEN|DMASRCINCR_3|DMADSTINCR_0;
   }
+  //====[DMA channel2 used for DMA9 fix]====
+  //setup dummy channel: read and write from unused space in the SPI registers
+  *((unsigned int*)&DMA2SA) = EUSCI_A0_BASE + 0x02;
+  *((unsigned int*)&DMA2DA) = EUSCI_A0_BASE + 0x04;
+  // only one byte
+  DMA2SZ = 1;
+  // Configure the DMA transfer, repeated byte transfer with no increment
+  DMA2CTL = DMADT_4|DMASBDB|DMAEN|DMASRCINCR_0|DMADSTINCR_0;
   //====[DMA channel1 used for transmit]====
   // Destination DMA address: the transmit buffer.
   *((unsigned int*)&DMA1DA) = (unsigned int)(&UCA0TXBUF);
@@ -318,6 +328,7 @@ int BUS_SPI_txrx(unsigned char addr,void *tx,void *rx,unsigned short len){
     //disable DMA
     DMA0CTL&=~DMAEN;
     DMA1CTL&=~DMAEN; 
+    DMA2CTL&=~DMAEN; 
     //SPI pins back to GPIO
     SPI_deactivate();
     //Return Error
@@ -334,6 +345,7 @@ int BUS_SPI_txrx(unsigned char addr,void *tx,void *rx,unsigned short len){
   //disable DMA
   DMA0CTL&=~DMAEN;
   DMA1CTL&=~DMAEN; 
+  DMA2CTL&=~DMAEN; 
   //SPI pins back to GPIO
   SPI_deactivate();
   //Check if SPI complete event received
