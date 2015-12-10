@@ -84,8 +84,6 @@ static void ARC_bus_run(void *p) __toplevel{
       if(SPI_addr){
         //turn off SPI
         SPI_deactivate();
-        //tell helper thread to send SPI complete command
-        ctl_events_set_clear(&BUS_helper_events,BUS_HELPER_EV_SPI_COMPLETE_CMD,0);
         //assemble CRC
         crc=SPI_buf[arcBus_stat.spi_stat.len+1];//LSB
         crc|=(((unsigned short)SPI_buf[arcBus_stat.spi_stat.len])<<8);//MSB
@@ -98,11 +96,17 @@ static void ARC_bus_run(void *p) __toplevel{
           BUS_free_buffer();
           //send event
           ctl_events_set_clear(&SUB_events,SUB_EV_SPI_ERR_CRC,0);
+          //set return value for SPI complete packet
+          arcBus_stat.spi_stat.nack=ERR_BAD_CRC;
         }else{
           //tell subsystem, SPI data received
           //Subsystem must signal to free the buffer
           ctl_events_set_clear(&SUB_events,SUB_EV_SPI_DAT,0);
+          //set return value for SPI complete packet
+          arcBus_stat.spi_stat.nack=RET_SUCCESS;
         }
+        //tell helper thread to send SPI complete command
+        ctl_events_set_clear(&BUS_helper_events,BUS_HELPER_EV_SPI_COMPLETE_CMD,0);
       }
     }
     //check if an I2C command has been received
@@ -313,7 +317,7 @@ static void ARC_bus_run(void *p) __toplevel{
 
             case CMD_SPI_COMPLETE:
               //check length
-              if(len!=0){
+              if(len!=1){
                 resp=ERR_PK_LEN;
                 break;
               }
@@ -343,7 +347,8 @@ static void ARC_bus_run(void *p) __toplevel{
               DMA2CTL&=~DMAEN;
               //turn off SPI
               SPI_deactivate();
-              //SPI transfer is done
+              //SPI transfer is done, see if there was an error
+              arcBus_stat.spi_stat.nack=ptr[0];
               //notify CDH board
 #ifndef CDH_LIB
               ctl_events_set_clear(&BUS_helper_events,BUS_HELPER_EV_SPI_CLEAR_CMD,0);
@@ -540,11 +545,14 @@ static void ARC_bus_helper(void *p) __toplevel{
     //SPI transaction is complete
     if(e&BUS_HELPER_EV_SPI_COMPLETE_CMD){      
       //done with SPI send command
-      BUS_cmd_init(pk,CMD_SPI_COMPLETE);
-      resp=BUS_cmd_tx(SPI_addr,pk,0,0,BUS_I2C_SEND_FOREGROUND);
+      ptr=BUS_cmd_init(pk,CMD_SPI_COMPLETE);
+      //send return to indicate success
+      *ptr=arcBus_stat.spi_stat.nack;
+      //send data
+      resp=BUS_cmd_tx(SPI_addr,pk,1,0,BUS_I2C_SEND_FOREGROUND);
       //check if command was successful and try again if it failed
       if(resp!=RET_SUCCESS){
-        resp=BUS_cmd_tx(SPI_addr,pk,0,0,BUS_I2C_SEND_FOREGROUND);
+        resp=BUS_cmd_tx(SPI_addr,pk,1,0,BUS_I2C_SEND_FOREGROUND);
       }
       //check if command sent successfully
       if(resp!=RET_SUCCESS){

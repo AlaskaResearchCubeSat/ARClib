@@ -350,6 +350,11 @@ int BUS_SPI_txrx(unsigned char addr,void *tx,void *rx,unsigned short len){
   SPI_deactivate();
   //Check if SPI complete event received
   if(e&BUS_EV_SPI_COMPLETE){
+    //check for errors from the destination
+    if(arcBus_stat.spi_stat.nack!=0){
+      //error from the other system, return it
+      return arcBus_stat.spi_stat.nack;
+    }
     //if RX is null then don't calculate CRC
     if(rx!=NULL){
         //assemble CRC
