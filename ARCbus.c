@@ -357,6 +357,11 @@ int BUS_SPI_txrx(unsigned char addr,void *tx,void *rx,unsigned short len){
     }
     //if RX is null then don't calculate CRC
     if(rx!=NULL){
+        //check if DMA0 finished receiving 
+        if(!(DMA0CTL&DMAIFG)){
+          //Error : DMA timed out (CRC is probably bad)
+          return ERR_DMA_TIMEOUT;
+        }
         //assemble CRC
         crc=((unsigned char*)rx)[arcBus_stat.spi_stat.len+1];//LSB
         crc|=(((unsigned short)((unsigned char*)rx)[arcBus_stat.spi_stat.len])<<8);//MSB
@@ -365,6 +370,11 @@ int BUS_SPI_txrx(unsigned char addr,void *tx,void *rx,unsigned short len){
           //Bad CRC
           return ERR_BAD_CRC;
         }
+    }
+    //check if DMA1 finished transmitting
+    if(!(DMA1CTL&DMAIFG)){
+      //Error : DMA timed out (CRC is probably bad on the other end)
+      return ERR_DMA_TIMEOUT;
     }
     //Success!!
     return RET_SUCCESS;
