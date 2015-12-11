@@ -284,6 +284,7 @@ int BUS_SPI_txrx(unsigned char addr,void *tx,void *rx,unsigned short len){
     DMA0CTL =DMADT_0|DMASBDB|DMAEN|DMASRCINCR_3|DMADSTINCR_0;
   }
   //====[DMA channel2 used for DMA9 fix]====
+  //DMA9 workaround, use a dummy channel with lower priority and the same trigger
   //setup dummy channel: read and write from unused space in the SPI registers
   *((unsigned int*)&DMA2SA) = EUSCI_A0_BASE + 0x02;
   *((unsigned int*)&DMA2DA) = EUSCI_A0_BASE + 0x04;
