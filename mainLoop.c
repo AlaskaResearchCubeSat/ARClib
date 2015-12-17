@@ -42,12 +42,27 @@ static struct{
 unsigned short powerState=SUB_PWR_OFF;
 
 //pointer to linked list of command parse functions
-CMD_PARSE_DAT *cmd_parse_list;
+//nodes in the list are sorted by priority
+//this node is the first in the list (or NULL for an empty list)
+//the last node in the list has next set to NULL
+CMD_PARSE_DAT *cmd_parse_list=NULL;
 
+//register callback
+//insert the callback structure in the linked list based on priority
 void BUS_register_cmd_callback(CMD_PARSE_DAT *cb_dat){
-  //TODO: insertion sort for priority
-  cb_dat->next=cmd_parse_list;
-  cmd_parse_list=cb_dat;
+  //get a pointer to the current list head
+  CMD_PARSE_DAT **head=&cmd_parse_list;
+  //find insertion point.
+  //This should be where *head points to a node with greater priority (or the beginning)
+  //and *head->next points to a node with lower priority (or the end)
+  while(*head!=NULL && (*head)->priority>cb_dat->priority){
+    //move head to the next element in the list
+    head= &(*head)->next;
+  }
+  //link to lower priority callbacks
+  cb_dat->next=*head;
+  //link in this callback
+  *head=cb_dat;
 }
 
 //ARC bus Task, do ARC bus stuff
