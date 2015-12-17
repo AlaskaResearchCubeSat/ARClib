@@ -41,6 +41,15 @@ static struct{
 //power state of subsystem
 unsigned short powerState=SUB_PWR_OFF;
 
+//pointer to linked list of command parse functions
+CMD_PARSE_DAT *cmd_parse_list;
+
+void BUS_register_cmd_callback(CMD_PARSE_DAT *cb_dat){
+  //TODO: insertion sort for priority
+  cb_dat->next=cmd_parse_list;
+  cmd_parse_list=cb_dat;
+}
+
 //ARC bus Task, do ARC bus stuff
 static void ARC_bus_run(void *p) __toplevel{
   unsigned int e;
@@ -53,6 +62,8 @@ static void ARC_bus_run(void *p) __toplevel{
   unsigned char *SPI_buf=NULL;
   ticker nt,ot;
   int snd,i;
+  unsigned short parse_mask;
+  CMD_PARSE_DAT *parse_ptr;
   SPI_addr=0;
   //Initialize ErrorLib
   error_recording_start();
@@ -438,8 +449,22 @@ static void ARC_bus_run(void *p) __toplevel{
                 //this is a dummy command that does nothing
             break;
             default:
-              //check for subsystem command
-              resp=SUB_parseCmd(addr,cmd,ptr,len);
+              //get callback structure list
+              parse_ptr=cmd_parse_list;
+              //TODO: calculate mask based incoming I2C address
+              parse_mask=0xFFFF;
+              //set response to unknown command
+              resp=ERR_UNKNOWN_CMD;
+              //loop through list and check for commands
+              while(parse_ptr!=NULL && resp==ERR_UNKNOWN_CMD){                
+                //check if flags match
+                if(parse_ptr->flags&parse_mask){
+                  //check for subsystem command
+                  resp=parse_ptr->cb(addr,cmd,ptr,len);
+                }
+                //get next callback structure
+                parse_ptr=parse_ptr->next;
+              }
             break;
           }
           //check if command was recognized

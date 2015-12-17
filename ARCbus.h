@@ -70,7 +70,7 @@ enum{CMD_PING=7,CMD_NACK=51,CMD_SPI_COMPLETE,CMD_SPI_RDY,CMD_SUB_ON,CMD_SUB_OFF,
 //Return values from bus functions
 enum{RET_SUCCESS=0,ERR_BAD_LEN=-1,ERR_CMD_NACK=-2,ERR_I2C_NACK=-3,ERR_UNKNOWN=-4,ERR_BAD_ADDR=-5,ERR_BAD_CRC=-6,ERR_TIMEOUT=-7,ERR_BUSY=-8,ERR_INVALID_ARGUMENT=-9,ERR_PACKET_TOO_LONG=-10,ERR_I2C_ABORT=-11,ERR_TIME_INVALID=-12,ERR_TIME_TOO_OLD=-13,ERR_I2C_CLL=-14,ERR_I2C_START_TIMEOUT=-15,ERR_I2C_TX_SELF=-16,ERR_DMA_TIMEOUT=-17};
 
-//Return values for SUB_parseCmd these will be send as part of the NACK packet
+//command response values these will be send as part of the NACK packet
 enum{ERR_PK_LEN=1,ERR_UNKNOWN_CMD=2,ERR_SPI_LEN=3,ERR_BAD_PK=4,ERR_SPI_BUSY=5,ERR_BUFFER_BUSY=6,ERR_ILLEAGLE_COMMAND=7,ERR_SPI_NOT_RUNNING=8,ERR_SPI_WRONG_ADDR=9,ERR_PK_BAD_PARM=10};
 
 //table of board addresses
@@ -116,6 +116,9 @@ enum{BUS_ALARM_0=0,BUS_ALARM_1,BUS_NUM_ALARMS};
 //return values for BUS_build
 enum{BUS_BUILD_CDH,BUS_BUILD_SUBSYSTEM};
 
+//command parse flags
+enum{CMD_PARSE_ADDR0=(1<<0),CMD_PARSE_ADDR1=(1<<1),CMD_PARSE_ADDR2=(1<<2),CMD_PARSE_ADDR3=(1<<3),CMD_PARSE_GC_ADDR=(1<<7)};
+
 //ticker for time keeping
 typedef unsigned long ticker;
 
@@ -150,8 +153,23 @@ typedef struct{
   CTL_EVENT_SET_t events;
 }BUS_STAT;
 
+//callback to parse subsystem commands
+typedef int (*cmd_parse_Callback)(unsigned char src,unsigned char cmd,unsigned char *dat,unsigned short len);
+
 //bus status
 extern BUS_STAT arcBus_stat;
+
+//callback information for linked list
+typedef struct cp_cb{
+  //function to call
+  cmd_parse_Callback cb;
+  //flags for addresses used
+  unsigned char flags;
+  //priority, determines sort order
+  unsigned char priority;
+  //next in the list
+  struct cp_cb *next;
+}CMD_PARSE_DAT;
 
 //events for subsystems
 extern CTL_EVENT_SET_t SUB_events;
@@ -180,8 +198,6 @@ int BUS_SPI_txrx(unsigned char addr,void *tx,void *rx,unsigned short len);
 //Setup buffer for command 
 unsigned char *BUS_cmd_init(unsigned char *buf,unsigned char id);
 
-//Function provided by subsystem code to parse subsystem commands
-int SUB_parseCmd(unsigned char src,unsigned char cmd,unsigned char *dat,unsigned short len);
 //get current time
 ticker get_ticker_time(void);
 //set current time
@@ -258,6 +274,9 @@ unsigned char BUS_get_OA(void);
 
 //return which build is used
 int BUS_build(void);
+
+//register command parse callback
+void BUS_register_cmd_callback(CMD_PARSE_DAT *cb_dat);
 
 #endif
   
