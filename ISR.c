@@ -22,6 +22,8 @@ CTL_EVENT_SET_t DMA_events;
 
 void bus_I2C_isr(void) __ctl_interrupt[USCI_B0_VECTOR]{
   static unsigned short end_e=0;
+  //toggle P8.1 on ISR entry
+  P8OUT^=BIT1;
   switch(UCB0IV){
     case USCI_I2C_UCALIFG:    //Arbitration lost
       //Check if packet was in progress
