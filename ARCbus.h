@@ -157,7 +157,7 @@ typedef struct{
 }BUS_STAT;
 
 //callback to parse subsystem commands
-typedef int (*cmd_parse_Callback)(unsigned char src,unsigned char cmd,unsigned char *dat,unsigned short len);
+typedef int (*cmd_parse_Callback)(unsigned char src,unsigned char cmd,unsigned char *dat,unsigned short len,unsigned char flags);
 
 //bus status
 extern BUS_STAT arcBus_stat;

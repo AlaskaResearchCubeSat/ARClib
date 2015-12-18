@@ -477,7 +477,7 @@ static void ARC_bus_run(void *p) __toplevel{
                 //check if flags match
                 if(parse_ptr->flags&parse_mask){
                   //check for subsystem command
-                  resp=parse_ptr->cb(addr,cmd,ptr,len);
+                  resp=parse_ptr->cb(addr,cmd,ptr,len,flags);
                 }
                 //get next callback structure
                 parse_ptr=parse_ptr->next;
