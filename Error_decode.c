@@ -1,3 +1,4 @@
+#include "ARCbus.h"
 #include <Error.h>
 #include "ARCbus_internal.h"
 
