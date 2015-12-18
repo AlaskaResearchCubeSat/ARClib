@@ -77,6 +77,45 @@ int BUS_I2C_aux_addr(unsigned char addr,unsigned char dest){
   return RET_SUCCESS;
 }
 
+//return I2C address based on flags
+unsigned char BUS_flags_to_addr(unsigned char flags){
+  switch(flags){
+    case CMD_PARSE_ADDR0:
+      //check if address is enabled
+      if(UCOAEN&UCB0I2COA0){
+        //return address without GCEN or OAEN bits
+        return (~(UCGCEN|UCOAEN))&UCB0I2COA0;
+      }
+    break;
+    case CMD_PARSE_ADDR1:
+      //check if address is enabled
+      if(UCOAEN&UCB0I2COA1){
+        //return address without GCEN or OAEN bits
+        return (~(UCGCEN|UCOAEN))&UCB0I2COA1;
+      }
+    break;
+    case CMD_PARSE_ADDR2:
+      //check if address is enabled
+      if(UCOAEN&UCB0I2COA2){
+        //return address without GCEN or OAEN bits
+        return (~(UCGCEN|UCOAEN))&UCB0I2COA2;
+      }
+    break;
+    case CMD_PARSE_ADDR3:
+      //check if address is enabled
+      if(UCOAEN&UCB0I2COA3){
+        //return address without GCEN or OAEN bits
+        return (~(UCGCEN|UCOAEN))&UCB0I2COA3;
+      }
+    break;
+    case CMD_PARSE_GC_ADDR:
+      return BUS_ADDR_GC;
+    default:
+      return BUS_FLAGS_INVALID_ADDR;
+  }
+  return BUS_FLAGS_ADDR_DISABLED;
+}
+
 //Setup buffer for command 
 unsigned char *BUS_cmd_init(unsigned char *buf,unsigned char id){
   buf[1]=id;

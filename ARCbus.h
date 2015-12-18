@@ -119,6 +119,9 @@ enum{BUS_BUILD_CDH,BUS_BUILD_SUBSYSTEM};
 //command parse flags
 enum{CMD_PARSE_ADDR0=(1<<0),CMD_PARSE_ADDR1=(1<<1),CMD_PARSE_ADDR2=(1<<2),CMD_PARSE_ADDR3=(1<<3),CMD_PARSE_GC_ADDR=(1<<7)};
 
+//return values for BUS_flags_to_addr
+enum{BUS_FLAGS_INVALID_ADDR,BUS_FLAGS_ADDR_DISABLED};
+
 //ticker for time keeping
 typedef unsigned long ticker;
 
