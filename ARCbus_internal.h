@@ -91,6 +91,7 @@
   typedef struct{
     unsigned char stat;
     unsigned char len;
+    unsigned char flags;
     unsigned char dat[BUS_I2C_HDR_LEN+BUS_I2C_MAX_PACKET_LEN+BUS_I2C_CRC_LEN];
   }I2C_PACKET;
 
