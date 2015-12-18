@@ -281,5 +281,9 @@ int BUS_build(void);
 //register command parse callback
 void BUS_register_cmd_callback(CMD_PARSE_DAT *cb_dat);
 
+//enable extra I2C own address registers
+int BUS_I2C_aux_addr(unsigned char addr,unsigned char dest);
+//return I2C address based on flags
+unsigned char BUS_flags_to_addr(unsigned char flags);
+
 #endif
-  
