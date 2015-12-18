@@ -34,6 +34,49 @@ unsigned char BUS_get_OA(void){
   return UCB0I2COA0;
 }
 
+//enable extra I2C own address registers
+int BUS_I2C_aux_addr(unsigned char addr,unsigned char dest){
+  switch(dest){
+    case CMD_PARSE_ADDR1:
+      //check if address is enabled
+      if(UCOAEN&UCB0I2COA1){
+        //error, address is already enabled
+        return ERR_BAD_ADDR;
+      }
+      //enable interrupts for address 2
+      UCB0IE|=UCTXIE1|UCRXIE1;
+      //set and enable address 1
+      UCB0I2COA1=UCOAEN|addr;
+    break;
+    case CMD_PARSE_ADDR2:
+      //check if address is enabled
+      if(UCOAEN&UCB0I2COA2){
+        //error, address is already enabled
+        return ERR_BAD_ADDR;
+      }
+      //enable interrupts for address 2
+      UCB0IE|=UCTXIE2|UCRXIE2;
+      //set and enable address 2
+      UCB0I2COA2=UCOAEN|addr;
+    break;
+    case CMD_PARSE_ADDR3:
+      //check if address is enabled
+      if(UCOAEN&UCB0I2COA3){
+        //error, address is already enabled
+        return ERR_BAD_ADDR;
+      }
+      //enable interrupts for address 3
+      UCB0IE|=UCTXIE3|UCRXIE3;
+      //set and enable address 3
+      UCB0I2COA3=UCOAEN|addr;
+    break;
+    default:
+      //all other values are invalid
+      return ERR_INVALID_ARGUMENT;
+  }
+  return RET_SUCCESS;
+}
+
 //Setup buffer for command 
 unsigned char *BUS_cmd_init(unsigned char *buf,unsigned char id){
   buf[1]=id;
