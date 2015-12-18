@@ -69,7 +69,7 @@ void BUS_register_cmd_callback(CMD_PARSE_DAT *cb_dat){
 static void ARC_bus_run(void *p) __toplevel{
   unsigned int e;
   unsigned char len;
-  unsigned char addr,cmd;
+  unsigned char addr,cmd,flags;
   int resp;
   unsigned char pk[40];
   unsigned char *ptr;
@@ -77,7 +77,7 @@ static void ARC_bus_run(void *p) __toplevel{
   unsigned char *SPI_buf=NULL;
   ticker nt,ot;
   int snd,i;
-  unsigned short parse_mask;
+  unsigned char parse_mask;
   CMD_PARSE_DAT *parse_ptr;
   SPI_addr=0;
   //Initialize ErrorLib
@@ -170,6 +170,8 @@ static void ARC_bus_run(void *p) __toplevel{
         len=len-BUS_I2C_CRC_LEN-BUS_I2C_HDR_LEN;
         //get sender address
         addr=CMD_ADDR_MASK&I2C_rx_buf[I2C_rx_out].dat[0];
+        //get packet flags
+        flags=I2C_rx_buf[I2C_rx_out].flags;
         //get command type
         cmd=I2C_rx_buf[I2C_rx_out].dat[1];
         //point to the first payload byte
@@ -466,8 +468,8 @@ static void ARC_bus_run(void *p) __toplevel{
             default:
               //get callback structure list
               parse_ptr=cmd_parse_list;
-              //TODO: calculate mask based incoming I2C address
-              parse_mask=0xFFFF;
+              //get mask from packet flags
+              parse_mask=flags;
               //set response to unknown command
               resp=ERR_UNKNOWN_CMD;
               //loop through list and check for commands
