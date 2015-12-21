@@ -8,8 +8,7 @@
 
 #include "ARCbus_internal.h"
 
-
-
+__thread unsigned char BUS_thread_addr_flags=0;
 
 //=======================================================================================
 //                                 [BUS Functions]
@@ -20,8 +19,22 @@ unsigned char BUS_get_OA(void){
   int i;
   //base address for own I2C addresses
   volatile unsigned int * const oa_base=&UCB0I2COA0;
-  //loop through addresses and return the first one that matches
-  //TODO: perhaps there is a better way to do this (on a per task basis?)
+  unsigned char addr;
+  //check for default address flags
+  if(BUS_thread_addr_flags!=0){
+    //try to get thread specific address
+    addr=BUS_flags_to_addr(BUS_thread_addr_flags);
+    //check for success
+    if(!(addr&BUS_FLAGS_ADDR_MASK) && addr!=BUS_ADDR_GC){
+      //return address
+      return addr;
+    }
+    //report error
+    report_error(ERR_LEV_ERROR,BUS_ERR_SRC_I2C,I2C_ERR_INVALID_FLAGS,(BUS_thread_addr_flags<<8)|(addr));
+    //reset flags to default
+    BUS_thread_addr_flags=0;
+  }
+  //Fallback loop through addresses and return the first one that is enabled
   for(i=0;i<4;i++){
     //check if address enabled
     if(oa_base[i]&UCOAEN){

@@ -106,6 +106,17 @@ const char* cmd_resptostr(unsigned char resp){
   }
 }
 
+const char* bus_flags_tostr(unsigned char flags){
+  switch(flags){
+    case BUS_FLAGS_INVALID_ADDR:
+      return "BUS_FLAGS_INVALID_ADDR";
+    case BUS_FLAGS_ADDR_DISABLED:
+      return "BUS_FLAGS_ADDR_DISABLED";
+    default:
+      return "Unknown";
+  }
+}
+
 //decode errors from ACDS system
 char *err_decode_arcbus(char buf[150], unsigned short source,int err, unsigned short argument){
   switch(source){
@@ -269,6 +280,13 @@ char *err_decode_arcbus(char buf[150], unsigned short source,int err, unsigned s
             case ERR_REQ_ERR_MUTEX_TIMEOUT:
                 return "Error Request : Mutex lock timeout";
         }
+    break;
+    case BUS_ERR_SRC_I2C:
+      switch(err){
+        case I2C_ERR_INVALID_FLAGS:
+            sprintf(buf,"I2C : Error, bad I2C flags (0x%02hhX) BUS_flags_to_addr returned %s (0x%02hhX)",(argument>>8),bus_flags_tostr(argument),argument);
+        return buf;
+      }
     break;
   }
   sprintf(buf,"source = %i, error = %i, argument = %i",source,err,argument);
