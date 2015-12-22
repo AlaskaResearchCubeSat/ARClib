@@ -45,6 +45,28 @@ unsigned char BUS_get_OA(void){
   //no match! return OA0
   //TODO: report error? do something else?
   return UCB0I2COA0;
+}//return own address
+
+
+//set own address, this is done on a per-task basis
+unsigned char BUS_set_OA(unsigned char addr){
+  unsigned char flags;
+  //get flags from address
+  flags=BUS_addr_to_flags(addr);
+  //check for error
+  switch(flags){
+    case BUS_FLAGS_ADDR_DISABLED:
+    case BUS_FLAGS_INVALID_ADDR:
+    case CMD_PARSE_GC_ADDR:
+      //return error from BUS_addr_to_flags
+      //TODO: is there a better way to do this?
+      return flags;
+    default:
+      //set flags for this task
+      BUS_thread_addr_flags=flags;
+      //return success
+      return RET_SUCCESS;
+  }
 }
 
 //enable extra I2C own address registers
@@ -128,6 +150,36 @@ unsigned char BUS_flags_to_addr(unsigned char flags){
   }
   return BUS_FLAGS_ADDR_DISABLED;
 }
+
+//find flags for address, address must be enabled
+unsigned char BUS_addr_to_flags(unsigned char addr){
+  int i,disabled;
+  //base address for own I2C addresses
+  volatile unsigned int * const oa_base=&UCB0I2COA0;
+  //loop through addresses to find a match
+  for(i=0,disabled;i<4;i++){
+    //check for a match
+    if(((~(UCGCEN|UCOAEN))&oa_base[i])==addr){
+      //check if address is enabled
+      if(oa_base[i]&UCOAEN){
+        //Success!!, return flags for address
+        return CMD_PARSE_ADDR0<<i;
+      }else{
+        //disabled, set flag
+        disabled=1;
+      }
+    }
+  }
+  //TODO: are these the best error values to return??
+  //check if address was disabled
+  if(disabled){
+    //return disabled error
+    return BUS_FLAGS_ADDR_DISABLED;
+  }else{
+    //return invalid flags error
+    return BUS_FLAGS_INVALID_ADDR;
+  }
+}//return own address
 
 //Setup buffer for command 
 unsigned char *BUS_cmd_init(unsigned char *buf,unsigned char id){

@@ -274,6 +274,8 @@ void BUS_int_clear(unsigned char clear);
 int BUS_OA_check(unsigned char addr);
 //return own address
 unsigned char BUS_get_OA(void);
+//set own address
+unsigned char BUS_set_OA(unsigned char addr);
 
 //return which build is used
 int BUS_build(void);
@@ -285,5 +287,7 @@ void BUS_register_cmd_callback(CMD_PARSE_DAT *cb_dat);
 int BUS_I2C_aux_addr(unsigned char addr,unsigned char dest);
 //return I2C address based on flags
 unsigned char BUS_flags_to_addr(unsigned char flags);
+//find flags for address, address must be enabled
+unsigned char BUS_addr_to_flags(unsigned char addr);
 
 #endif
