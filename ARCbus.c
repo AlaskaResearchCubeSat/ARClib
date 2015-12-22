@@ -223,7 +223,7 @@ static ticker packet_time=0;
 static unsigned BUS_I2C_lock(void){
   int i;
   //try to capture mutex
-  if(0==ctl_mutex_lock(&arcBus_stat.i2c_stat.mutex,CTL_TIMEOUT_DELAY,10)){
+  if(0==ctl_mutex_lock(&arcBus_stat.i2c_stat.mutex,CTL_TIMEOUT_DELAY,100)){
      return ERR_BUSY;
   }
   return 0;
