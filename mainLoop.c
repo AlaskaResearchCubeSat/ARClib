@@ -182,15 +182,6 @@ static void ARC_bus_run(void *p) __toplevel{
         if(ptr[len]==crc){
           //handle command based on command type
           switch(cmd){
-      #ifdef CDH_LIB
-            case CMD_SUB_POWERUP:
-                //compare to version string
-                if(strncmp((char*)ptr,ARClib_version,len)){
-                    //version mismatch
-                    report_error(ERR_LEV_WARNING,BUS_ERR_SRC_MAIN_LOOP,MAIN_LOOP_ERR_SUBSYSTEM_VERSION_MISMATCH,addr);
-                }
-            break;
-    #endif
             case CMD_SUB_ON:            
                 //check for proper length
                 if(len!=0){
@@ -477,6 +468,17 @@ static void ARC_bus_run(void *p) __toplevel{
                 //this is a dummy command that does nothing
             break;
             default:
+            #ifdef CDH_LIB
+              if(cmd==CMD_SUB_POWERUP){
+                //compare to version string
+                if(strncmp((char*)ptr,ARClib_version,len)){
+                    //version mismatch
+                    report_error(ERR_LEV_WARNING,BUS_ERR_SRC_MAIN_LOOP,MAIN_LOOP_ERR_SUBSYSTEM_VERSION_MISMATCH,addr);
+                }
+                //set length to zero
+                len=0;
+              }
+            #endif
               //get callback structure list
               parse_ptr=cmd_parse_list;
               //get mask from packet flags
