@@ -65,7 +65,7 @@ void BUS_register_cmd_callback(CMD_PARSE_DAT *cb_dat){
   //link in this callback
   *head=cb_dat;
 }
-#define POWERUP_VERSION_LEN     25
+#define BUS_VERSION_LEN         25
 
 //ARC bus Task, do ARC bus stuff
 static void ARC_bus_run(void *p) __toplevel{
@@ -565,13 +565,13 @@ static void ARC_bus_run(void *p) __toplevel{
 static void ARC_bus_helper(void *p) __toplevel{
   unsigned int e;
   int resp,maxsize;
-  unsigned char *ptr,pk[BUS_I2C_HDR_LEN+POWERUP_VERSION_LEN+BUS_I2C_CRC_LEN];
+  unsigned char *ptr,pk[BUS_I2C_HDR_LEN+BUS_VERSION_LEN+BUS_I2C_CRC_LEN];
   unsigned short len;
   #ifndef CDH_LIB         //Subsystem board 
     //first send "I'm on" command
     ptr=BUS_cmd_init(pk,CMD_SUB_POWERUP);//setup command
     //write version into string
-    len=strlcpy((char*)ptr,ARClib_version,POWERUP_VERSION_LEN);
+    len=strlcpy((char*)ptr,ARClib_version,BUS_VERSION_LEN);
     //send command
     resp=BUS_cmd_tx(BUS_ADDR_CDH,pk,len,0,BUS_I2C_SEND_FOREGROUND);
       //check for failed send
