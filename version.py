@@ -18,7 +18,7 @@ except:
 	#fake return code to indicate an error
 	rc=1
 	#fake error
-	err='Error encountered while running command'
+	err='Error encountered while running git describe : '+str(sys.exc_info()[0])
 
 #check for success
 if rc==0:
