@@ -180,6 +180,17 @@ typedef struct cp_cb{
   struct cp_cb *next;
 }CMD_PARSE_DAT;
 
+//version structure
+typedef struct{
+  //numerical version
+  unsigned short major,minor;
+  unsigned short commits;
+  //version dirty flag
+  unsigned short dty;
+  //version hash
+  char hash[];
+}BUS_VERSION;
+
 //events for subsystems
 extern CTL_EVENT_SET_t SUB_events;
 
@@ -188,13 +199,8 @@ extern unsigned short powerState;
 
 //ARClib version string
 extern const char ARClib_version[];
-//ARClib numerical version
-extern const unsigned short ARClib_major,ARClib_minor;
-extern const unsigned short ARClib_commits;
-//ARClib version hash
-extern const char ARClib_hash[];
-//ARClib version dirty flag
-extern const unsigned short ARClib_dty;
+//ARClib version struct
+extern const BUS_VERSION ARClib_vstruct;
 
 //setup clocks and low tasking stuff for ARC
 void ARC_setup(void);

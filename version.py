@@ -3,6 +3,9 @@
 import subprocess
 import sys
 
+#length of minor version string in digits
+minor_ver_len=4
+
 try:
 	#path to git
 	git_str='git'
@@ -35,6 +38,14 @@ if rc==0:
 	if vers[0][0]=='v':
 		try:
 			(major,minor)=vers[0][1:].split('.')
+			#get minor version length
+			mlen=len(minor)
+			#check version length
+			if(mlen>minor_ver_len):
+				minor='BUS_INVALID_MINOR_VER'
+			else:
+				#padd minor version to 4 digits
+				minor+=(minor_ver_len-mlen)*'0'
 		except:
 			major='BUS_INVALID_MAJOR_VER'
 			minor='BUS_INVALID_MINOR_VER'
@@ -66,13 +77,7 @@ if rc==0:
 	#write version string line
 	f.write('const char ARClib_version[]="'+ver+'";\n\n')
 	#write integer versions
-	f.write('const unsigned short ARClib_major='+major+',ARClib_minor='+minor+';\n')
-	#write commit number
-	f.write('const unsigned short ARClib_commits='+commits+';\n')
-	#write hash string
-	f.write('const char ARClib_hash[]="'+vhash+'";\n')
-	#write dirty flag
-	f.write('const unsigned short ARClib_dty='+dirty+';\n')
+	f.write('const BUS_VERSION ARClib_vstruct={'+major+','+minor+','+commits+','+dirty+',"'+vhash+'"};\n')
 	#close file
 	f.close()
 else:
