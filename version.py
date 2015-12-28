@@ -48,7 +48,8 @@ if rc==0:
 		commits='0'
 		has_commits=False
 	#check for dty suffix
-	if vers[-1]=='dty': dirty='BUS_VER_DIRTY'
+	if vers[-1]=='dty':
+		dirty='BUS_VER_DIRTY'
 		vhash=vers[-2]
 	else:
 		dirty='BUS_VER_CLEAN'
