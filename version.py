@@ -70,7 +70,7 @@ if rc==0:
 	#write commit number
 	f.write('const unsigned short ARClib_commits='+commits+';\n')
 	#write hash string
-	f.write('const char ARClib_hash="'+vhash+'";\n')
+	f.write('const char ARClib_hash[]="'+vhash+'";\n')
 	#write dirty flag
 	f.write('const unsigned short ARClib_dty='+dirty+';\n')
 	#close file
@@ -91,7 +91,7 @@ else:
 	#write commit number
 	f.write('const unsigned short ARClib_commits=0;\n')
 	#write hash string
-	f.write('const char ARClib_hash="invalid";\n')
+	f.write('const char ARClib_hash[]="invalid";\n')
 	#write dirty flag
 	f.write('const unsigned short ARClib_dty=BUS_VER_DIRTY;\n')
 	#close file
