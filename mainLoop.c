@@ -572,8 +572,12 @@ static void ARC_bus_helper(void *p) __toplevel{
   #ifndef CDH_LIB         //Subsystem board 
     //first send "I'm on" command
     ptr=BUS_cmd_init(pk,CMD_SUB_POWERUP);//setup command
+    //copy in data part of struct
+    memcpy(ptr,&ARClib_vstruct,sizeof(BUS_VERSION));
+    //increment pointer
+    ptr+=sizeof(BUS_VERSION);
     //write version into string
-    len=strlcpy((char*)ptr,ARClib_version,BUS_VERSION_LEN);
+    len=strlcpy((char*)ptr,ARClib_vstruct.hash,BUS_VERSION_HASH_LEN)+sizeof(BUS_VERSION);
     //send command
     resp=BUS_cmd_tx(BUS_ADDR_CDH,pk,len,0,BUS_I2C_SEND_FOREGROUND);
       //check for failed send
