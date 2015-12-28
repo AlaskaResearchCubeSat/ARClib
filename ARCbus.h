@@ -67,6 +67,12 @@ enum{CMD_PING=7,CMD_NACK=51,CMD_SPI_COMPLETE,CMD_SPI_RDY,CMD_SUB_ON,CMD_SUB_OFF,
 //maximum packet length that can fit in the receive buffer
 #define BUS_I2C_MAX_PACKET_LEN      (30)
 
+//version constants
+#define BUS_INVALID_MAJOR_VER       (0xFFFF)
+#define BUS_INVALID_MINOR_VER       (0xFFFF)
+#define BUS_VER_DIRTY               (1)         //local, uncommited, changes when library compiled
+#define BUS_VER_CLEAN               (0)         //all changes commited when library compiled
+
 //Return values from bus functions
 enum{RET_SUCCESS=0,ERR_BAD_LEN=-1,ERR_CMD_NACK=-2,ERR_I2C_NACK=-3,ERR_UNKNOWN=-4,ERR_BAD_ADDR=-5,ERR_BAD_CRC=-6,ERR_TIMEOUT=-7,ERR_BUSY=-8,ERR_INVALID_ARGUMENT=-9,ERR_PACKET_TOO_LONG=-10,ERR_I2C_ABORT=-11,ERR_TIME_INVALID=-12,ERR_TIME_TOO_OLD=-13,ERR_I2C_CLL=-14,ERR_I2C_START_TIMEOUT=-15,ERR_I2C_TX_SELF=-16,ERR_DMA_TIMEOUT=-17};
 
