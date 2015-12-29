@@ -65,7 +65,89 @@ void BUS_register_cmd_callback(CMD_PARSE_DAT *cb_dat){
   //link in this callback
   *head=cb_dat;
 }
-#define BUS_VERSION_LEN         25
+#define BUS_VERSION_LEN         (sizeof(BUS_VERSION)+BUS_VERSION_HASH_LEN)
+#define BUS_VERSION_MINOR_DIG   (4)     //maximum digits in minor version
+#define BUS_VERSION_HASH_LEN    (13)    //maximum length of hash that is sent
+
+
+//compare versions and report error if they are different
+char BUS_version_cmp(const BUS_VERSION* other,unsigned char len){
+  //first check that length is long enough
+  if(len<sizeof(BUS_VERSION)){
+    //return error
+    return BUS_VER_LENGTH;
+  }
+  //check for valid major versions
+  if(other->major==BUS_INVALID_MAJOR_VER || ARClib_vstruct.major==BUS_INVALID_MAJOR_VER){
+    //report error
+    report_error(ERR_LEV_ERROR,BUS_ERR_SRC_VERSION,VERSION_ERR_INVALID_MAJOR,(ARClib_vstruct.major==BUS_INVALID_MAJOR_VER?VERSION_ERR_INVALID_MINE:0)|(other->major==BUS_INVALID_MAJOR_VER?VERSION_ERR_INVALID_OTHER:0));
+    //return, a major version is invalid, can't continue
+    return BUS_VER_INVALID_MAJOR_REV;
+  }
+  //compare major versions
+  if(other->major!=ARClib_vstruct.major){
+    //versions diffe, check which one is older
+    if(other->major>ARClib_vstruct.major){
+      //report error
+      report_error(ERR_LEV_ERROR,BUS_ERR_SRC_VERSION,VERSION_ERR_MAJOR_REV_NEWER,other->major);
+      //other version is newer
+      return BUS_VER_MAJOR_REV_NEWER;
+    }else{
+      //report error
+      report_error(ERR_LEV_ERROR,BUS_ERR_SRC_VERSION,VERSION_ERR_MAJOR_REV_OLDER,other->major);
+      //other version is older
+      return BUS_VER_MAJOR_REV_NEWER;
+    }
+  }
+  //check for valid minor versions
+  if(other->minor==BUS_INVALID_MINOR_VER || ARClib_vstruct.minor==BUS_INVALID_MINOR_VER){
+    //report error
+    report_error(ERR_LEV_ERROR,BUS_ERR_SRC_VERSION,VERSION_ERR_INVALID_MINOR,(ARClib_vstruct.minor==BUS_INVALID_MINOR_VER?VERSION_ERR_INVALID_MINE:0)|(other->minor==BUS_INVALID_MINOR_VER?VERSION_ERR_INVALID_OTHER:0));
+    //return, a major version is invalid, can't continue
+    return BUS_VER_INVALID_MINOR_REV;
+  }
+  //compare minor versions
+  if(other->minor!=ARClib_vstruct.minor){
+    //versions diffe, check which one is older
+    if(other->minor>ARClib_vstruct.minor){
+      //report error
+      report_error(ERR_LEV_ERROR,BUS_ERR_SRC_VERSION,VERSION_ERR_MINOR_REV_NEWER,other->minor);
+      //other version is newer
+      return BUS_VER_MINOR_REV_NEWER;
+    }else{
+      //report error
+      report_error(ERR_LEV_ERROR,BUS_ERR_SRC_VERSION,VERSION_ERR_MINOR_REV_OLDER,other->minor);
+      //other version is older
+      return BUS_VER_MINOR_REV_OLDER;
+    }
+  }
+  //check dirty flags
+  if(other->dty!=BUS_VER_CLEAN || ARClib_vstruct.dty!=BUS_VER_CLEAN){
+    //report error
+    report_error(ERR_LEV_ERROR,BUS_ERR_SRC_VERSION,VERSION_ERR_DIRTY_REV,(((unsigned short)ARClib_vstruct.dty)<<8)|(other->dty));
+    //one version is dirty, there is no way to tell if they are the same
+    return BUS_VER_DIRTY_REV;
+  }
+  //compare hashes
+  if(strncmp(other->hash,ARClib_vstruct.hash,len-sizeof(BUS_VERSION))){
+    //report error
+    report_error(ERR_LEV_ERROR,BUS_ERR_SRC_VERSION,VERSION_ERR_HASH_MISMATCH,0);
+    //hashes are different
+    return BUS_VER_HASH_MISMATCH;
+  }
+  //check string length of hash to make sure the full hash was compared
+  if(strlen(ARClib_vstruct.hash)+sizeof(BUS_VERSION)>len){
+    //compare the number of commits between versioned commit and the current one
+    if(other->commits!=ARClib_vstruct.commits){
+      //report error
+      report_error(ERR_LEV_ERROR,BUS_ERR_SRC_VERSION,VERSION_ERR_COMMIT_MISMATCH,other->commits);
+      //different number of commits, different commits
+      return BUS_VER_COMMIT_MISMATCH;
+    }
+    //otherwise versions are probably the same
+  }
+  return BUS_VER_SAME;
+}
 
 //ARC bus Task, do ARC bus stuff
 static void ARC_bus_run(void *p) __toplevel{
@@ -80,6 +162,10 @@ static void ARC_bus_run(void *p) __toplevel{
   ticker nt,ot;
   int snd,i;
   unsigned char parse_mask;
+  #ifdef CDH_LIB
+  //temporary array for bus version comparison, needed for alignment reasons
+  unsigned short tmp[(BUS_VERSION_LEN+1)/sizeof(unsigned short)];
+  #endif
   CMD_PARSE_DAT *parse_ptr;
   SPI_addr=0;
   //Initialize ErrorLib
@@ -470,10 +556,13 @@ static void ARC_bus_run(void *p) __toplevel{
             default:
             #ifdef CDH_LIB
               if(cmd==CMD_SUB_POWERUP){
+                char vresp;
+                //copy into temporary word aligned variable
+                memcpy(tmp,ptr,len);
                 //compare to version string
-                if(strncmp((char*)ptr,ARClib_version,len)){
+                if((vresp=BUS_version_cmp((BUS_VERSION*)tmp,len))){
                     //version mismatch
-                    report_error(ERR_LEV_WARNING,BUS_ERR_SRC_MAIN_LOOP,MAIN_LOOP_ERR_SUBSYSTEM_VERSION_MISMATCH,addr);
+                    report_error(ERR_LEV_ERROR,BUS_ERR_SRC_MAIN_LOOP,MAIN_LOOP_ERR_SUBSYSTEM_VERSION_MISMATCH,(((unsigned short)vresp)<<8)|addr);
                 }
                 //set length to zero
                 len=0;
