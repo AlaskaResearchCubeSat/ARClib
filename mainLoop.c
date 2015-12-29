@@ -691,29 +691,6 @@ static void ARC_bus_helper(void *p) __toplevel{
       //send some data
       async_send_data();
     }
-#ifndef CDH_LIB
-    //time to send subsystem powerup message
-    if(e&BUS_HELPER_EV_SUB_POWERUP){
-        //first send "I'm on" command
-        BUS_cmd_init(pk,CMD_SUB_POWERUP);//setup command
-        //send command
-        resp=BUS_cmd_tx(BUS_ADDR_CDH,pk,0,0,BUS_I2C_SEND_FOREGROUND);
-         //check for failed send
-        if(resp!=RET_SUCCESS){
-          //give a warning
-          report_error(ERR_LEV_WARNING,BUS_ERR_SRC_MAIN_LOOP,MAIN_LOOP_ERR_CDH_NOT_FOUND,resp);
-          //wait a bit
-          ctl_timeout_wait(ctl_get_current_time()+30);
-          //resend
-          resp=BUS_cmd_tx(BUS_ADDR_CDH,pk,0,0,BUS_I2C_SEND_FOREGROUND);
-          //check for success
-          if(resp!=RET_SUCCESS){
-            //Failed
-            report_error(ERR_LEV_ERROR,BUS_ERR_SRC_MAIN_LOOP,MAIN_LOOP_ERR_CDH_NOT_FOUND,resp);     
-          }
-        }
-    }
-#endif
     //SPI transaction is complete
     if(e&BUS_HELPER_EV_SPI_COMPLETE_CMD){      
       //done with SPI send command
