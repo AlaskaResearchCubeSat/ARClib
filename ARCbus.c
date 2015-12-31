@@ -326,10 +326,10 @@ int BUS_cmd_tx(unsigned char addr,void *buff,unsigned short len,unsigned short f
   if(!(e&BUS_EV_I2C_MASTER_STARTED)){
     //clear start bit
     UCB0CTL1&=~UCTXSTT;
-    //release I2C bus
-    BUS_I2C_release();
     //set I2C master state
     arcBus_stat.i2c_stat.tx.stat=BUS_I2C_MASTER_IDLE;
+    //release I2C bus
+    BUS_I2C_release();
     //chech which error happened
     switch(e&BUS_EV_I2C_MASTER_START){
       case 0:
@@ -347,10 +347,10 @@ int BUS_cmd_tx(unsigned char addr,void *buff,unsigned short len,unsigned short f
   e=ctl_events_wait(CTL_EVENT_WAIT_ANY_EVENTS_WITH_AUTO_CLEAR,&arcBus_stat.events,BUS_EV_I2C_MASTER,CTL_TIMEOUT_DELAY,50);
   //save transaction time
   packet_time=get_ticker_time();
-  //release I2C bus
-  BUS_I2C_release();
   //set I2C master state
   arcBus_stat.i2c_stat.tx.stat=BUS_I2C_MASTER_IDLE;
+  //release I2C bus
+  BUS_I2C_release();
   //check which event(s) happened
   switch(e&BUS_EV_I2C_MASTER){
     case BUS_EV_I2C_COMPLETE:
