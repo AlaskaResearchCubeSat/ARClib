@@ -2,6 +2,7 @@
 
 import subprocess
 import sys
+import traceback
 
 #length of minor version string in digits
 minor_ver_len=4
@@ -22,11 +23,13 @@ try:
 	err=err.decode("utf-8").strip
 	#get returncode
 	rc=p.returncode;
-except:
+except Exception as e:
 	#fake return code to indicate an error
 	rc=1
-	#fake error
-	err='Error encountered while running git describe : '+str(sys.exc_info()[0])
+	#get traceback info for error
+	lines=traceback.format_exc().splitlines()
+	#fake error from traceback (the last line is the actual error
+	err='Error encountered while running git describe : '+lines[-1]
 
 #check for success
 if rc==0:
