@@ -315,6 +315,9 @@ char *err_decode_arcbus(char buf[150], unsigned short source,int err, unsigned s
         case I2C_ERR_INVALID_FLAGS:
             sprintf(buf,"I2C : Error, bad I2C flags (0x%02hhX) BUS_flags_to_addr returned %s (0x%02hhX)",(argument>>8),bus_flags_tostr(argument),argument);
         return buf;
+        case I2C_ERR_TOO_MANY_ERRORS:
+            sprintf(buf,"I2C : too many errors : %s (%i)",BUS_error_str(argument),argument);
+        return buf;
       }
     break;
     case BUS_ERR_SRC_VERSION:

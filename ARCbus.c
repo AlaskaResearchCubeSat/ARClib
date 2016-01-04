@@ -234,6 +234,57 @@ void BUS_I2C_release(void){
   ctl_mutex_unlock(&arcBus_stat.i2c_stat.mutex);
 }
 
+//keep track of which errors have happened
+static int BUS_I2C_err_track(int error){
+  //keep track of how many errors have happened
+  static errors=0;
+  //check which error happened
+  switch(error){
+    //I2C start timeout error happened
+    case ERR_I2C_START_TIMEOUT:
+      //This error causes problems reset after only a few errors
+      if(errors>3){
+        //reset MSP430 to clear the error
+        reset(ERR_LEV_ERROR+20,BUS_ERR_SRC_I2C,I2C_ERR_TOO_MANY_ERRORS,error);
+      }
+      errors++;
+    break;
+    //These errors happen when the device is not found or busy
+    case ERR_I2C_NACK:
+    case BUS_EV_I2C_TX_SELF:
+    case BUS_EV_I2C_ABORT:
+      //Do nothing, errors are not cleared or incremented
+    break;
+    //send successful!
+    case RET_SUCCESS:
+      //reset error count
+      errors=0;
+    break;
+    //Clock low timeout
+    case BUS_EV_I2C_ERR_CCL:
+      //This error does not happen too often
+      if(errors>10){
+        //reset MSP430 to clear the error
+        reset(ERR_LEV_ERROR+20,BUS_ERR_SRC_I2C,I2C_ERR_TOO_MANY_ERRORS,error);
+      }
+      errors++;
+    break;
+    //Other or unknown error
+    default:
+      //reset if a lot of these happen
+      if(errors>40){
+        //reset MSP430 to clear the error
+        reset(ERR_LEV_ERROR+20,BUS_ERR_SRC_I2C,I2C_ERR_TOO_MANY_ERRORS,error);
+      }
+      errors++;
+    break;
+  }
+  //release I2C bus
+  BUS_I2C_release();
+  //return error
+  return error;
+}
+
 //send command
 int BUS_cmd_tx(unsigned char addr,void *buff,unsigned short len,unsigned short flags,short bgnd){
   unsigned int e;
@@ -328,19 +379,17 @@ int BUS_cmd_tx(unsigned char addr,void *buff,unsigned short len,unsigned short f
     UCB0CTL1&=~UCTXSTT;
     //set I2C master state
     arcBus_stat.i2c_stat.tx.stat=BUS_I2C_MASTER_IDLE;
-    //release I2C bus
-    BUS_I2C_release();
     //chech which error happened
     switch(e&BUS_EV_I2C_MASTER_START){
       case 0:
         //no event happened so timeout
-        return ERR_I2C_START_TIMEOUT;
+        return BUS_I2C_err_track(ERR_I2C_START_TIMEOUT);
       case BUS_EV_I2C_NACK:
         //I2C device did not acknowledge
-        return ERR_I2C_NACK;
+        return BUS_I2C_err_track(ERR_I2C_NACK);
       default:
         //error is not defined
-        return ERR_UNKNOWN;
+        return BUS_I2C_err_track(ERR_UNKNOWN);
     }
   }
   //wait for transaction to complete
@@ -349,31 +398,29 @@ int BUS_cmd_tx(unsigned char addr,void *buff,unsigned short len,unsigned short f
   packet_time=get_ticker_time();
   //set I2C master state
   arcBus_stat.i2c_stat.tx.stat=BUS_I2C_MASTER_IDLE;
-  //release I2C bus
-  BUS_I2C_release();
   //check which event(s) happened
   switch(e&BUS_EV_I2C_MASTER){
     case BUS_EV_I2C_COMPLETE:
       //no error
-      return RET_SUCCESS;
+      return BUS_I2C_err_track(RET_SUCCESS);
     case BUS_EV_I2C_NACK:
       //I2C device did not acknowledge
-      return ERR_I2C_NACK;
+      return BUS_I2C_err_track(ERR_I2C_NACK);
     case BUS_EV_I2C_ABORT:
       //I2C device did not acknowledge
-      return ERR_I2C_ABORT;
+      return BUS_I2C_err_track(ERR_I2C_ABORT);
     case 0:
       //no event happened, so time out
-      return ERR_TIMEOUT;
+      return BUS_I2C_err_track(ERR_TIMEOUT);
     case BUS_EV_I2C_ERR_CCL:
       //Clock low timeout
-      return ERR_I2C_CLL;
+      return BUS_I2C_err_track(ERR_I2C_CLL);
     case BUS_EV_I2C_TX_SELF:
       //TX to self and no one else responded
-      return ERR_I2C_TX_SELF;
+      return BUS_I2C_err_track(ERR_I2C_TX_SELF);
     default:
       //error is not defined
-      return ERR_UNKNOWN;
+      return BUS_I2C_err_track(ERR_UNKNOWN);
   }
 }
 
