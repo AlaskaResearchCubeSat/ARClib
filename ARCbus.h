@@ -18,11 +18,11 @@ enum{BUS_PRI_EXTRA_LOW=20,BUS_PRI_LOW=50,BUS_PRI_NORMAL=80,BUS_PRI_HIGH=110,BUS_
 
 
 //Flags for events handled by BUS functions (ex BUS_cmd_tx)
-enum{BUS_EV_CMD_NACK=(1<<0),BUS_EV_I2C_COMPLETE=(1<<1),BUS_EV_I2C_NACK=(1<<2),BUS_EV_SPI_COMPLETE=(1<<3),BUS_EV_I2C_ABORT=(1<<4),BUS_EV_SPI_NACK=(1<<5),BUS_EV_I2C_ERR_CCL=(1<<6),BUS_EV_I2C_MASTER_STARTED=(1<<7),BUS_INT_EV_I2C_TX_SELF=1<<8};
+enum{BUS_EV_CMD_NACK=(1<<0),BUS_EV_I2C_COMPLETE=(1<<1),BUS_EV_I2C_NACK=(1<<2),BUS_EV_SPI_COMPLETE=(1<<3),BUS_EV_I2C_ABORT=(1<<4),BUS_EV_SPI_NACK=(1<<5),BUS_EV_I2C_ERR_CCL=(1<<6),BUS_EV_I2C_MASTER_STARTED=(1<<7),BUS_EV_I2C_TX_SELF=1<<8};
 //all events for SPI master
 #define BUS_EV_SPI_MASTER           (BUS_EV_SPI_COMPLETE|BUS_EV_SPI_NACK)
 //all events created by master transactions
-#define BUS_EV_I2C_MASTER           (BUS_EV_I2C_COMPLETE|BUS_EV_I2C_NACK|BUS_EV_I2C_ABORT|BUS_INT_EV_I2C_TX_SELF)
+#define BUS_EV_I2C_MASTER           (BUS_EV_I2C_COMPLETE|BUS_EV_I2C_NACK|BUS_EV_I2C_ABORT|BUS_EV_I2C_TX_SELF)
 //start events created by master transactions
 #define BUS_EV_I2C_MASTER_START     (BUS_EV_I2C_MASTER_STARTED|BUS_EV_I2C_NACK)
 
@@ -50,7 +50,7 @@ enum{CMD_PING=7,CMD_NACK=51,CMD_SPI_COMPLETE,CMD_SPI_RDY,CMD_SUB_ON,CMD_SUB_OFF,
      CMD_SPI_CLEAR,CMD_EPS_STAT,CMD_LEDL_STAT,CMD_ACDS_STAT,CMD_COMM_STAT,CMD_IMG_STAT,CMD_ASYNC_SETUP,
      CMD_ASYNC_DAT,CMD_SPI_DATA_ACTION,CMD_MAG_DATA,CMD_MAG_SAMPLE_CONFIG,CMD_ERR_REQ,CMD_IMG_READ_PIC,
      CMD_IMG_TAKE_TIMED_PIC,CMD_IMG_TAKE_PIC_NOW,CMD_GS_DATA,CMD_TEST_MODE,CMD_BEACON_ON,CMD_ACDS_CONFIG,
-     CMD_IMG_CLEARPIC,CMD_LEDL_READ_BLOCK,CMD_ACDS_READ_BLOCK,CMD_EPS_SEND,CMD_LEDL_BLOW_FUSE};
+     CMD_IMG_CLEARPIC,CMD_LEDL_READ_BLOCK,CMD_ACDS_READ_BLOCK,CMD_EPS_SEND,CMD_LEDL_BLOW_FUSE,CMD_SPI_ABORT};
 
 //bit to allow NACK to be sent
 #define CMD_TX_NACK                 (0x80)
@@ -67,10 +67,16 @@ enum{CMD_PING=7,CMD_NACK=51,CMD_SPI_COMPLETE,CMD_SPI_RDY,CMD_SUB_ON,CMD_SUB_OFF,
 //maximum packet length that can fit in the receive buffer
 #define BUS_I2C_MAX_PACKET_LEN      (30)
 
-//Return values from bus functions
-enum{RET_SUCCESS=0,ERR_BAD_LEN=-1,ERR_CMD_NACK=-2,ERR_I2C_NACK=-3,ERR_UNKNOWN=-4,ERR_BAD_ADDR=-5,ERR_BAD_CRC=-6,ERR_TIMEOUT=-7,ERR_BUSY=-8,ERR_INVALID_ARGUMENT=-9,ERR_PACKET_TOO_LONG=-10,ERR_I2C_ABORT=-11,ERR_TIME_INVALID=-12,ERR_TIME_TOO_OLD=-13,ERR_I2C_CLL=-14,ERR_I2C_START_TIMEOUT=-15,ERR_I2C_TX_SELF=-16};
+//version constants
+#define BUS_INVALID_MAJOR_VER       (0xFFFF)
+#define BUS_INVALID_MINOR_VER       (0xFFFF)
+#define BUS_VER_DIRTY               (1)         //local, uncommited, changes when library compiled
+#define BUS_VER_CLEAN               (0)         //all changes commited when library compiled
 
-//Return values for SUB_parseCmd these will be send as part of the NACK packet
+//Return values from bus functions
+enum{RET_SUCCESS=0,ERR_BAD_LEN=-1,ERR_CMD_NACK=-2,ERR_I2C_NACK=-3,ERR_UNKNOWN=-4,ERR_BAD_ADDR=-5,ERR_BAD_CRC=-6,ERR_TIMEOUT=-7,ERR_BUSY=-8,ERR_INVALID_ARGUMENT=-9,ERR_PACKET_TOO_LONG=-10,ERR_I2C_ABORT=-11,ERR_TIME_INVALID=-12,ERR_TIME_TOO_OLD=-13,ERR_I2C_CLL=-14,ERR_I2C_START_TIMEOUT=-15,ERR_I2C_TX_SELF=-16,ERR_DMA_TIMEOUT=-17};
+
+//command response values these will be send as part of the NACK packet
 enum{ERR_PK_LEN=1,ERR_UNKNOWN_CMD=2,ERR_SPI_LEN=3,ERR_BAD_PK=4,ERR_SPI_BUSY=5,ERR_BUFFER_BUSY=6,ERR_ILLEAGLE_COMMAND=7,ERR_SPI_NOT_RUNNING=8,ERR_SPI_WRONG_ADDR=9,ERR_PK_BAD_PARM=10};
 
 //table of board addresses
@@ -116,6 +122,12 @@ enum{BUS_ALARM_0=0,BUS_ALARM_1,BUS_NUM_ALARMS};
 //return values for BUS_build
 enum{BUS_BUILD_CDH,BUS_BUILD_SUBSYSTEM};
 
+//command parse flags
+enum{CMD_PARSE_ADDR0=(1<<0),CMD_PARSE_ADDR1=(1<<1),CMD_PARSE_ADDR2=(1<<2),CMD_PARSE_ADDR3=(1<<3),CMD_PARSE_GC_ADDR=(1<<7)};
+
+//return values for BUS_flags_to_addr
+enum{BUS_FLAGS_INVALID_ADDR=0xFF,BUS_FLAGS_ADDR_DISABLED=0xFE,BUS_FLAGS_ADDR_MASK=0x80};
+
 //ticker for time keeping
 typedef unsigned long ticker;
 
@@ -150,8 +162,34 @@ typedef struct{
   CTL_EVENT_SET_t events;
 }BUS_STAT;
 
+//callback to parse subsystem commands
+typedef int (*cmd_parse_Callback)(unsigned char src,unsigned char cmd,unsigned char *dat,unsigned short len,unsigned char flags);
+
 //bus status
 extern BUS_STAT arcBus_stat;
+
+//callback information for linked list
+typedef struct cp_cb{
+  //function to call
+  cmd_parse_Callback cb;
+  //flags for addresses used
+  unsigned char flags;
+  //priority, determines sort order
+  unsigned char priority;
+  //next in the list
+  struct cp_cb *next;
+}CMD_PARSE_DAT;
+
+//version structure
+typedef struct{
+  //numerical version
+  unsigned short major,minor;
+  unsigned short commits;
+  //version dirty flag
+  unsigned short dty;
+  //version hash
+  char hash[];
+}BUS_VERSION;
 
 //events for subsystems
 extern CTL_EVENT_SET_t SUB_events;
@@ -159,8 +197,10 @@ extern CTL_EVENT_SET_t SUB_events;
 //keep track of power status
 extern unsigned short powerState;
 
-//ARClib version
+//ARClib version string
 extern const char ARClib_version[];
+//ARClib version struct
+extern const BUS_VERSION ARClib_vstruct;
 
 //setup clocks and low tasking stuff for ARC
 void ARC_setup(void);
@@ -180,8 +220,6 @@ int BUS_SPI_txrx(unsigned char addr,void *tx,void *rx,unsigned short len);
 //Setup buffer for command 
 unsigned char *BUS_cmd_init(unsigned char *buf,unsigned char id);
 
-//Function provided by subsystem code to parse subsystem commands
-int SUB_parseCmd(unsigned char src,unsigned char cmd,unsigned char *dat,unsigned short len);
 //get current time
 ticker get_ticker_time(void);
 //set current time
@@ -229,6 +267,10 @@ void reset_por(unsigned char level,unsigned short source,int err, unsigned short
 
 //get error string for bus errors
 const char *BUS_error_str(int error);
+//get string for command name
+const char* BUS_cmdtostr(unsigned char cmd);
+//get error string for command responses
+const char* BUS_cmd_resptostr(unsigned char resp);
 
 //stop global interrupts from happening 
 int BUS_stop_interrupts(void);
@@ -255,9 +297,20 @@ void BUS_int_clear(unsigned char clear);
 int BUS_OA_check(unsigned char addr);
 //return own address
 unsigned char BUS_get_OA(void);
+//set own address
+unsigned char BUS_set_OA(unsigned char addr);
 
 //return which build is used
 int BUS_build(void);
 
+//register command parse callback
+void BUS_register_cmd_callback(CMD_PARSE_DAT *cb_dat);
+
+//enable extra I2C own address registers
+int BUS_I2C_aux_addr(unsigned char addr,unsigned char dest);
+//return I2C address based on flags
+unsigned char BUS_flags_to_addr(unsigned char flags);
+//find flags for address, address must be enabled
+unsigned char BUS_addr_to_flags(unsigned char addr);
+
 #endif
-  

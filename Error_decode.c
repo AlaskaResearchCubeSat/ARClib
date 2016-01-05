@@ -1,107 +1,6 @@
+#include "ARCbus.h"
 #include <Error.h>
 #include "ARCbus_internal.h"
-
-const char* cmdtostr(unsigned char cmd){
-  switch(cmd){
-    case CMD_NACK:
-      return "Nack";
-    case CMD_SPI_COMPLETE:
-      return "SPI Complete";
-    case CMD_SPI_RDY:
-      return "SPI Ready";
-    case CMD_SUB_ON:
-      return "Subsystem On";
-    case CMD_SUB_OFF:
-      return "Subsystem Off";
-    case CMD_SUB_POWERUP:
-      return "Subsystem Powerup";
-    case CMD_RESET:
-      return "Reset";
-    case CMD_SUB_STAT:
-      return "Subsystem Stat";
-    case CMD_SPI_CLEAR:
-      return "SPI Clear";
-    case CMD_EPS_STAT:
-      return "EPS Status";
-    case CMD_LEDL_STAT:
-      return "LEDL Status";
-    case CMD_ACDS_STAT:
-      return "ACDS Status";
-    case CMD_COMM_STAT:
-      return "COMM Status";
-    case CMD_IMG_STAT:
-      return "IMG Status";
-    case CMD_ASYNC_SETUP:
-      return "Async Setup";
-    case CMD_ASYNC_DAT:
-      return "Async Data";
-    case CMD_SPI_DATA_ACTION:
-      return "SPI Data Action";
-    case CMD_PING:
-        return "CMD_PING";
-    case CMD_MAG_DATA:
-        return "CMD_MAG_DATA";
-    case CMD_MAG_SAMPLE_CONFIG:
-        return "CMD_MAG_SAMPLE_CONFIG";
-    case CMD_ERR_REQ:
-        return "CMD_ERR_REQ";
-    case CMD_IMG_READ_PIC:
-        return "CMD_IMG_READ_PIC";
-    case CMD_IMG_TAKE_TIMED_PIC:
-        return "CMD_IMG_TAKE_TIMED_PIC";
-    case CMD_IMG_TAKE_PIC_NOW:
-        return "CMD_IMG_TAKE_PIC_NOW";
-    case CMD_GS_DATA:
-        return "CMD_GS_DATA";
-    case CMD_TEST_MODE:
-        return "CMD_TEST_MODE";
-    case CMD_BEACON_ON:
-        return "CMD_BEACON_ON";
-    case CMD_ACDS_CONFIG:
-        return "CMD_ACDS_CONFIG";
-    case CMD_IMG_CLEARPIC:
-        return "CMD_IMG_CLEARPIC";
-    case CMD_LEDL_READ_BLOCK:
-        return "CMD_LEDL_READ_BLOCK";
-    case CMD_ACDS_READ_BLOCK:
-        return "CMD_ACDS_READ_BLOCK";
-    case CMD_EPS_SEND:
-        return "CMD_EPS_SEND";
-    case CMD_LEDL_BLOW_FUSE:
-        return "CMD_LEDL_BLOW_FUSE";
-    default:
-      return "Unknown";
-  }
-}
-
-const char* cmd_resptostr(unsigned char resp){
-  switch(resp){
-    case RET_SUCCESS:
-      return "Success";
-    case ERR_PK_LEN:
-      return "Error Invalid Packet Length";
-    case ERR_UNKNOWN_CMD:
-      return "Error Unknown Command";
-    case ERR_SPI_LEN:
-      return "Error SPI Block Length";
-    case ERR_BAD_PK:
-      return "Error Bad Packet";
-    case ERR_SPI_BUSY:
-      return "Error SPI busy";
-    case ERR_BUFFER_BUSY:
-      return "Error Buffer Busy";
-    case ERR_ILLEAGLE_COMMAND:
-      return "Error Illeagle Command";
-    case ERR_SPI_NOT_RUNNING:
-      return "Error SPI not running";
-    case ERR_SPI_WRONG_ADDR:
-      return "Error SPI wrong address";
-    case ERR_PK_BAD_PARM:
-      return "Error Bad parameter";
-    default:
-      return "Unknown";
-  }
-}
 
 //decode errors from ACDS system
 char *err_decode_arcbus(char buf[150], unsigned short source,int err, unsigned short argument){
@@ -130,13 +29,13 @@ char *err_decode_arcbus(char buf[150], unsigned short source,int err, unsigned s
         case MAIN_LOOP_ERR_RESET:
           return "ARCbus Main Loop : Commanded Reset";
         case MAIN_LOOP_ERR_CMD_CRC:
-          sprintf(buf,"ARCbus Main Loop : bad CRC for command %s (%i)",cmdtostr(argument),argument);
+          sprintf(buf,"ARCbus Main Loop : bad CRC for command %s (%i)",BUS_cmdtostr(argument),argument);
         return buf;
         case MAIN_LOOP_ERR_BAD_CMD:
-          sprintf(buf,"ARCbus Main Loop : failed to parse command %s (%i), resp \"%s\" (%i)",cmdtostr(argument&0xFF),argument&0xFF,cmd_resptostr(argument>>8),argument>>8);
+          sprintf(buf,"ARCbus Main Loop : failed to parse command %s (%i), resp \"%s\" (%i)",BUS_cmdtostr(argument&0xFF),argument&0xFF,BUS_cmd_resptostr(argument>>8),argument>>8);
         return buf;
         case MAIN_LOOP_ERR_NACK_REC:
-          sprintf(buf,"ARCbus Main Loop : NACK for command %s (%i), reason %i",cmdtostr(argument>>8),argument>>8,argument&0xFF);
+          sprintf(buf,"ARCbus Main Loop : NACK for command %s (%i), reason %i",BUS_cmdtostr(argument>>8),argument>>8,argument&0xFF);
         return buf;
         case MAIN_LOOP_ERR_SPI_COMPLETE_FAIL:
           sprintf(buf,"ARCbus Main Loop : Failed to send SPI complete command : %s",BUS_error_str(argument));
@@ -162,6 +61,11 @@ char *err_decode_arcbus(char buf[150], unsigned short source,int err, unsigned s
           return "ARCbus Main Loop : Core Supply Low Error";
         case MAIN_LOOP_ERR_SVMH:
           return "ARCbus Main Loop : Input Supply Low Error";
+        case MAIN_LOOP_SPI_ABORT:  
+          sprintf(buf,"ARCbus Main Loop : Abort command recived, aborting SPI transaction. SPI addr = 0x%02X",argument);
+        case MAIN_LOOP_ERR_SUBSYSTEM_VERSION_MISMATCH:
+          sprintf(buf,"ARCbus Main Loop : Version mismatch for address 0x%02X : \"%s\" (%i)",(argument&0xFF),bus_version_err_tostr(argument>>8),(signed char)(argument>>8));
+          return buf;
       }
     break; 
     case BUS_ERR_SRC_STARTUP:
@@ -263,6 +167,46 @@ char *err_decode_arcbus(char buf[150], unsigned short source,int err, unsigned s
             case ERR_REQ_ERR_MUTEX_TIMEOUT:
                 return "Error Request : Mutex lock timeout";
         }
+    break;
+    case BUS_ERR_SRC_I2C:
+      switch(err){
+        case I2C_ERR_INVALID_FLAGS:
+            sprintf(buf,"I2C : Error, bad I2C flags (0x%02hhX) BUS_flags_to_addr returned %s (0x%02hhX)",(argument>>8),bus_flags_tostr(argument),argument);
+        return buf;
+        case I2C_ERR_TOO_MANY_ERRORS:
+            sprintf(buf,"I2C : too many errors : %s (%i)",BUS_error_str(argument),argument);
+        return buf;
+      }
+    break;
+    case BUS_ERR_SRC_VERSION:
+      switch(err){
+        case VERSION_ERR_INVALID_MAJOR:
+            sprintf(buf,"Version : Error invalid major revision. mine : %s, other : %s",(argument&VERSION_ERR_INVALID_MINE)?"invalid":"valid",(argument&VERSION_ERR_INVALID_OTHER)?"invalid":"valid");
+        return buf;
+        case VERSION_ERR_MAJOR_REV_NEWER:
+            sprintf(buf,"Version : Error other major version is newer. version : %u",argument);
+        return buf;
+        case VERSION_ERR_MAJOR_REV_OLDER:
+            sprintf(buf,"Version : Error other major version is older. version : %u",argument);
+        return buf;
+        case VERSION_ERR_INVALID_MINOR:
+            sprintf(buf,"Version : Error invalid minor revision. mine : %s, other : %s",(argument&VERSION_ERR_INVALID_MINE)?"invalid":"valid",(argument&VERSION_ERR_INVALID_OTHER)?"invalid":"valid");
+        return buf;
+        case VERSION_ERR_MINOR_REV_NEWER:
+            sprintf(buf,"Version : Error other minor version is newer. version : %u",argument);
+        return buf;
+        case VERSION_ERR_MINOR_REV_OLDER:
+            sprintf(buf,"Version : Error other minor version is older. version : %u",argument);
+        return buf;
+        case VERSION_ERR_DIRTY_REV:
+            sprintf(buf,"Version : dirty revision. mine : %s, other : %s",((argument>>8)==BUS_VER_CLEAN)?"clean":"dirty",((argument&&0x00FF)==BUS_VER_CLEAN)?"clean":"dirty");
+        return buf;
+        case VERSION_ERR_HASH_MISMATCH:
+            return "Version : version hash mismatch";
+        case VERSION_ERR_COMMIT_MISMATCH:
+            sprintf(buf,"Version : commit number mismatch. other : %u",argument);
+        return buf;
+      }
     break;
   }
   sprintf(buf,"source = %i, error = %i, argument = %i",source,err,argument);

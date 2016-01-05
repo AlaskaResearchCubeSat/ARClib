@@ -19,7 +19,8 @@
   #define BUS_PINS_SPI      (BUS_PIN_SOMI|BUS_PIN_SIMO|BUS_PIN_SCK)
   
   //ARCbus error sources
-  enum{BUS_ERR_SRC_CTL=ERR_SRC_ARCBUS,BUS_ERR_SRC_MAIN_LOOP,BUS_ERR_SRC_STARTUP,BUS_ERR_SRC_ASYNC,BUS_ERR_SRC_SETUP,BUS_ERR_SRC_ALARMS,BUS_ERR_SRC_ERR_REQ};
+  enum{BUS_ERR_SRC_CTL=ERR_SRC_ARCBUS,BUS_ERR_SRC_MAIN_LOOP,BUS_ERR_SRC_STARTUP,BUS_ERR_SRC_ASYNC,BUS_ERR_SRC_SETUP,BUS_ERR_SRC_ALARMS,BUS_ERR_SRC_ERR_REQ,BUS_ERR_SRC_I2C,
+      BUS_ERR_SRC_VERSION};
   
   //error codes for CTL
   enum{CTL_ERR_HANDLER};
@@ -27,7 +28,8 @@
   //error codes for main loop
   enum{MAIN_LOOP_ERR_RESET,MAIN_LOOP_ERR_CMD_CRC,MAIN_LOOP_ERR_BAD_CMD,MAIN_LOOP_ERR_NACK_REC,MAIN_LOOP_ERR_SPI_COMPLETE_FAIL,
       MAIN_LOOP_ERR_SPI_CLEAR_FAIL,MAIN_LOOP_ERR_MUTIPLE_CDH,MAIN_LOOP_ERR_CDH_NOT_FOUND,MAIN_LOOP_ERR_RX_BUF_STAT,MAIN_LOOP_ERR_I2C_RX_BUSY,
-      MAIN_LOOP_ERR_I2C_ARB_LOST,MAIN_LOOP_CDH_SUB_STAT_REC,MAIN_LOOP_RESET_FAIL,MAIN_LOOP_ERR_SVML,MAIN_LOOP_ERR_SVMH};
+      MAIN_LOOP_ERR_I2C_ARB_LOST,MAIN_LOOP_CDH_SUB_STAT_REC,MAIN_LOOP_RESET_FAIL,MAIN_LOOP_ERR_SVML,MAIN_LOOP_ERR_SVMH,MAIN_LOOP_SPI_ABORT,
+      MAIN_LOOP_ERR_SUBSYSTEM_VERSION_MISMATCH};
       
   //error codes for startup code
   enum{STARTUP_ERR_RESET_UNKNOWN,STARTUP_ERR_MAIN_RETURN,STARTUP_ERR_WDT_RESET,STARTUP_ERR_WDT_PW_RESET,STARTUP_ERR_BOR,STARTUP_ERR_RESET_PIN,STARTUP_ERR_RESET_FLASH_KEYV,
@@ -45,6 +47,17 @@
       
   //error codes for error request
   enum{ERR_REQ_ERR_SPI_SEND,ERR_REQ_ERR_BUFFER_BUSY,ERR_REQ_ERR_MUTEX_TIMEOUT};
+
+  //error codes for I2C
+  enum{I2C_ERR_INVALID_FLAGS,I2C_ERR_TOO_MANY_ERRORS};
+
+  //error codes for version comparison
+  enum{VERSION_ERR_INVALID_MAJOR,VERSION_ERR_MAJOR_REV_NEWER,VERSION_ERR_MAJOR_REV_OLDER,VERSION_ERR_INVALID_MINOR,VERSION_ERR_MINOR_REV_NEWER,
+       VERSION_ERR_MINOR_REV_OLDER,VERSION_ERR_DIRTY_REV,VERSION_ERR_HASH_MISMATCH,VERSION_ERR_COMMIT_MISMATCH};
+
+  //define constants for invalid errors
+  #define VERSION_ERR_INVALID_OTHER             (0xFF00)
+  #define VERSION_ERR_INVALID_MINE              (0x00FF)
   
   #define BUS_ERR_LEV_ROUTINE_RST   (ERR_LEV_DEBUG+3)
   
@@ -54,11 +67,15 @@
   //values for async setup command
   enum{ASYNC_OPEN,ASYNC_CLOSE};
 
+  //version comparison return values
+  enum{BUS_VER_SAME=0,BUS_VER_INVALID_MAJOR_REV=-1,BUS_VER_MAJOR_REV_OLDER=-2,BUS_VER_MAJOR_REV_NEWER=-3,BUS_VER_INVALID_MINOR_REV=-4,BUS_VER_MINOR_REV_OLDER=-5,
+       BUS_VER_MINOR_REV_NEWER=-6,BUS_VER_DIRTY_REV=-7,BUS_VER_HASH_MISMATCH=-8,BUS_VER_COMMIT_MISMATCH=-9,BUS_VER_LENGTH=-10};
+
   //all events for ARCBUS internal commands
   #define BUS_INT_EV_ALL    (BUS_INT_EV_I2C_CMD_RX|BUS_INT_EV_SPI_COMPLETE|BUS_INT_EV_BUFF_UNLOCK|BUS_INT_EV_RELEASE_MUTEX|BUS_INT_EV_I2C_RX_BUSY|BUS_INT_EV_I2C_ARB_LOST|BUS_INT_EV_SVML|BUS_INT_EV_SVMH)
 
   //flags for bus helper events
-  enum{BUS_HELPER_EV_ASYNC_TIMEOUT=1<<0,BUS_HELPER_EV_SPI_COMPLETE_CMD=1<<1,BUS_HELPER_EV_SPI_CLEAR_CMD=1<<2,BUS_HELPER_EV_ASYNC_CLOSE=1<<3,BUS_HELPER_EV_ERR_REQ=1<<4,BUS_HELPER_EV_SUB_POWERUP=1<<5};
+  enum{BUS_HELPER_EV_ASYNC_TIMEOUT=1<<0,BUS_HELPER_EV_SPI_COMPLETE_CMD=1<<1,BUS_HELPER_EV_SPI_CLEAR_CMD=1<<2,BUS_HELPER_EV_ASYNC_CLOSE=1<<3,BUS_HELPER_EV_ERR_REQ=1<<4};
   
   //flags for I2C_PACKET structures
   enum{I2C_PACKET_STAT_EMPTY,I2C_PACKET_STAT_IN_PROGRESS,I2C_PACKET_STAT_COMPLETE};
@@ -66,11 +83,14 @@
   //size of I2C packet queue
   #define BUS_I2C_PACKET_QUEUE_LEN      5
 
+  //time to wait to retry an I2C packet in 32.768 kHz clocks
+  #define BUS_I2C_WAIT_TIME             25          // (about 0.7 ms or about the length of a 4 byte packet at 50kb/s)
+
   //minimum timeout for SPI transaction
   #define  BUS_SPI_MIN_TIMEOUT    (20)
 
   //all helper task events
-  #define BUS_HELPER_EV_ALL (BUS_HELPER_EV_ASYNC_TIMEOUT|BUS_HELPER_EV_SPI_COMPLETE_CMD|BUS_HELPER_EV_SPI_CLEAR_CMD|BUS_HELPER_EV_ASYNC_CLOSE|BUS_HELPER_EV_ERR_REQ|BUS_HELPER_EV_SUB_POWERUP)
+  #define BUS_HELPER_EV_ALL (BUS_HELPER_EV_ASYNC_TIMEOUT|BUS_HELPER_EV_SPI_COMPLETE_CMD|BUS_HELPER_EV_SPI_CLEAR_CMD|BUS_HELPER_EV_ASYNC_CLOSE|BUS_HELPER_EV_ERR_REQ)
   
   //task structure for idle task and ARC bus task
   extern CTL_TASK_t idle_task,ARC_bus_task;
@@ -88,6 +108,7 @@
   typedef struct{
     unsigned char stat;
     unsigned char len;
+    unsigned char flags;
     unsigned char dat[BUS_I2C_HDR_LEN+BUS_I2C_MAX_PACKET_LEN+BUS_I2C_CRC_LEN];
   }I2C_PACKET;
 
@@ -109,12 +130,6 @@
   
   //task structures
   extern CTL_TASK_t ARC_bus_task;
-  
-  //ticker time that the last time update happened at
-  extern ticker last_time_update;
-
-  //flag to see if time has been updated
-  extern short timesync;
   
   //events for subsystems
   extern CTL_EVENT_SET_t SUB_events,BUS_helper_events,BUS_INT_events;
@@ -138,5 +153,12 @@
   void BUS_timer_timeout_check(void);
   //trigger alarms that may have been updated over
   void BUS_alarm_ticker_update(ticker newt,ticker oldt);
+  //read timer while it is running 
+  short readTA1(void);
+
+  //return error string for bus flags errors
+  const char* bus_flags_tostr(unsigned char flags);
+  //return error string for version errors
+  const char * bus_version_err_tostr(signed char resp);
 
 #endif
