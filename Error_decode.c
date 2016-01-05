@@ -1,3 +1,4 @@
+#include "ARCbus.h"
 #include <Error.h>
 #include "ARCbus_internal.h"
 
@@ -69,6 +70,8 @@ const char* cmdtostr(unsigned char cmd){
         return "CMD_EPS_SEND";
     case CMD_LEDL_BLOW_FUSE:
         return "CMD_LEDL_BLOW_FUSE";
+    case CMD_SPI_ABORT:
+        return "CMD_SPI_ABORT";
     default:
       return "Unknown";
   }
@@ -98,6 +101,44 @@ const char* cmd_resptostr(unsigned char resp){
       return "Error SPI wrong address";
     case ERR_PK_BAD_PARM:
       return "Error Bad parameter";
+    default:
+      return "Unknown";
+  }
+}
+
+const char* bus_flags_tostr(unsigned char flags){
+  switch(flags){
+    case BUS_FLAGS_INVALID_ADDR:
+      return "BUS_FLAGS_INVALID_ADDR";
+    case BUS_FLAGS_ADDR_DISABLED:
+      return "BUS_FLAGS_ADDR_DISABLED";
+    default:
+      return "Unknown";
+  }
+}
+
+const char * bus_version_err_tostr(signed char resp){
+  switch(resp){
+    case BUS_VER_SAME:
+      return "BUS_VER_SAME";
+    case BUS_VER_INVALID_MAJOR_REV:
+      return "BUS_VER_INVALID_MAJOR_REV";
+    case BUS_VER_MAJOR_REV_OLDER:
+      return "BUS_VER_MAJOR_REV_OLDER";
+    case BUS_VER_MAJOR_REV_NEWER:
+      return "BUS_VER_MAJOR_REV_NEWER";
+    case BUS_VER_INVALID_MINOR_REV:
+      return "BUS_VER_INVALID_MINOR_REV";
+    case BUS_VER_MINOR_REV_OLDER:
+      return "BUS_VER_MINOR_REV_OLDER";
+    case BUS_VER_MINOR_REV_NEWER:
+      return "BUS_VER_MINOR_REV_NEWER";
+    case BUS_VER_DIRTY_REV:
+      return "BUS_VER_DIRTY_REV";
+    case BUS_VER_HASH_MISMATCH:
+      return "BUS_VER_HASH_MISMATCH";
+    case BUS_VER_COMMIT_MISMATCH:
+      return "BUS_VER_COMMIT_MISMATCH";
     default:
       return "Unknown";
   }
@@ -162,6 +203,11 @@ char *err_decode_arcbus(char buf[150], unsigned short source,int err, unsigned s
           return "ARCbus Main Loop : Core Supply Low Error";
         case MAIN_LOOP_ERR_SVMH:
           return "ARCbus Main Loop : Input Supply Low Error";
+        case MAIN_LOOP_SPI_ABORT:  
+          sprintf(buf,"ARCbus Main Loop : Abort command recived, aborting SPI transaction. SPI addr = 0x%02X",argument);
+        case MAIN_LOOP_ERR_SUBSYSTEM_VERSION_MISMATCH:
+          sprintf(buf,"ARCbus Main Loop : Version mismatch for address 0x%02X : \"%s\" (%i)",(argument&0xFF),bus_version_err_tostr(argument>>8),(signed char)(argument>>8));
+          return buf;
       }
     break; 
     case BUS_ERR_SRC_STARTUP:
@@ -287,6 +333,46 @@ char *err_decode_arcbus(char buf[150], unsigned short source,int err, unsigned s
             case ERR_REQ_ERR_MUTEX_TIMEOUT:
                 return "Error Request : Mutex lock timeout";
         }
+    break;
+    case BUS_ERR_SRC_I2C:
+      switch(err){
+        case I2C_ERR_INVALID_FLAGS:
+            sprintf(buf,"I2C : Error, bad I2C flags (0x%02hhX) BUS_flags_to_addr returned %s (0x%02hhX)",(argument>>8),bus_flags_tostr(argument),argument);
+        return buf;
+        case I2C_ERR_TOO_MANY_ERRORS:
+            sprintf(buf,"I2C : too many errors : %s (%i)",BUS_error_str(argument),argument);
+        return buf;
+      }
+    break;
+    case BUS_ERR_SRC_VERSION:
+      switch(err){
+        case VERSION_ERR_INVALID_MAJOR:
+            sprintf(buf,"Version : Error invalid major revision. mine : %s, other : %s",(argument&VERSION_ERR_INVALID_MINE)?"invalid":"valid",(argument&VERSION_ERR_INVALID_OTHER)?"invalid":"valid");
+        return buf;
+        case VERSION_ERR_MAJOR_REV_NEWER:
+            sprintf(buf,"Version : Error other major version is newer. version : %u",argument);
+        return buf;
+        case VERSION_ERR_MAJOR_REV_OLDER:
+            sprintf(buf,"Version : Error other major version is older. version : %u",argument);
+        return buf;
+        case VERSION_ERR_INVALID_MINOR:
+            sprintf(buf,"Version : Error invalid minor revision. mine : %s, other : %s",(argument&VERSION_ERR_INVALID_MINE)?"invalid":"valid",(argument&VERSION_ERR_INVALID_OTHER)?"invalid":"valid");
+        return buf;
+        case VERSION_ERR_MINOR_REV_NEWER:
+            sprintf(buf,"Version : Error other minor version is newer. version : %u",argument);
+        return buf;
+        case VERSION_ERR_MINOR_REV_OLDER:
+            sprintf(buf,"Version : Error other minor version is older. version : %u",argument);
+        return buf;
+        case VERSION_ERR_DIRTY_REV:
+            sprintf(buf,"Version : dirty revision. mine : %s, other : %s",((argument>>8)==BUS_VER_CLEAN)?"clean":"dirty",((argument&&0x00FF)==BUS_VER_CLEAN)?"clean":"dirty");
+        return buf;
+        case VERSION_ERR_HASH_MISMATCH:
+            return "Version : version hash mismatch";
+        case VERSION_ERR_COMMIT_MISMATCH:
+            sprintf(buf,"Version : commit number mismatch. other : %u",argument);
+        return buf;
+      }
     break;
   }
   sprintf(buf,"source = %i, error = %i, argument = %i",source,err,argument);

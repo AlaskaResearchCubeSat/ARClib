@@ -8,8 +8,7 @@
 
 #include "ARCbus_internal.h"
 
-
-
+__thread unsigned char BUS_thread_addr_flags=0;
 
 //=======================================================================================
 //                                 [BUS Functions]
@@ -20,8 +19,22 @@ unsigned char BUS_get_OA(void){
   int i;
   //base address for own I2C addresses
   volatile unsigned int * const oa_base=&UCB0I2COA0;
-  //loop through addresses and return the first one that matches
-  //TODO: perhaps there is a better way to do this (on a per task basis?)
+  unsigned char addr;
+  //check for default address flags
+  if(BUS_thread_addr_flags!=0){
+    //try to get thread specific address
+    addr=BUS_flags_to_addr(BUS_thread_addr_flags);
+    //check for success
+    if(!(addr&BUS_FLAGS_ADDR_MASK) && addr!=BUS_ADDR_GC){
+      //return address
+      return addr;
+    }
+    //report error
+    report_error(ERR_LEV_ERROR,BUS_ERR_SRC_I2C,I2C_ERR_INVALID_FLAGS,(BUS_thread_addr_flags<<8)|(addr));
+    //reset flags to default
+    BUS_thread_addr_flags=0;
+  }
+  //Fallback loop through addresses and return the first one that is enabled
   for(i=0;i<4;i++){
     //check if address enabled
     if(oa_base[i]&UCOAEN){
@@ -32,7 +45,141 @@ unsigned char BUS_get_OA(void){
   //no match! return OA0
   //TODO: report error? do something else?
   return UCB0I2COA0;
+}//return own address
+
+
+//set own address, this is done on a per-task basis
+unsigned char BUS_set_OA(unsigned char addr){
+  unsigned char flags;
+  //get flags from address
+  flags=BUS_addr_to_flags(addr);
+  //check for error
+  switch(flags){
+    case BUS_FLAGS_ADDR_DISABLED:
+    case BUS_FLAGS_INVALID_ADDR:
+    case CMD_PARSE_GC_ADDR:
+      //return error from BUS_addr_to_flags
+      //TODO: is there a better way to do this?
+      return flags;
+    default:
+      //set flags for this task
+      BUS_thread_addr_flags=flags;
+      //return success
+      return RET_SUCCESS;
+  }
 }
+
+//enable extra I2C own address registers
+int BUS_I2C_aux_addr(unsigned char addr,unsigned char dest){
+  switch(dest){
+    case CMD_PARSE_ADDR1:
+      //check if address is enabled
+      if(UCOAEN&UCB0I2COA1){
+        //error, address is already enabled
+        return ERR_BAD_ADDR;
+      }
+      //enable interrupts for address 2
+      UCB0IE|=UCTXIE1|UCRXIE1;
+      //set and enable address 1
+      UCB0I2COA1=UCOAEN|addr;
+    break;
+    case CMD_PARSE_ADDR2:
+      //check if address is enabled
+      if(UCOAEN&UCB0I2COA2){
+        //error, address is already enabled
+        return ERR_BAD_ADDR;
+      }
+      //enable interrupts for address 2
+      UCB0IE|=UCTXIE2|UCRXIE2;
+      //set and enable address 2
+      UCB0I2COA2=UCOAEN|addr;
+    break;
+    case CMD_PARSE_ADDR3:
+      //check if address is enabled
+      if(UCOAEN&UCB0I2COA3){
+        //error, address is already enabled
+        return ERR_BAD_ADDR;
+      }
+      //enable interrupts for address 3
+      UCB0IE|=UCTXIE3|UCRXIE3;
+      //set and enable address 3
+      UCB0I2COA3=UCOAEN|addr;
+    break;
+    default:
+      //all other values are invalid
+      return ERR_INVALID_ARGUMENT;
+  }
+  return RET_SUCCESS;
+}
+
+//return I2C address based on flags
+unsigned char BUS_flags_to_addr(unsigned char flags){
+  switch(flags){
+    case CMD_PARSE_ADDR0:
+      //check if address is enabled
+      if(UCOAEN&UCB0I2COA0){
+        //return address without GCEN or OAEN bits
+        return (~(UCGCEN|UCOAEN))&UCB0I2COA0;
+      }
+    break;
+    case CMD_PARSE_ADDR1:
+      //check if address is enabled
+      if(UCOAEN&UCB0I2COA1){
+        //return address without GCEN or OAEN bits
+        return (~(UCGCEN|UCOAEN))&UCB0I2COA1;
+      }
+    break;
+    case CMD_PARSE_ADDR2:
+      //check if address is enabled
+      if(UCOAEN&UCB0I2COA2){
+        //return address without GCEN or OAEN bits
+        return (~(UCGCEN|UCOAEN))&UCB0I2COA2;
+      }
+    break;
+    case CMD_PARSE_ADDR3:
+      //check if address is enabled
+      if(UCOAEN&UCB0I2COA3){
+        //return address without GCEN or OAEN bits
+        return (~(UCGCEN|UCOAEN))&UCB0I2COA3;
+      }
+    break;
+    case CMD_PARSE_GC_ADDR:
+      return BUS_ADDR_GC;
+    default:
+      return BUS_FLAGS_INVALID_ADDR;
+  }
+  return BUS_FLAGS_ADDR_DISABLED;
+}
+
+//find flags for address, address must be enabled
+unsigned char BUS_addr_to_flags(unsigned char addr){
+  int i,disabled;
+  //base address for own I2C addresses
+  volatile unsigned int * const oa_base=&UCB0I2COA0;
+  //loop through addresses to find a match
+  for(i=0,disabled;i<4;i++){
+    //check for a match
+    if(((~(UCGCEN|UCOAEN))&oa_base[i])==addr){
+      //check if address is enabled
+      if(oa_base[i]&UCOAEN){
+        //Success!!, return flags for address
+        return CMD_PARSE_ADDR0<<i;
+      }else{
+        //disabled, set flag
+        disabled=1;
+      }
+    }
+  }
+  //TODO: are these the best error values to return??
+  //check if address was disabled
+  if(disabled){
+    //return disabled error
+    return BUS_FLAGS_ADDR_DISABLED;
+  }else{
+    //return invalid flags error
+    return BUS_FLAGS_INVALID_ADDR;
+  }
+}//return own address
 
 //Setup buffer for command 
 unsigned char *BUS_cmd_init(unsigned char *buf,unsigned char id){
@@ -76,7 +223,7 @@ static ticker packet_time=0;
 static unsigned BUS_I2C_lock(void){
   int i;
   //try to capture mutex
-  if(0==ctl_mutex_lock(&arcBus_stat.i2c_stat.mutex,CTL_TIMEOUT_DELAY,10)){
+  if(0==ctl_mutex_lock(&arcBus_stat.i2c_stat.mutex,CTL_TIMEOUT_DELAY,100)){
      return ERR_BUSY;
   }
   return 0;
@@ -85,6 +232,57 @@ static unsigned BUS_I2C_lock(void){
 //release the I2C bus
 void BUS_I2C_release(void){
   ctl_mutex_unlock(&arcBus_stat.i2c_stat.mutex);
+}
+
+//keep track of which errors have happened
+static int BUS_I2C_err_track(int error){
+  //keep track of how many errors have happened
+  static errors=0;
+  //check which error happened
+  switch(error){
+    //I2C start timeout error happened
+    case ERR_I2C_START_TIMEOUT:
+      //This error causes problems reset after only a few errors
+      if(errors>3){
+        //reset MSP430 to clear the error
+        reset(ERR_LEV_ERROR+20,BUS_ERR_SRC_I2C,I2C_ERR_TOO_MANY_ERRORS,error);
+      }
+      errors++;
+    break;
+    //These errors happen when the device is not found or busy
+    case ERR_I2C_NACK:
+    case BUS_EV_I2C_TX_SELF:
+    case BUS_EV_I2C_ABORT:
+      //Do nothing, errors are not cleared or incremented
+    break;
+    //send successful!
+    case RET_SUCCESS:
+      //reset error count
+      errors=0;
+    break;
+    //Clock low timeout
+    case BUS_EV_I2C_ERR_CCL:
+      //This error does not happen too often
+      if(errors>10){
+        //reset MSP430 to clear the error
+        reset(ERR_LEV_ERROR+20,BUS_ERR_SRC_I2C,I2C_ERR_TOO_MANY_ERRORS,error);
+      }
+      errors++;
+    break;
+    //Other or unknown error
+    default:
+      //reset if a lot of these happen
+      if(errors>40){
+        //reset MSP430 to clear the error
+        reset(ERR_LEV_ERROR+20,BUS_ERR_SRC_I2C,I2C_ERR_TOO_MANY_ERRORS,error);
+      }
+      errors++;
+    break;
+  }
+  //release I2C bus
+  BUS_I2C_release();
+  //return error
+  return error;
 }
 
 //send command
@@ -174,54 +372,55 @@ int BUS_cmd_tx(unsigned char addr,void *buff,unsigned short len,unsigned short f
     return RET_SUCCESS;
   }
   //wait for packet to start
-  e=ctl_events_wait(CTL_EVENT_WAIT_ANY_EVENTS_WITH_AUTO_CLEAR,&arcBus_stat.events,BUS_EV_I2C_MASTER_START,CTL_TIMEOUT_DELAY,104);
+  e=ctl_events_wait(CTL_EVENT_WAIT_ANY_EVENTS_WITH_AUTO_CLEAR,&arcBus_stat.events,BUS_EV_I2C_MASTER_START,CTL_TIMEOUT_DELAY,50);
   //check to see if there was a problem
   if(!(e&BUS_EV_I2C_MASTER_STARTED)){
-    //release I2C bus
-    BUS_I2C_release();
+    //clear start bit
+    UCB0CTL1&=~UCTXSTT;
     //set I2C master state
     arcBus_stat.i2c_stat.tx.stat=BUS_I2C_MASTER_IDLE;
     //chech which error happened
     switch(e&BUS_EV_I2C_MASTER_START){
       case 0:
         //no event happened so timeout
-        return ERR_I2C_START_TIMEOUT;
+        return BUS_I2C_err_track(ERR_I2C_START_TIMEOUT);
       case BUS_EV_I2C_NACK:
         //I2C device did not acknowledge
-        return ERR_I2C_NACK;
+        return BUS_I2C_err_track(ERR_I2C_NACK);
       default:
         //error is not defined
-        return ERR_UNKNOWN;
+        return BUS_I2C_err_track(ERR_UNKNOWN);
     }
   }
   //wait for transaction to complete
-  e=ctl_events_wait(CTL_EVENT_WAIT_ANY_EVENTS_WITH_AUTO_CLEAR,&arcBus_stat.events,BUS_EV_I2C_MASTER,CTL_TIMEOUT_DELAY,104);
+  e=ctl_events_wait(CTL_EVENT_WAIT_ANY_EVENTS_WITH_AUTO_CLEAR,&arcBus_stat.events,BUS_EV_I2C_MASTER,CTL_TIMEOUT_DELAY,50);
   //save transaction time
   packet_time=get_ticker_time();
-  //release I2C bus
-  BUS_I2C_release();
   //set I2C master state
   arcBus_stat.i2c_stat.tx.stat=BUS_I2C_MASTER_IDLE;
   //check which event(s) happened
   switch(e&BUS_EV_I2C_MASTER){
     case BUS_EV_I2C_COMPLETE:
       //no error
-      return RET_SUCCESS;
+      return BUS_I2C_err_track(RET_SUCCESS);
     case BUS_EV_I2C_NACK:
       //I2C device did not acknowledge
-      return ERR_I2C_NACK;
+      return BUS_I2C_err_track(ERR_I2C_NACK);
     case BUS_EV_I2C_ABORT:
       //I2C device did not acknowledge
-      return ERR_I2C_ABORT;
+      return BUS_I2C_err_track(ERR_I2C_ABORT);
     case 0:
       //no event happened, so time out
-      return ERR_TIMEOUT;
+      return BUS_I2C_err_track(ERR_TIMEOUT);
     case BUS_EV_I2C_ERR_CCL:
       //Clock low timeout
-      return ERR_I2C_CLL;
+      return BUS_I2C_err_track(ERR_I2C_CLL);
+    case BUS_EV_I2C_TX_SELF:
+      //TX to self and no one else responded
+      return BUS_I2C_err_track(ERR_I2C_TX_SELF);
     default:
       //error is not defined
-      return ERR_UNKNOWN;
+      return BUS_I2C_err_track(ERR_UNKNOWN);
   }
 }
 
@@ -255,14 +454,17 @@ int BUS_SPI_txrx(unsigned char addr,void *tx,void *rx,unsigned short len){
   arcBus_stat.spi_stat.len=len;
   arcBus_stat.spi_stat.rx=rx;
   arcBus_stat.spi_stat.tx=tx;
+  arcBus_stat.spi_stat.nack=0;
   //disable DMA
   DMA0CTL&=~DMAEN;
   DMA1CTL&=~DMAEN;
+  DMA2CTL&=~DMAEN;
   //Setup SPI
   SPI_slave_setup();
   //setup DMA for transfer
-  DMACTL0 &=~(DMA0TSEL_15|DMA1TSEL_15);
+  DMACTL0 &=~(DMA0TSEL_31|DMA1TSEL_31);
   DMACTL0 |= (DMA0TSEL__USCIA0RX|DMA1TSEL__USCIA0TX);
+  DMACTL1 = DMA2TSEL__USCIA0TX;
   //====[DMA channel0 used for receive]====
   //check for omitted receive buffer
   if(rx!=NULL){
@@ -273,8 +475,17 @@ int BUS_SPI_txrx(unsigned char addr,void *tx,void *rx,unsigned short len){
     // The size of the block to be transferred
     DMA0SZ = len+BUS_SPI_CRC_LEN;
     // Configure the DMA transfer, single byte transfer with source increment
-    DMA0CTL =DMADT_0|DMASBDB|DMAEN|DMADSTINCR1|DMADSTINCR0;
+    DMA0CTL =DMADT_0|DMASBDB|DMAEN|DMASRCINCR_3|DMADSTINCR_0;
   }
+  //====[DMA channel2 used for DMA9 fix]====
+  //DMA9 workaround, use a dummy channel with lower priority and the same trigger
+  //setup dummy channel: read and write from unused space in the SPI registers
+  *((unsigned int*)&DMA2SA) = EUSCI_A0_BASE + 0x02;
+  *((unsigned int*)&DMA2DA) = EUSCI_A0_BASE + 0x04;
+  // only one byte
+  DMA2SZ = 1;
+  // Configure the DMA transfer, repeated byte transfer with no increment
+  DMA2CTL = DMADT_4|DMASBDB|DMAEN|DMASRCINCR_0|DMADSTINCR_0;
   //====[DMA channel1 used for transmit]====
   // Destination DMA address: the transmit buffer.
   *((unsigned int*)&DMA1DA) = (unsigned int)(&UCA0TXBUF);
@@ -286,7 +497,7 @@ int BUS_SPI_txrx(unsigned char addr,void *tx,void *rx,unsigned short len){
     DMA1SZ = len+BUS_SPI_CRC_LEN-1;
     // Configure the DMA transfer, single byte transfer with destination increment
     //enable interrupt to notify code when transfer is complete
-    DMA1CTL=DMADT_0|DMASBDB|DMASRCINCR1|DMASRCINCR0|DMAEN;
+    DMA1CTL=DMADT_0|DMASBDB|DMASRCINCR_3|DMADSTINCR_0|DMAEN;
     //start things off with an initial transfer
     UCA0TXBUF=*((unsigned char*)tx);
   }else{
@@ -295,7 +506,7 @@ int BUS_SPI_txrx(unsigned char addr,void *tx,void *rx,unsigned short len){
     // The size of the block to be transferred
     DMA1SZ = len+BUS_SPI_CRC_LEN-1;
     // Configure the DMA transfer, single byte transfer with no increment
-    DMA1CTL=DMADT_0|DMASBDB|DMASRCINCR0|DMASRCINCR0|DMAEN;
+    DMA1CTL=DMADT_0|DMASBDB|DMASRCINCR_0|DMADSTINCR_0|DMAEN;
     //start things off with an initial transfer
     UCA0TXBUF=BUS_SPI_DUMMY_DATA;
   }
@@ -312,6 +523,7 @@ int BUS_SPI_txrx(unsigned char addr,void *tx,void *rx,unsigned short len){
     //disable DMA
     DMA0CTL&=~DMAEN;
     DMA1CTL&=~DMAEN; 
+    DMA2CTL&=~DMAEN; 
     //SPI pins back to GPIO
     SPI_deactivate();
     //Return Error
@@ -320,20 +532,31 @@ int BUS_SPI_txrx(unsigned char addr,void *tx,void *rx,unsigned short len){
   }
   //calculate wait time based on packet length
   time=len/10;
-  if(time<=10){
-    time=10;
+  if(time<=BUS_SPI_MIN_TIMEOUT){
+    time=BUS_SPI_MIN_TIMEOUT;
   }
   //wait for SPI complete signal from master
   e=ctl_events_wait(CTL_EVENT_WAIT_ANY_EVENTS_WITH_AUTO_CLEAR,&arcBus_stat.events,BUS_EV_SPI_MASTER,CTL_TIMEOUT_DELAY,time);
   //disable DMA
   DMA0CTL&=~DMAEN;
   DMA1CTL&=~DMAEN; 
+  DMA2CTL&=~DMAEN; 
   //SPI pins back to GPIO
   SPI_deactivate();
   //Check if SPI complete event received
   if(e&BUS_EV_SPI_COMPLETE){
+    //check for errors from the destination
+    if(arcBus_stat.spi_stat.nack!=0){
+      //error from the other system, return it
+      return arcBus_stat.spi_stat.nack;
+    }
     //if RX is null then don't calculate CRC
     if(rx!=NULL){
+        //check if DMA0 finished receiving 
+        if(!(DMA0CTL&DMAIFG)){
+          //Error : DMA timed out (CRC is probably bad)
+          return ERR_DMA_TIMEOUT;
+        }
         //assemble CRC
         crc=((unsigned char*)rx)[arcBus_stat.spi_stat.len+1];//LSB
         crc|=(((unsigned short)((unsigned char*)rx)[arcBus_stat.spi_stat.len])<<8);//MSB
@@ -343,11 +566,39 @@ int BUS_SPI_txrx(unsigned char addr,void *tx,void *rx,unsigned short len){
           return ERR_BAD_CRC;
         }
     }
+    //check if DMA1 finished transmitting
+    if(!(DMA1CTL&DMAIFG)){
+      //Error : DMA timed out (CRC is probably bad on the other end)
+      return ERR_DMA_TIMEOUT;
+    }
     //Success!!
     return RET_SUCCESS;
   }else if(e&BUS_EV_SPI_NACK){
-    return ERR_BUSY;
+    char tmp=arcBus_stat.spi_stat.nack;
+    //clear NACK reason
+    arcBus_stat.spi_stat.nack=0;
+    //check why NACK was sent
+    switch(tmp){
+      case ERR_PK_LEN:
+        //not sure why this could have happened
+        return ERR_INVALID_ARGUMENT;
+      break;
+      case ERR_SPI_LEN:
+        //SPI data is bigger than the buffer
+        return ERR_BAD_LEN;
+      break;
+      case ERR_SPI_BUSY:
+      case ERR_BUFFER_BUSY:
+        //the other MSP is busy
+        return ERR_BUSY;
+      break;
+      default:
+        return ERR_UNKNOWN;
+    }
   }else{
+    //timeout occurred, send SPI abort packet
+    ptr=BUS_cmd_init(buf,CMD_SPI_ABORT);
+    resp=BUS_cmd_tx(addr,buf,0,BUS_CMD_FL_NACK,BUS_I2C_SEND_FOREGROUND);
     //Return error, timeout occurred
     return ERR_TIMEOUT;
   }

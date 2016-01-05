@@ -24,7 +24,17 @@ void bus_I2C_isr(void) __ctl_interrupt[USCI_B0_VECTOR]{
   static unsigned short end_e=0;
   switch(UCB0IV){
     case USCI_I2C_UCALIFG:    //Arbitration lost
-      //Arbitration lost, resend later?
+      //Check if packet was in progress
+      if(arcBus_stat.i2c_stat.tx.stat==BUS_I2C_MASTER_IN_PROGRESS){
+        //set index
+        arcBus_stat.i2c_stat.tx.idx=0;
+        //set I2C master state
+        arcBus_stat.i2c_stat.tx.stat=BUS_I2C_MASTER_PENDING;
+        //set timer to attempt to send later
+        TA1CCR1=readTA1()+BUS_I2C_WAIT_TIME;
+        //setup TA1CCR1 interrupt
+        TA1CCTL1=CCIE;
+      }
       //set flag to indicate condition
       ctl_events_set_clear(&BUS_INT_events,BUS_INT_EV_I2C_ARB_LOST,0);
       //check if running
@@ -46,8 +56,11 @@ void bus_I2C_isr(void) __ctl_interrupt[USCI_B0_VECTOR]{
       //check if we have written more than a byte to the TX buffer
       //one byte is always written after the start condition is sent
       if(arcBus_stat.i2c_stat.tx.idx>1){
-          //set ABORT as the end event
-          end_e=BUS_EV_I2C_ABORT;
+          //check if end_e is set
+          if(end_e==0){
+            //set ABORT as the end event
+            end_e=BUS_EV_I2C_ABORT;
+          }
       }else{
           //set NACK as end event
           end_e=BUS_EV_I2C_NACK;
@@ -96,6 +109,14 @@ void bus_I2C_isr(void) __ctl_interrupt[USCI_B0_VECTOR]{
           arcBus_stat.i2c_stat.mode=BUS_I2C_RX;
           //set buffer status
           I2C_rx_buf[I2C_rx_in].stat=I2C_PACKET_STAT_IN_PROGRESS;
+          //check if this is a general call packet
+          if(UCB0STATW&UCGC){
+            //set that general call address was received 
+            I2C_rx_buf[I2C_rx_in].flags=CMD_PARSE_GC_ADDR;
+          }else{
+            //received address is not known yet
+            I2C_rx_buf[I2C_rx_in].flags=0;
+          }
         }
       }
     break;
@@ -104,7 +125,7 @@ void bus_I2C_isr(void) __ctl_interrupt[USCI_B0_VECTOR]{
       if(UCB0CTLW0&UCMST){
         //check if mutex release event should be sent
         if(!arcBus_stat.i2c_stat.mutex_release){
-          //set saved event
+          //set saved event and clear TX self event
           ctl_events_set_clear(&arcBus_stat.events,end_e,0);
         }else{
           //set event
@@ -123,6 +144,8 @@ void bus_I2C_isr(void) __ctl_interrupt[USCI_B0_VECTOR]{
         if(arcBus_stat.i2c_stat.mode==BUS_I2C_RX){
           //set packet length
           I2C_rx_buf[I2C_rx_in].len=arcBus_stat.i2c_stat.rx.idx;
+          //zero rx index
+          arcBus_stat.i2c_stat.rx.idx=0;
           //set buffer status to complete
           I2C_rx_buf[I2C_rx_in].stat=I2C_PACKET_STAT_COMPLETE;
           //increment index
@@ -145,46 +168,113 @@ void bus_I2C_isr(void) __ctl_interrupt[USCI_B0_VECTOR]{
           ctl_events_set_clear(&arcBus_stat.events,0,BUS_EV_I2C_MASTER|BUS_EV_I2C_MASTER_START);
           //set master mode
           UCB0CTLW0|=UCMST;
+          //clear saved event
+          end_e=0; 
+          //generate start condition
+          UCB0CTL1|=UCTXSTT;
         }
       }
     break;
-    case USCI_I2C_UCRXIFG3:    //Slave 3 RXIFG
-      //receive data
-      arcBus_stat.i2c_stat.rx.ptr[arcBus_stat.i2c_stat.rx.idx++]=UCB0RXBUF;
+    case USCI_I2C_UCRXIFG3:    //Slave3 RXIFG
+      //check if master transaction is in progress
+      if(arcBus_stat.i2c_stat.tx.stat==BUS_I2C_MASTER_IN_PROGRESS){
+        //master transaction, nack as a slave
+        UCB0CTL1|=UCTXNACK;
+        //set send to self event
+        end_e=BUS_EV_I2C_TX_SELF;
+        break;
+      }  
       //check buffer size
       if(arcBus_stat.i2c_stat.rx.idx>=sizeof(I2C_rx_buf[0].dat)){
         //receive buffer is full, send NACK
         UCB0CTL1|=UCTXNACK;
+      }else{
+        //receive data
+        arcBus_stat.i2c_stat.rx.ptr[arcBus_stat.i2c_stat.rx.idx++]=UCB0RXBUF;
+      }
+      //check if flags have been set
+      if(I2C_rx_buf[I2C_rx_in].flags==0){
+        //set flag for addr3
+        I2C_rx_buf[I2C_rx_in].flags=CMD_PARSE_ADDR3;
       }
     break;
     case USCI_I2C_UCTXIFG3:    //Slave 3 TXIFG
         //no data to send so send dummy data
         UCB0TXBUF=BUS_I2C_DUMMY_DATA;
     break;
-    break;
     case USCI_I2C_UCRXIFG2:    //Slave 2 RXIFG
-      //receive data
-      arcBus_stat.i2c_stat.rx.ptr[arcBus_stat.i2c_stat.rx.idx++]=UCB0RXBUF;
+      //check if master transaction is in progress
+      if(arcBus_stat.i2c_stat.tx.stat==BUS_I2C_MASTER_IN_PROGRESS){
+        //master transaction, nack as a slave
+        UCB0CTL1|=UCTXNACK;
+        //set send to self event
+        end_e=BUS_EV_I2C_TX_SELF;
+        break;
+      }  
       //check buffer size
       if(arcBus_stat.i2c_stat.rx.idx>=sizeof(I2C_rx_buf[0].dat)){
         //receive buffer is full, send NACK
         UCB0CTL1|=UCTXNACK;
+      }else{
+        //receive data
+        arcBus_stat.i2c_stat.rx.ptr[arcBus_stat.i2c_stat.rx.idx++]=UCB0RXBUF;
+      }
+      //check if flags have been set
+      if(I2C_rx_buf[I2C_rx_in].flags==0){
+        //set flag for addr2
+        I2C_rx_buf[I2C_rx_in].flags=CMD_PARSE_ADDR2;
       }
     break;
     case USCI_I2C_UCTXIFG2:    //Slave 2 TXIFG
-    break;
+        //no data to send so send dummy data
+        UCB0TXBUF=BUS_I2C_DUMMY_DATA;
     break;
     case USCI_I2C_UCRXIFG1:    //Slave 1 RXIFG
+      //check if master transaction is in progress
+      if(arcBus_stat.i2c_stat.tx.stat==BUS_I2C_MASTER_IN_PROGRESS){
+        //master transaction, nack as a slave
+        UCB0CTL1|=UCTXNACK;
+        //set send to self event
+        end_e=BUS_EV_I2C_TX_SELF;
+        break;
+      }  
+      //check buffer size
+      if(arcBus_stat.i2c_stat.rx.idx>=sizeof(I2C_rx_buf[0].dat)){
+        //receive buffer is full, send NACK
+        UCB0CTL1|=UCTXNACK;
+      }else{
+        //receive data
+        arcBus_stat.i2c_stat.rx.ptr[arcBus_stat.i2c_stat.rx.idx++]=UCB0RXBUF;
+      }
+      //check if flags have been set
+      if(I2C_rx_buf[I2C_rx_in].flags==0){
+        //set flag for addr1
+        I2C_rx_buf[I2C_rx_in].flags=CMD_PARSE_ADDR1;
+      }
     break;
     case USCI_I2C_UCTXIFG1:    //Slave 1 TXIFG
     break;
     case USCI_I2C_UCRXIFG0:    //Data receive in master mode and Slave 0 RXIFG
-      //receive data
-      arcBus_stat.i2c_stat.rx.ptr[arcBus_stat.i2c_stat.rx.idx++]=UCB0RXBUF;
+      //check if master transaction is in progress
+      if(arcBus_stat.i2c_stat.tx.stat==BUS_I2C_MASTER_IN_PROGRESS){
+        //master transaction, nack as a slave
+        UCB0CTL1|=UCTXNACK;
+        //set send to self event
+        end_e=BUS_EV_I2C_TX_SELF;
+        break;
+      }  
       //check buffer size
       if(arcBus_stat.i2c_stat.rx.idx>=sizeof(I2C_rx_buf[0].dat)){
         //receive buffer is full, send NACK
         UCB0CTL1|=UCTXNACK;
+      }else{
+        //receive data
+        arcBus_stat.i2c_stat.rx.ptr[arcBus_stat.i2c_stat.rx.idx++]=UCB0RXBUF;
+      }
+      //check if flags have been set
+      if(I2C_rx_buf[I2C_rx_in].flags==0){
+        //set flag for addr0
+        I2C_rx_buf[I2C_rx_in].flags=CMD_PARSE_ADDR0;
       }
     break;
     case USCI_I2C_UCTXIFG0:    //Data transmit in master mode and Slave 0 TXIFG
@@ -320,6 +410,31 @@ void task_tick(void) __ctl_interrupt[TIMER1_A0_VECTOR]{
     }
   }
   BUS_timer_timeout_check();
+}
+
+//================[I2C timeout interrupt]=========================
+void bus_resend(void) __ctl_interrupt[TIMER1_A1_VECTOR]{
+  switch(TA1IV){
+    case TA1IV_TA1CCR1:
+      //check master status to see if a command is pending
+      if(arcBus_stat.i2c_stat.tx.stat==BUS_I2C_MASTER_PENDING){          
+        //transmision interrupted, start again
+        //set to transmit mode
+        UCB0CTLW0|=UCTR;
+        //clear master I2C flags
+        ctl_events_set_clear(&arcBus_stat.events,0,BUS_EV_I2C_MASTER|BUS_EV_I2C_MASTER_START);
+        //set master mode
+        UCB0CTLW0|=UCMST;
+        //generate start condition
+        UCB0CTL1|=UCTXSTT;
+        //set next timeout
+        TA1CCR1+=BUS_I2C_WAIT_TIME;
+      }else{
+        //disable interrupts
+        TA1CCTL1&=~CCIE;
+      }
+    break;
+  }
 }
 
 //================[System NMI Interrupt]=========================

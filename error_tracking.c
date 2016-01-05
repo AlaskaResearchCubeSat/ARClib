@@ -115,7 +115,7 @@ void startup_error_check(void){
     case SYSRSTIV_SVSH:        //SVSH
       saved_error.level=BUS_ERR_LEV_ROUTINE_RST;
       saved_error.source=BUS_ERR_SRC_STARTUP;
-      saved_error.err=STARTUP_ERR_RESET_SVSL;
+      saved_error.err=STARTUP_ERR_RESET_SVSH;
       saved_error.argument=0;
       //set magic value
       saved_error.magic=RESET_MAGIC_POST;
@@ -140,7 +140,7 @@ void startup_error_check(void){
     case SYSRSTIV_WDTTO:       //WDT Time out
       saved_error.level=ERR_LEV_ERROR;
       saved_error.source=BUS_ERR_SRC_STARTUP;
-      saved_error.err=STARTUP_ERR_RESET_SVSL;
+      saved_error.err=STARTUP_ERR_WDT_RESET;
       saved_error.argument=0;
       //set magic value
       saved_error.magic=RESET_MAGIC_POST;
