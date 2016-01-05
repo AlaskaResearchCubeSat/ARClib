@@ -14,7 +14,7 @@ try:
 	if sys.platform.startswith(('win','cygwin')):
 		git_str="C:\\Program Files (x86)\\Git\\bin\\git.exe"
 	#call git describe to get version strin
-	p=subprocess.Popen([git_str,"describe","--dirty=-dty","--always","--match=v*.*"],stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+	p=subprocess.Popen([git_str,"describe","--dirty=-dty","--always","--match=v*.*"],stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
 	#wait for command to complete
 	p.wait()
 	#get data from command
