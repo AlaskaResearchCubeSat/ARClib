@@ -267,6 +267,10 @@ void reset_por(unsigned char level,unsigned short source,int err, unsigned short
 
 //get error string for bus errors
 const char *BUS_error_str(int error);
+//get string for command name
+const char* BUS_cmdtostr(unsigned char cmd);
+//get error string for command responses
+const char* BUS_cmd_resptostr(unsigned char resp);
 
 //stop global interrupts from happening 
 int BUS_stop_interrupts(void);
