@@ -187,6 +187,9 @@ void I2C_reset(void){
 //task structure idle task
 extern CTL_TASK_t idle_task;
 
+//mutex for crc
+extern CTL_MUTEX_t crc_mutex;
+
 void initARCbus(unsigned char addr){
   int i;
   //kick watchdog
@@ -198,6 +201,8 @@ void initARCbus(unsigned char addr){
   ctl_events_init(&DMA_events,0);
   //I2C mutex init
   ctl_mutex_init(&arcBus_stat.i2c_stat.mutex);
+  //crc mutex init
+  ctl_mutex_init(&crc_mutex);
   //set I2C to idle mode
   arcBus_stat.i2c_stat.mode=BUS_I2C_IDLE;
   //set I2C master to idle mode

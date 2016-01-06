@@ -2,148 +2,6 @@
 #include <Error.h>
 #include "ARCbus_internal.h"
 
-const char* cmdtostr(unsigned char cmd){
-  switch(cmd){
-    case CMD_NACK:
-      return "Nack";
-    case CMD_SPI_COMPLETE:
-      return "SPI Complete";
-    case CMD_SPI_RDY:
-      return "SPI Ready";
-    case CMD_SUB_ON:
-      return "Subsystem On";
-    case CMD_SUB_OFF:
-      return "Subsystem Off";
-    case CMD_SUB_POWERUP:
-      return "Subsystem Powerup";
-    case CMD_RESET:
-      return "Reset";
-    case CMD_SUB_STAT:
-      return "Subsystem Stat";
-    case CMD_SPI_CLEAR:
-      return "SPI Clear";
-    case CMD_EPS_STAT:
-      return "EPS Status";
-    case CMD_LEDL_STAT:
-      return "LEDL Status";
-    case CMD_ACDS_STAT:
-      return "ACDS Status";
-    case CMD_COMM_STAT:
-      return "COMM Status";
-    case CMD_IMG_STAT:
-      return "IMG Status";
-    case CMD_ASYNC_SETUP:
-      return "Async Setup";
-    case CMD_ASYNC_DAT:
-      return "Async Data";
-    case CMD_SPI_DATA_ACTION:
-      return "SPI Data Action";
-    case CMD_PING:
-        return "CMD_PING";
-    case CMD_MAG_DATA:
-        return "CMD_MAG_DATA";
-    case CMD_MAG_SAMPLE_CONFIG:
-        return "CMD_MAG_SAMPLE_CONFIG";
-    case CMD_ERR_REQ:
-        return "CMD_ERR_REQ";
-    case CMD_IMG_READ_PIC:
-        return "CMD_IMG_READ_PIC";
-    case CMD_IMG_TAKE_TIMED_PIC:
-        return "CMD_IMG_TAKE_TIMED_PIC";
-    case CMD_IMG_TAKE_PIC_NOW:
-        return "CMD_IMG_TAKE_PIC_NOW";
-    case CMD_GS_DATA:
-        return "CMD_GS_DATA";
-    case CMD_TEST_MODE:
-        return "CMD_TEST_MODE";
-    case CMD_BEACON_ON:
-        return "CMD_BEACON_ON";
-    case CMD_ACDS_CONFIG:
-        return "CMD_ACDS_CONFIG";
-    case CMD_IMG_CLEARPIC:
-        return "CMD_IMG_CLEARPIC";
-    case CMD_LEDL_READ_BLOCK:
-        return "CMD_LEDL_READ_BLOCK";
-    case CMD_ACDS_READ_BLOCK:
-        return "CMD_ACDS_READ_BLOCK";
-    case CMD_EPS_SEND:
-        return "CMD_EPS_SEND";
-    case CMD_LEDL_BLOW_FUSE:
-        return "CMD_LEDL_BLOW_FUSE";
-    case CMD_SPI_ABORT:
-        return "CMD_SPI_ABORT";
-    default:
-      return "Unknown";
-  }
-}
-
-const char* cmd_resptostr(unsigned char resp){
-  switch(resp){
-    case RET_SUCCESS:
-      return "Success";
-    case ERR_PK_LEN:
-      return "Error Invalid Packet Length";
-    case ERR_UNKNOWN_CMD:
-      return "Error Unknown Command";
-    case ERR_SPI_LEN:
-      return "Error SPI Block Length";
-    case ERR_BAD_PK:
-      return "Error Bad Packet";
-    case ERR_SPI_BUSY:
-      return "Error SPI busy";
-    case ERR_BUFFER_BUSY:
-      return "Error Buffer Busy";
-    case ERR_ILLEAGLE_COMMAND:
-      return "Error Illeagle Command";
-    case ERR_SPI_NOT_RUNNING:
-      return "Error SPI not running";
-    case ERR_SPI_WRONG_ADDR:
-      return "Error SPI wrong address";
-    case ERR_PK_BAD_PARM:
-      return "Error Bad parameter";
-    default:
-      return "Unknown";
-  }
-}
-
-const char* bus_flags_tostr(unsigned char flags){
-  switch(flags){
-    case BUS_FLAGS_INVALID_ADDR:
-      return "BUS_FLAGS_INVALID_ADDR";
-    case BUS_FLAGS_ADDR_DISABLED:
-      return "BUS_FLAGS_ADDR_DISABLED";
-    default:
-      return "Unknown";
-  }
-}
-
-const char * bus_version_err_tostr(signed char resp){
-  switch(resp){
-    case BUS_VER_SAME:
-      return "BUS_VER_SAME";
-    case BUS_VER_INVALID_MAJOR_REV:
-      return "BUS_VER_INVALID_MAJOR_REV";
-    case BUS_VER_MAJOR_REV_OLDER:
-      return "BUS_VER_MAJOR_REV_OLDER";
-    case BUS_VER_MAJOR_REV_NEWER:
-      return "BUS_VER_MAJOR_REV_NEWER";
-    case BUS_VER_INVALID_MINOR_REV:
-      return "BUS_VER_INVALID_MINOR_REV";
-    case BUS_VER_MINOR_REV_OLDER:
-      return "BUS_VER_MINOR_REV_OLDER";
-    case BUS_VER_MINOR_REV_NEWER:
-      return "BUS_VER_MINOR_REV_NEWER";
-    case BUS_VER_DIRTY_REV:
-      return "BUS_VER_DIRTY_REV";
-    case BUS_VER_HASH_MISMATCH:
-      return "BUS_VER_HASH_MISMATCH";
-    case BUS_VER_COMMIT_MISMATCH:
-      return "BUS_VER_COMMIT_MISMATCH";
-    default:
-      return "Unknown";
-  }
-}
-
 //decode errors from ACDS system
 char *err_decode_arcbus(char buf[150], unsigned short source,int err, unsigned short argument){
   switch(source){
@@ -171,13 +29,13 @@ char *err_decode_arcbus(char buf[150], unsigned short source,int err, unsigned s
         case MAIN_LOOP_ERR_RESET:
           return "ARCbus Main Loop : Commanded Reset";
         case MAIN_LOOP_ERR_CMD_CRC:
-          sprintf(buf,"ARCbus Main Loop : bad CRC for command %s (%i)",cmdtostr(argument),argument);
+          sprintf(buf,"ARCbus Main Loop : bad CRC for command %s (%i)",BUS_cmdtostr(argument),argument);
         return buf;
         case MAIN_LOOP_ERR_BAD_CMD:
-          sprintf(buf,"ARCbus Main Loop : failed to parse command %s (%i), resp \"%s\" (%i)",cmdtostr(argument&0xFF),argument&0xFF,cmd_resptostr(argument>>8),argument>>8);
+          sprintf(buf,"ARCbus Main Loop : failed to parse command %s (%i), resp \"%s\" (%i)",BUS_cmdtostr(argument&0xFF),argument&0xFF,BUS_cmd_resptostr(argument>>8),argument>>8);
         return buf;
         case MAIN_LOOP_ERR_NACK_REC:
-          sprintf(buf,"ARCbus Main Loop : NACK for command %s (%i), reason %i",cmdtostr(argument>>8),argument>>8,argument&0xFF);
+          sprintf(buf,"ARCbus Main Loop : NACK for command %s (%i), reason %i",BUS_cmdtostr(argument>>8),argument>>8,argument&0xFF);
         return buf;
         case MAIN_LOOP_ERR_SPI_COMPLETE_FAIL:
           sprintf(buf,"ARCbus Main Loop : Failed to send SPI complete command : %s",BUS_error_str(argument));

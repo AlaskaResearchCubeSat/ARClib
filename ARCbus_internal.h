@@ -177,4 +177,9 @@
   //read timer while it is running 
   short readTA1(void);
 
+  //return error string for bus flags errors
+  const char* bus_flags_tostr(unsigned char flags);
+  //return error string for version errors
+  const char * bus_version_err_tostr(signed char resp);
+
 #endif
