@@ -49,6 +49,8 @@ if rc==0:
 			else:
 				#padd minor version to 4 digits
 				minor+=(minor_ver_len-mlen)*'0'
+				#strip leading zeros
+				minor=minor[:-1].lstrip('0')+minor[-1]
 		except:
 			major='BUS_INVALID_MAJOR_VER'
 			minor='BUS_INVALID_MINOR_VER'
