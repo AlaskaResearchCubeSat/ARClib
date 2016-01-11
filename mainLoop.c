@@ -39,6 +39,15 @@ static struct{
     unsigned char dest;
 }err_req;
 
+//struct for NACK info
+//This is used to setup a NACK packet in the bus task and have it sent by the bus helper task
+//no mutex is used but address is used to indicate busy status. This only works if no other threads use this structure
+static struct{
+  unsigned char addr;
+  unsigned char dat[BUS_I2C_HDR_LEN+2+BUS_I2C_CRC_LEN];
+}nack_info;
+
+
 //power state of subsystem
 unsigned short powerState=SUB_PWR_OFF;
 
@@ -591,14 +600,21 @@ static void ARC_bus_run(void *p) __toplevel{
             report_error(ERR_LEV_ERROR,BUS_ERR_SRC_MAIN_LOOP,MAIN_LOOP_ERR_BAD_CMD,(((unsigned short)resp)<<8)|((unsigned short)cmd));
             //check packet to see if NACK should be sent
             if(I2C_rx_buf[I2C_rx_out].dat[0]&CMD_TX_NACK){
-              //setup command
-              ptr=BUS_cmd_init(pk,CMD_NACK);
-              //sent command
-              *ptr++=cmd;
-              //send NACK reason
-              *ptr++=resp;
-              //send packet
-              BUS_cmd_tx(addr,pk,2,0,BUS_I2C_SEND_BGND);
+              //check NACK address to see if a nack can be sent
+              if(nack_info.addr==0){
+                //set address
+                nack_info.addr=addr;
+                //setup command
+                ptr=BUS_cmd_init(nack_info.dat,CMD_NACK);
+                //sent command
+                *ptr++=cmd;
+                //send NACK reason
+                *ptr++=resp;
+                //tell helper thread to send packet
+                ctl_events_set_clear(&BUS_helper_events,BUS_HELPER_EV_NACK,0);
+              }else{
+                //TODO: report error
+              }
             }
           }
         }else{
@@ -606,14 +622,21 @@ static void ARC_bus_run(void *p) __toplevel{
           report_error(ERR_LEV_ERROR,BUS_ERR_SRC_MAIN_LOOP,MAIN_LOOP_ERR_CMD_CRC,cmd);
           //if command was not a NACK command send NACK
           if(cmd!=CMD_NACK){
-            //setup command
-            ptr=BUS_cmd_init(pk,CMD_NACK);
-            //sent command
-            *ptr++=cmd;
-            //send NACK reason
-            *ptr++=ERR_BAD_CRC;
-            //send packet
-            BUS_cmd_tx(addr,pk,2,0,BUS_I2C_SEND_BGND);
+            //check NACK address to see if a nack can be sent
+            if(nack_info.addr==0){
+              //set address
+              nack_info.addr=addr;
+              //setup command
+              ptr=BUS_cmd_init(nack_info.dat,CMD_NACK);
+              //sent command
+              *ptr++=cmd;
+              //send NACK reason
+              *ptr++=ERR_BAD_CRC;
+              //tell helper thread to send packet
+              ctl_events_set_clear(&BUS_helper_events,BUS_HELPER_EV_NACK,0);
+            }else{
+              //TODO: report error
+            }
           }
         }
         //done with packet set status
@@ -778,6 +801,21 @@ static void ARC_bus_helper(void *p) __toplevel{
           //report error
           report_error(ERR_LEV_ERROR,BUS_ERR_SRC_ERR_REQ,ERR_REQ_ERR_MUTEX_TIMEOUT,0);
         }
+    }
+    if(e&BUS_HELPER_EV_NACK){
+      //double check address
+      if(nack_info.addr){
+        //send the command
+        resp=BUS_cmd_tx(nack_info.addr,nack_info.dat,2,0,BUS_I2C_SEND_FOREGROUND);
+        //check response
+        if(resp!=RET_SUCCESS){
+          //TODO: report error
+        }
+        //clear the address
+        nack_info.addr=0;
+      }else{
+        //TODO: report error
+      }
     }
   }
 }
