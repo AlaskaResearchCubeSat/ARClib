@@ -613,7 +613,8 @@ static void ARC_bus_run(void *p) __toplevel{
                 //tell helper thread to send packet
                 ctl_events_set_clear(&BUS_helper_events,BUS_HELPER_EV_NACK,0);
               }else{
-                //TODO: report error
+                //can't send nack, report error
+                report_error(ERR_LEV_ERROR,BUS_ERR_SRC_MAIN_LOOP,MAIN_LOOP_ERR_NACK_BUSY,(((unsigned short)addr)<<8)|resp);
               }
             }
           }
@@ -635,7 +636,8 @@ static void ARC_bus_run(void *p) __toplevel{
               //tell helper thread to send packet
               ctl_events_set_clear(&BUS_helper_events,BUS_HELPER_EV_NACK,0);
             }else{
-              //TODO: report error
+              //can't send nack, report error
+              report_error(ERR_LEV_ERROR,BUS_ERR_SRC_MAIN_LOOP,MAIN_LOOP_ERR_NACK_BUSY,(((unsigned short)addr)<<8)|ERR_BAD_CRC);
             }
           }
         }
@@ -809,12 +811,14 @@ static void ARC_bus_helper(void *p) __toplevel{
         resp=BUS_cmd_tx(nack_info.addr,nack_info.dat,2,0,BUS_I2C_SEND_FOREGROUND);
         //check response
         if(resp!=RET_SUCCESS){
-          //TODO: report error
+          //error sending packet, report error
+          report_error(ERR_LEV_ERROR,BUS_ERR_SRC_MAIN_LOOP,MAIN_LOOP_ERR_TX_NACK_FAIL,resp);
         }
         //clear the address
         nack_info.addr=0;
       }else{
-        //TODO: report error
+        //no nack packet? report error
+        report_error(ERR_LEV_ERROR,BUS_ERR_SRC_MAIN_LOOP,MAIN_LOOP_ERR_UNEXPECTED_NACK_EV,0);
       }
     }
   }

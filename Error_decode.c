@@ -66,6 +66,14 @@ char *err_decode_arcbus(char buf[150], unsigned short source,int err, unsigned s
         case MAIN_LOOP_ERR_SUBSYSTEM_VERSION_MISMATCH:
           sprintf(buf,"ARCbus Main Loop : Version mismatch for address 0x%02X : \"%s\" (%i)",(argument&0xFF),bus_version_err_tostr(argument>>8),(signed char)(argument>>8));
           return buf;
+        case MAIN_LOOP_ERR_NACK_BUSY:
+          sprintf(buf,"ARCbus Main Loop : NACK is busy failed to send NACK to 0x%02X : %s (%i)",(unsigned char)(argument>>8),BUS_cmd_resptostr(argument&0xFF),(argument&0xFF));
+          return buf;
+        case MAIN_LOOP_ERR_TX_NACK_FAIL:
+          sprintf(buf,"ARCbus Main Loop : Failed to transmit NACK : %s (%i)",BUS_error_str(argument),argument);
+          return buf;
+        case MAIN_LOOP_ERR_UNEXPECTED_NACK_EV:
+          return "ARCbus Main Loop : Unpected Tx NACK event";
       }
     break; 
     case BUS_ERR_SRC_STARTUP:
