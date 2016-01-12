@@ -123,16 +123,8 @@ void bus_I2C_isr(void) __ctl_interrupt[USCI_B0_VECTOR]{
     case USCI_I2C_UCSTPIFG:    //Stop condition received
       //check if we are master
       if(UCB0CTLW0&UCMST){
-        //check if mutex release event should be sent
-        if(!arcBus_stat.i2c_stat.mutex_release){
-          //set saved event and clear TX self event
-          ctl_events_set_clear(&arcBus_stat.events,end_e,0);
-        }else{
-          //set event
-          ctl_events_set_clear(&BUS_INT_events,BUS_INT_EV_RELEASE_MUTEX,0);
-          //clear flag
-          arcBus_stat.i2c_stat.mutex_release=0;
-        }
+        //set saved event and clear TX self event
+        ctl_events_set_clear(&arcBus_stat.events,end_e,0);
         //clear saved event
         end_e=0;
         //set state to idle
@@ -298,11 +290,8 @@ void bus_I2C_isr(void) __ctl_interrupt[USCI_B0_VECTOR]{
         }else{//Master Mode
           //generate stop condition
           UCB0CTL1|=UCTXSTP;
-          //if running in background a diffrent event must be set to release the mutex
-          if(!arcBus_stat.i2c_stat.mutex_release){
-            //set end event
-            end_e=BUS_EV_I2C_COMPLETE;
-          }
+          //set end event
+          end_e=BUS_EV_I2C_COMPLETE;
           //set state to idle
           arcBus_stat.i2c_stat.mode=BUS_I2C_IDLE;
         }

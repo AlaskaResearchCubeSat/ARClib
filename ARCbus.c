@@ -286,11 +286,10 @@ static int BUS_I2C_err_track(int error){
 }
 
 //send command
-int BUS_cmd_tx(unsigned char addr,void *buff,unsigned short len,unsigned short flags,short bgnd){
+int BUS_cmd_tx(unsigned char addr,void *buff,unsigned short len,unsigned short flags){
   unsigned int e;
   short ret;
   int i;
-  int mutex_release;
   unsigned char resp[2];
   //check address
   if((ret=addr_chk(addr))!=RET_SUCCESS){
@@ -319,31 +318,9 @@ int BUS_cmd_tx(unsigned char addr,void *buff,unsigned short len,unsigned short f
   if(len==0){
     return ERR_BAD_LEN;
   }
-  //if running in the background check to see that we are the ARCbus task
-  if(bgnd){
-    if(ctl_task_executing!=&ARC_bus_task){
-      //invalid argument
-      return ERR_INVALID_ARGUMENT;
-    }
-    //release mutex after complete
-    mutex_release=1;
-  }else{
-    //don't release mutex after complete
-    mutex_release=0;
-  }
   //wait for the bus to become free
   if(BUS_I2C_lock()){
     //I2C bus is in use
-    return ERR_BUSY;
-  }
-  //only change mutex_relase in arcBus structure after lock is obtained
-  arcBus_stat.i2c_stat.mutex_release=mutex_release;
-  //make sure that we are not calling while running in the background
-  if(ctl_task_executing!=&ARC_bus_task && arcBus_stat.i2c_stat.mutex.lock_count!=1){
-    //only allow function to be entered once at a time
-    //release I2C bus
-    BUS_I2C_release();
-    //TODO : perhaps provide a better error here
     return ERR_BUSY;
   }
   //Setup for I2C transaction  
@@ -366,11 +343,6 @@ int BUS_cmd_tx(unsigned char addr,void *buff,unsigned short len,unsigned short f
   //UCB0CTLW0|=UCMST|UCTR;
   //generate start condition
   UCB0CTL1|=UCTXSTT;
-  //if transmitting in the background, return
-  if(bgnd){
-    //return success
-    return RET_SUCCESS;
-  }
   //wait for packet to start
   e=ctl_events_wait(CTL_EVENT_WAIT_ANY_EVENTS_WITH_AUTO_CLEAR,&arcBus_stat.events,BUS_EV_I2C_MASTER_START,CTL_TIMEOUT_DELAY,50);
   //check to see if there was a problem
@@ -517,7 +489,7 @@ int BUS_SPI_txrx(unsigned char addr,void *tx,void *rx,unsigned short len){
   //then send LSB
   ptr[1]=len;
   //send command
-  resp=BUS_cmd_tx(addr,buf,2,BUS_CMD_FL_NACK,BUS_I2C_SEND_FOREGROUND);
+  resp=BUS_cmd_tx(addr,buf,2,BUS_CMD_FL_NACK);
   //check if sent correctly
   if(resp!=RET_SUCCESS){
     //disable DMA
@@ -598,7 +570,7 @@ int BUS_SPI_txrx(unsigned char addr,void *tx,void *rx,unsigned short len){
   }else{
     //timeout occurred, send SPI abort packet
     ptr=BUS_cmd_init(buf,CMD_SPI_ABORT);
-    resp=BUS_cmd_tx(addr,buf,0,BUS_CMD_FL_NACK,BUS_I2C_SEND_FOREGROUND);
+    resp=BUS_cmd_tx(addr,buf,0,BUS_CMD_FL_NACK);
     //Return error, timeout occurred
     return ERR_TIMEOUT;
   }

@@ -693,7 +693,7 @@ static void ARC_bus_helper(void *p) __toplevel{
     //write version into string
     len=strlcpy((char*)ptr,ARClib_vstruct.hash,BUS_VERSION_HASH_LEN)+sizeof(BUS_VERSION);
     //send command
-    resp=BUS_cmd_tx(BUS_ADDR_CDH,pk,len,0,BUS_I2C_SEND_FOREGROUND);
+    resp=BUS_cmd_tx(BUS_ADDR_CDH,pk,len,0);
       //check for failed send
       if(resp!=RET_SUCCESS){
         //give a warning
@@ -701,7 +701,7 @@ static void ARC_bus_helper(void *p) __toplevel{
         //wait a bit
         ctl_timeout_wait(ctl_get_current_time()+30);
         //resend
-        resp=BUS_cmd_tx(BUS_ADDR_CDH,pk,len,0,BUS_I2C_SEND_FOREGROUND);
+        resp=BUS_cmd_tx(BUS_ADDR_CDH,pk,len,0);
         //check for success
         if(resp!=RET_SUCCESS){
           //Failed
@@ -723,10 +723,10 @@ static void ARC_bus_helper(void *p) __toplevel{
       //send return to indicate success
       *ptr=arcBus_stat.spi_stat.nack;
       //send data
-      resp=BUS_cmd_tx(SPI_addr,pk,1,0,BUS_I2C_SEND_FOREGROUND);
+      resp=BUS_cmd_tx(SPI_addr,pk,1,0);
       //check if command was successful and try again if it failed
       if(resp!=RET_SUCCESS){
-        resp=BUS_cmd_tx(SPI_addr,pk,1,0,BUS_I2C_SEND_FOREGROUND);
+        resp=BUS_cmd_tx(SPI_addr,pk,1,0);
       }
       //check if command sent successfully
       if(resp!=RET_SUCCESS){
@@ -739,10 +739,10 @@ static void ARC_bus_helper(void *p) __toplevel{
     if(e&BUS_HELPER_EV_SPI_CLEAR_CMD){
       //done with SPI send command
       BUS_cmd_init(pk,CMD_SPI_CLEAR);
-      resp=BUS_cmd_tx(BUS_ADDR_CDH,pk,0,0,BUS_I2C_SEND_FOREGROUND);
+      resp=BUS_cmd_tx(BUS_ADDR_CDH,pk,0,0);
       //check if command was successful and try again if it failed
       if(resp!=RET_SUCCESS){
-        resp=BUS_cmd_tx(BUS_ADDR_CDH,pk,0,0,BUS_I2C_SEND_FOREGROUND);
+        resp=BUS_cmd_tx(BUS_ADDR_CDH,pk,0,0);
       }
       //check if command sent successfully
       if(resp!=RET_SUCCESS){
@@ -808,7 +808,7 @@ static void ARC_bus_helper(void *p) __toplevel{
       //double check address
       if(nack_info.addr){
         //send the command
-        resp=BUS_cmd_tx(nack_info.addr,nack_info.dat,2,0,BUS_I2C_SEND_FOREGROUND);
+        resp=BUS_cmd_tx(nack_info.addr,nack_info.dat,2,0);
         //check response
         if(resp!=RET_SUCCESS){
           //error sending packet, report error

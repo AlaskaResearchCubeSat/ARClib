@@ -52,7 +52,7 @@ int async_open(unsigned char addr){
   //send close command
   *ptr=ASYNC_OPEN;
   //send command
-  resp=BUS_cmd_tx(addr,buff,1,0,BUS_I2C_SEND_FOREGROUND);
+  resp=BUS_cmd_tx(addr,buff,1,0);
   //check for errors
   if(resp==RET_SUCCESS){
     //no errors, set address
@@ -107,7 +107,7 @@ int async_close(void){
   *ptr=ASYNC_CLOSE;
   for(i=0;i<2;i++){
     //send command
-    resp=BUS_cmd_tx(async_addr,buff,1,0,BUS_I2C_SEND_FOREGROUND);
+    resp=BUS_cmd_tx(async_addr,buff,1,0);
     //check if command sent successfully
     if(resp==RET_SUCCESS){
       //clear address
@@ -165,7 +165,7 @@ int async_send_data(void){
     return RET_SUCCESS;
   }
   //send data
-  resp=BUS_cmd_tx(async_addr,buff,len,0,BUS_I2C_SEND_FOREGROUND);
+  resp=BUS_cmd_tx(async_addr,buff,len,0);
   if(resp!=RET_SUCCESS){
     //sending data failed, report error
     report_error(ERR_LEV_ERROR,BUS_ERR_SRC_ASYNC,ASYNC_ERR_DATA_FAIL,resp);

@@ -95,9 +95,6 @@ enum{BUS_CMD_FL_NACK=0x02};
 //Power states
 enum{SUB_PWR_OFF=0,SUB_PWR_ON};
 
-//used for BUS_cmd_tx
-enum{BUS_I2C_SEND_BGND=1,BUS_I2C_SEND_FOREGROUND=0};
-
 //I2C modes
 enum {BUS_I2C_IDLE=0,BUS_I2C_TX=1,BUS_I2C_RX};
 
@@ -144,7 +141,6 @@ typedef struct{
   }tx;
   unsigned short mode;
   CTL_MUTEX_t mutex;
-  short mutex_release;
 }BUS_I2C_STAT;
 
 //struct for SPI status
@@ -214,7 +210,7 @@ void mainLoop(void);
 void mainLoop_testing(void (*cb)(void));
 
 //send packet over the bus
-int BUS_cmd_tx(unsigned char addr,void *buff,unsigned short len,unsigned short flags,short bgnd);
+int BUS_cmd_tx(unsigned char addr,void *buff,unsigned short len,unsigned short flags);
 //Send data over SPI
 int BUS_SPI_txrx(unsigned char addr,void *tx,void *rx,unsigned short len);
 //Setup buffer for command 
