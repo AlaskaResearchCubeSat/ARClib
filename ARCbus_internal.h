@@ -81,7 +81,7 @@
   enum{I2C_PACKET_STAT_EMPTY,I2C_PACKET_STAT_IN_PROGRESS,I2C_PACKET_STAT_COMPLETE};
   
   //size of I2C packet queue
-  #define BUS_I2C_PACKET_QUEUE_LEN      5
+  #define BUS_I2C_PACKET_QUEUE_LEN      10
 
   //time to wait to retry an I2C packet in 32.768 kHz clocks
   #define BUS_I2C_WAIT_TIME             25          // (about 0.7 ms or about the length of a 4 byte packet at 50kb/s)
