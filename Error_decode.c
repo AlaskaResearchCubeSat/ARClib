@@ -3,7 +3,7 @@
 #include "ARCbus_internal.h"
 
 //decode errors from ACDS system
-char *err_decode_arcbus(char buf[150], unsigned short source,int err, unsigned short argument){
+const char *err_decode_arcbus(char buf[150], unsigned short source,int err, unsigned short argument){
   switch(source){
     case BUS_ERR_SRC_CTL:
       switch(err){

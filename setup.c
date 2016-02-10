@@ -114,6 +114,8 @@ void ARC_setup(void){
   //set timer to increment by 1
   ctl_time_increment=1;  
   
+  //setup error handler
+  err_register_handler(BUS_MIN_ERR,BUS_MAX_ERR,err_decode_arcbus,ERR_FLAGS_LIB);
 
   //init buffer
   BUS_init_buffer();

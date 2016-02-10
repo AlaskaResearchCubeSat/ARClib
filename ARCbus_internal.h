@@ -20,7 +20,10 @@
   
   //ARCbus error sources
   enum{BUS_ERR_SRC_CTL=ERR_SRC_ARCBUS,BUS_ERR_SRC_MAIN_LOOP,BUS_ERR_SRC_STARTUP,BUS_ERR_SRC_ASYNC,BUS_ERR_SRC_SETUP,BUS_ERR_SRC_ALARMS,BUS_ERR_SRC_ERR_REQ,BUS_ERR_SRC_I2C,
-      BUS_ERR_SRC_VERSION};
+      BUS_ERR_SRC_VERSION,BUS_NUM_ERR};
+
+  #define BUS_MAX_ERR       (BUS_NUM_ERR-1)
+  #define BUS_MIN_ERR       (ERR_SRC_ARCBUS)
   
   //error codes for CTL
   enum{CTL_ERR_HANDLER};
@@ -160,5 +163,8 @@
   const char* bus_flags_tostr(unsigned char flags);
   //return error string for version errors
   const char * bus_version_err_tostr(signed char resp);
+
+  //error decode function
+  const char *err_decode_arcbus(char buf[150], unsigned short source,int err, unsigned short argument);
 
 #endif
