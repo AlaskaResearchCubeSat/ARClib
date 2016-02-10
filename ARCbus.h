@@ -3,6 +3,9 @@
 
 #include <ctl.h>
 
+//Error source definitions
+enum{ERR_SRC_ARCBUS=0,ERR_SRC_SUBSYSTEM=50};
+
 //Macros for watchdog interaction
 #define WDT_KICK()        (WDTCTL=WDTPW|WDTCNTCL|WDTSSEL_1|WDTIS_3)
 //#define WDT_KICK          WDT_STOP
