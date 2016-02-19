@@ -3,9 +3,17 @@
 import subprocess
 import sys
 import traceback
+import argparse
 
 #length of minor version string in digits
 minor_ver_len=4
+
+parser = argparse.ArgumentParser(description='Generate Version information file from git describe')
+parser.add_argument('-p','--print',action='store_true',help='Print version instead of writing file')
+parser.add_argument('-o','--output',action='store',dest='fname',default='version.c',help='Output file to write version information to')
+				  
+#Parse command line arguments
+args = parser.parse_args()
 
 try:
 	#path to git
@@ -35,6 +43,12 @@ except Exception as e:
 if rc==0:
 	#get version
 	ver=out.decode("utf-8").strip()
+	#check if we are only printing
+	if args.print:
+		#print version
+		print(ver)
+		#exit
+		exit(0)
 	#split version
 	vers=ver.split('-')
 	#check for proper version string
@@ -76,7 +90,7 @@ if rc==0:
 	else:
 		vhash=""
 	#open output file
-	f=open("version.c","wt");
+	f=open(args.fname,"wt");
 	#write include line
 	f.write('#include "ARCbus.h"\n\n')
 	#write version string line
@@ -89,7 +103,7 @@ else:
 	#print error 
 	print(err,file=sys.stderr)
 	#open output file
-	f=open("version.c","wt");
+	f=open(args.fname,"wt");
 	#write include line
 	f.write('#include "ARCbus.h"\n\n')
 	#write warning line to indicate versioning problems
