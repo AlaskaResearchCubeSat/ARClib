@@ -312,4 +312,10 @@ unsigned char BUS_flags_to_addr(unsigned char flags);
 //find flags for address, address must be enabled
 unsigned char BUS_addr_to_flags(unsigned char addr);
 
+//timeout delay for time specified in milliseconds    
+void BUS_delay_msec(CTL_TIME_t timeout);
+
+//timeout delay for time specified in microseconds
+void BUS_delay_usec(CTL_TIME_t timeout);
+
 #endif

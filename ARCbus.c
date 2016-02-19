@@ -616,4 +616,29 @@ int BUS_build(void){
     return BUS_BUILD_SUBSYSTEM;
 #endif
 }
-    
+
+//timeout delay for time specified in milliseconds    
+void BUS_delay_msec(CTL_TIME_t timeout){
+  //TODO: calculate time in msec
+  //make sure timeout is greater than two
+  if(timeout<2){
+    //set timeout to minimum
+    timeout=2;
+  }
+  //wait for time to expire
+  ctl_timeout_wait(ctl_get_current_time()+timeout);
+}
+
+//timeout delay for time specified in microseconds
+void BUS_delay_usec(CTL_TIME_t timeout){
+  //calculate time in usec
+  timeout=(timeout+488)/977;
+  //make sure timeout is greater than two
+  if(timeout<2){
+    //set timeout to minimum
+    timeout=2;
+  }
+  //wait for time to expire
+  ctl_timeout_wait(ctl_get_current_time()+timeout);
+}
+ 
