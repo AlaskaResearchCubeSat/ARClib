@@ -7,6 +7,29 @@ import sys
 import time
 import re
 
+#copy file and preappend a line to it
+def preappend_copy(src,dst,line):
+	#check for directory destination
+	if os.path.isdir(dst):
+		#append file name
+		dst = os.path.join(dst,os.path.basename(src))
+	#open source file
+	with open(src, 'r') as sf:
+		#open destination file
+		with open(dst, 'w') as df:
+			#write preappend lines
+			df.write(line.rstrip('\r\n') + '\n')
+			#copy contents
+			while 1:
+				#read a chunk
+				buf=sf.read(16*1024)
+				#check if bytes were read
+				if not buf:
+					#if nothing read then done
+					break
+				#write chunk
+				df.write(buf)
+
 inputDir=os.path.dirname(os.path.realpath(sys.argv[0]))
 prefix=os.path.realpath(os.path.join(inputDir,"../../"))
 lib=os.path.join(prefix,"lib")
@@ -75,12 +98,27 @@ rc=subprocess.call([gitpath,"tag","--force","-m="+msg,tag])
 if rc!=0:
 	print("Error : could not tag export")
 	exit(rc)
-	
+
+#get version
+p=subprocess.Popen(['python',"version.py","--print"],stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE)	
+#wait for command to complete
+p.wait()
+#get data from command
+out,err=p.communicate()
+#get version
+ver=out.decode("utf-8").strip()
+#check returncode
+if p.returncode!=0:
+	print("Error : failed to get version string")
+	exit(rc)
+
+#generate message for first line of file
+file_msg="//"+msg+'\n// version : '+ver
 	
 for file in ("crc.h","ARCbus.h","DMA.h"):
     outpath=os.path.join(include,file)
     inpath=os.path.join(inputDir,file)
     print("Copying "+inpath+" to "+outpath)
-    shutil.copyfile(inpath,outpath)
+    preappend_copy(inpath,outpath,file_msg)
 
 print("Export Completed Successfully!");
