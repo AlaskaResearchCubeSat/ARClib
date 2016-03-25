@@ -47,10 +47,10 @@ basename="BUSlib"
 gitpath="C:\\Program Files (x86)\\Git\\bin\\git.exe"
 
 #check if there are uncommited changes
-rc=subprocess.call([gitpath,"diff-index","--quiet","HEAD"])
+rc=subprocess.call([gitpath,"-C",inputDir,"diff-index","--quiet","HEAD"])
 #check return code
 if rc!=0:
-	subprocess.call([gitpath,"status"])
+	subprocess.call([gitpath,"-C",inputDir,"status"])
 	print("Error : There are uncommitted changes. Commit or stash before exporting")
 	exit(rc)
 
@@ -104,9 +104,9 @@ if not args.headers:
 	#generate message
 	msg=time.strftime("Exported on %m/%d/%Y at %H:%M:%S",t);
 	#tag release
-	rc=subprocess.call([gitpath,"tag","--force","-m="+msg,tag])
+	rc=subprocess.call([gitpath,"-C",inputDir,"tag","--force","-m="+msg,tag])
 
-if rc!=0:
+	if rc!=0:
 		print("Error : could not tag export")
 		exit(rc)
 
