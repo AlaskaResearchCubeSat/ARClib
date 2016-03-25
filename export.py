@@ -47,10 +47,10 @@ basename="BUSlib"
 gitpath="C:\\Program Files (x86)\\Git\\bin\\git.exe"
 
 #check if there are uncommited changes
-rc=subprocess.call([gitpath,"diff-index","--quiet","HEAD"])
+rc=subprocess.call([gitpath,"-C",inputDir,"diff-index","--quiet","HEAD"])
 #check return code
 if rc!=0:
-	subprocess.call([gitpath,"status"])
+	subprocess.call([gitpath,"-C",inputDir,"status"])
 	print("Error : There are uncommitted changes. Commit or stash before exporting")
 	exit(rc)
 
@@ -84,7 +84,7 @@ if not args.headers:
 
 		#build using crossbuild
 		print("Building "+config);
-		rc=subprocess.call([crossbuild,'-config',config,basename+'.hzp'])
+		rc=subprocess.call([crossbuild,'-config',config,os.path.join(inputDir,basename+'.hzp')])
 		#check return code
 		if rc!=0:
 			print("Error : project did not build exiting")
@@ -107,14 +107,13 @@ msg=time.strftime("Exported on %m/%d/%Y at %H:%M:%S",t);
 #if only exporting headers skip taging
 if not args.headers:
 	#tag release
-	rc=subprocess.call([gitpath,"tag","--force","-m="+msg,tag])
-
-if rc!=0:
+	rc=subprocess.call([gitpath,"-C",inputDir,"tag","--force","-m="+msg,tag])
+	if rc!=0:
 		print("Error : could not tag export")
 		exit(rc)
 
 #get version
-p=subprocess.Popen(['python',"version.py","--print"],stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE)	
+p=subprocess.Popen(['python',os.path.join(inputDir,"version.py"),"--print"],stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE)	
 #wait for command to complete
 p.wait()
 #get data from command
