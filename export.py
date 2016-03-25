@@ -84,7 +84,7 @@ if not args.headers:
 
 		#build using crossbuild
 		print("Building "+config);
-		rc=subprocess.call([crossbuild,'-config',config,basename+'.hzp'])
+		rc=subprocess.call([crossbuild,'-config',config,os.path.join(inputDir,basename+'.hzp')])
 		#check return code
 		if rc!=0:
 			print("Error : project did not build exiting")
