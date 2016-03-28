@@ -4,9 +4,13 @@ import subprocess
 import sys
 import traceback
 import argparse
+import os
 
 #length of minor version string in digits
 minor_ver_len=4
+
+#get input dir
+inputDir=os.path.dirname(os.path.realpath(sys.argv[0]))
 
 parser = argparse.ArgumentParser(description='Generate Version information file from git describe')
 parser.add_argument('-p','--print',action='store_true',help='Print version instead of writing file')
@@ -22,7 +26,7 @@ try:
 	if sys.platform.startswith(('win','cygwin')):
 		git_str="C:\\Program Files (x86)\\Git\\bin\\git.exe"
 	#call git describe to get version strin
-	p=subprocess.Popen([git_str,"describe","--dirty=-dty","--always","--match=v*.*"],stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+	p=subprocess.Popen([git_str,"-C",inputDir,"describe","--dirty=-dty","--always","--match=v*.*"],stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
 	#wait for command to complete
 	p.wait()
 	#get data from command
