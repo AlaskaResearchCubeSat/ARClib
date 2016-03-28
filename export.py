@@ -123,7 +123,7 @@ ver=out.decode("utf-8").strip()
 #check returncode
 if p.returncode!=0:
 	print("Error : failed to get version string")
-	exit(rc)
+	exit(p.returncode)
 
 #generate message for first line of file
 file_msg="//"+msg+'\n// version : '+ver
