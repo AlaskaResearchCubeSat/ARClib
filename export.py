@@ -114,7 +114,7 @@ if not args.headers:
 		exit(rc)
 
 #get version
-p=subprocess.Popen(['python',"version.py","--print"],stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE)	
+p=subprocess.Popen(['python',os.path.join(inputDir,"version.py"),"--print"],stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE)	
 #wait for command to complete
 p.wait()
 #get data from command
