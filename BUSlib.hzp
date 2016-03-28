@@ -4,6 +4,7 @@
     <configuration
       Name="Common"
       Target="MSP430F6779A"
+      macros="ARC_prefix=Z:/ARC-2/ARC2-Software"
       batch_build_configurations="MSP430 Debug;MSP430 Debug CDH;MSP430 Release;MSP430 Release CDH"
       build_use_hardware_multiplier="32-Bit Multiplier"
       debug_threads_script="$(PackagesDir)/libraries/libctl/source/threads.js"
@@ -75,7 +76,7 @@
     Name="Common"
     Target="MSP430F6779A"
     build_use_hardware_multiplier="32-Bit Multiplier"
-    c_system_include_directories="$(StudioDir)/include;$(PackagesDir)/include;$(PackagesDir)/libraries/libctl/include/;Z:/Software/include/"
+    c_system_include_directories="$(StudioDir)/include;$(PackagesDir)/include;$(PackagesDir)/libraries/libctl/include/;$(ARC_prefix)/include/"
     linker_DebugIO_enabled="No"
     linker_memory_map_file="$(PackagesDir)/targets/msp430/MSP430F6779A.xml"
     msp430_debug_interface="JTAG"
