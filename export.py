@@ -96,13 +96,16 @@ if not args.headers:
 		print("Copying "+inpath+" to "+outpath)
 		shutil.copyfile(inpath,outpath)
 
-	#generate tag for export
-	#get time
-	t=time.localtime()
-	#generate tag name based on current date/time
-	tag=time.strftime("Export-%m-%d-%Y_%H%M%S",t);
-	#generate message
-	msg=time.strftime("Exported on %m/%d/%Y at %H:%M:%S",t);
+#generate tag for export
+#get time
+t=time.localtime()
+#generate tag name based on current date/time
+tag=time.strftime("Export-%m-%d-%Y_%H%M%S",t);
+#generate message
+msg=time.strftime("Exported on %m/%d/%Y at %H:%M:%S",t);
+
+#if only exporting headers skip taging
+if not args.headers:
 	#tag release
 	rc=subprocess.call([gitpath,"-C",inputDir,"tag","--force","-m="+msg,tag])
 
@@ -110,21 +113,21 @@ if not args.headers:
 		print("Error : could not tag export")
 		exit(rc)
 
-	#get version
-	p=subprocess.Popen(['python',"version.py","--print"],stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE)	
-	#wait for command to complete
-	p.wait()
-	#get data from command
-	out,err=p.communicate()
-	#get version
-	ver=out.decode("utf-8").strip()
-	#check returncode
-	if p.returncode!=0:
-		print("Error : failed to get version string")
-		exit(rc)
+#get version
+p=subprocess.Popen(['python',"version.py","--print"],stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE)	
+#wait for command to complete
+p.wait()
+#get data from command
+out,err=p.communicate()
+#get version
+ver=out.decode("utf-8").strip()
+#check returncode
+if p.returncode!=0:
+	print("Error : failed to get version string")
+	exit(rc)
 
-	#generate message for first line of file
-	file_msg="//"+msg+'\n// version : '+ver
+#generate message for first line of file
+file_msg="//"+msg+'\n// version : '+ver
 
 	
 for file in ("crc.h","ARCbus.h","DMA.h"):
