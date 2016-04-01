@@ -2,6 +2,7 @@
 #define __ARC_BUS_H
 
 #include <ctl.h>
+#include <msp430.h>
 
 //Error source definitions
 enum{ERR_SRC_ARCBUS=0,ERR_SRC_SUBSYSTEM=50};
@@ -93,7 +94,7 @@ enum{BUS_ADDR_LEDL=0x11,BUS_ADDR_ACDS=0x12,BUS_ADDR_COMM=0x13,BUS_ADDR_IMG=0x14,
 #define BUS_SPI_DUMMY_DATA  (0xFF)
 
 //flags for BUS_cmd_tx
-enum{BUS_CMD_FL_NACK=0x02};
+enum{BUS_CMD_FL_NACK=BIT1,BUS_CMD_FL_NO_SW_TX=BIT2};
 
 //Power states
 enum{SUB_PWR_OFF=0,SUB_PWR_ON};

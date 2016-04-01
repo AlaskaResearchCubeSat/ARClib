@@ -1,5 +1,6 @@
 #include <ctl.h>
 #include <msp430.h>
+#include <string.h>
 #include <stdlib.h>
 #include "timerA.h"
 #include "ARCbus.h"
@@ -317,6 +318,39 @@ int BUS_cmd_tx(unsigned char addr,void *buff,unsigned short len,unsigned short f
   //check for zero length
   if(len==0){
     return ERR_BAD_LEN;
+  }
+  //check if a software transmission should be done
+  if(!(flags&BUS_CMD_FL_NO_SW_TX) && BUS_OA_check(addr)==ERR_BAD_ADDR){
+    //disable interrupts
+    int en=ctl_global_interrupts_disable();
+    //check if buffer is in use
+    if(I2C_rx_buf[I2C_rx_in].stat==I2C_PACKET_STAT_EMPTY){
+      //set flags
+      I2C_rx_buf[I2C_rx_in].flags=BUS_addr_to_flags(addr);
+      //copy data into buffer
+      memcpy(I2C_rx_buf[I2C_rx_in].dat,buff,len);
+      //set length
+      I2C_rx_buf[I2C_rx_in].len=len;
+      //set buffer status
+      I2C_rx_buf[I2C_rx_in].stat=I2C_PACKET_STAT_COMPLETE;
+      //increment index
+      I2C_rx_in++;
+      //check for wraparound
+      if(I2C_rx_in>=BUS_I2C_PACKET_QUEUE_LEN){
+        I2C_rx_in=0;
+      }
+      //enable interrupts
+      if(en){
+        ctl_global_interrupts_enable();
+      }
+      //set flag for new packet
+      ctl_events_set_clear(&BUS_INT_events,BUS_INT_EV_I2C_CMD_RX,0);
+    }else{
+      //TODO: wait for buffer to be free?
+      if(en){
+        ctl_global_interrupts_enable();
+      }
+    }
   }
   //wait for the bus to become free
   if(BUS_I2C_lock()){
