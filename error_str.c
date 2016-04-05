@@ -101,8 +101,8 @@ const char* BUS_cmdtostr(unsigned char cmd){
         return "CMD_GS_DATA";
     case CMD_TEST_MODE:
         return "CMD_TEST_MODE";
-    case CMD_BEACON_ON:
-        return "CMD_BEACON_ON";
+    case CMD_BEACON_ON_OFF:
+        return "CMD_BEACON_ON_OFF";
     case CMD_ACDS_CONFIG:
         return "CMD_ACDS_CONFIG";
     case CMD_IMG_CLEARPIC:
@@ -117,6 +117,10 @@ const char* BUS_cmdtostr(unsigned char cmd){
         return "CMD_LEDL_BLOW_FUSE";
     case CMD_SPI_ABORT:
         return "CMD_SPI_ABORT";
+    case CMD_BEACON_TYPE:
+      return "CMD_BEACON_TYPE";
+    case CMD_HW_RESET:
+      return "CMD_HW_RESET";
     default:
       return "Unknown";
   }
