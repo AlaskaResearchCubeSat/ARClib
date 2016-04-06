@@ -148,6 +148,8 @@ void bus_I2C_isr(void) __ctl_interrupt[USCI_B0_VECTOR]{
           }
           //set flag to notify 
           ctl_events_set_clear(&BUS_INT_events,BUS_INT_EV_I2C_CMD_RX,0);
+          //set event to notify software transmitters
+          ctl_events_set_clear(&arcBus_stat.events,BUS_EV_I2C_RX_DONE,0);
         }
         //set state to idle
         arcBus_stat.i2c_stat.mode=BUS_I2C_IDLE;
