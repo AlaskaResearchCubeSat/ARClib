@@ -50,39 +50,39 @@ const char *BUS_error_str(int error){
 const char* BUS_cmdtostr(unsigned char cmd){
   switch(cmd){
     case CMD_NACK:
-      return "Nack";
+      return "CMD_NACK";
     case CMD_SPI_COMPLETE:
-      return "SPI Complete";
+      return "CMD_SPI_COMPLETE";
     case CMD_SPI_RDY:
-      return "SPI Ready";
+      return "CMD_SPI_RDY";
     case CMD_SUB_ON:
-      return "Subsystem On";
+      return "CMD_SUB_ON";
     case CMD_SUB_OFF:
-      return "Subsystem Off";
+      return "CMD_SUB_OFF";
     case CMD_SUB_POWERUP:
-      return "Subsystem Powerup";
+      return "CMD_SUB_POWERUP";
     case CMD_RESET:
-      return "Reset";
+      return "CMD_RESET";
     case CMD_SUB_STAT:
-      return "Subsystem Stat";
+      return "CMD_SUB_STAT";
     case CMD_SPI_CLEAR:
-      return "SPI Clear";
+      return "CMD_SPI_CLEAR";
     case CMD_EPS_STAT:
-      return "EPS Status";
+      return "CMD_EPS_STAT";
     case CMD_LEDL_STAT:
-      return "LEDL Status";
+      return "CMD_LEDL_STAT";
     case CMD_ACDS_STAT:
-      return "ACDS Status";
+      return "CMD_ACDS_STAT";
     case CMD_COMM_STAT:
-      return "COMM Status";
+      return "CMD_COMM_STAT";
     case CMD_IMG_STAT:
-      return "IMG Status";
+      return "CMD_IMG_STAT";
     case CMD_ASYNC_SETUP:
-      return "Async Setup";
+      return "CMD_ASYNC_SETUP";
     case CMD_ASYNC_DAT:
-      return "Async Data";
+      return "CMD_ASYNC_DAT";
     case CMD_SPI_DATA_ACTION:
-      return "SPI Data Action";
+      return "CMD_SPI_DATA_ACTION";
     case CMD_PING:
         return "CMD_PING";
     case CMD_MAG_DATA:
