@@ -121,6 +121,8 @@ const char* BUS_cmdtostr(unsigned char cmd){
       return "CMD_BEACON_TYPE";
     case CMD_HW_RESET:
       return "CMD_HW_RESET";
+    case CMD_RF_REQ:
+      return "CMD_RF_REQ";
     default:
       return "Unknown";
   }
