@@ -320,14 +320,20 @@ int BUS_cmd_tx(unsigned char addr,void *buff,unsigned short len,unsigned short f
     return ERR_BAD_LEN;
   }
   //check if a software transmission should be done
-  if(!(flags&BUS_CMD_FL_NO_SW_TX) && BUS_OA_check(addr)==ERR_BAD_ADDR){
+  if(!(flags&BUS_CMD_FL_NO_SW_TX) && (BUS_OA_check(addr)==ERR_BAD_ADDR || addr==BUS_ADDR_GC)){
     for(i=0;;i++){
       //disable interrupts
       int en=ctl_global_interrupts_disable();
       //check if buffer is in use
       if(I2C_rx_buf[I2C_rx_in].stat==I2C_PACKET_STAT_EMPTY){
-        //set flags
-        I2C_rx_buf[I2C_rx_in].flags=BUS_addr_to_flags(addr);
+        //check if sending to the general call address
+        if(addr==BUS_ADDR_GC){
+          //set flags for general call address
+          I2C_rx_buf[I2C_rx_in].flags=BUS_FLAGS_SW_GC|BUS_thread_addr_flags;
+        }else{
+          //set flags
+          I2C_rx_buf[I2C_rx_in].flags=BUS_addr_to_flags(addr);
+        }
         //copy data into buffer
         memcpy(I2C_rx_buf[I2C_rx_in].dat,buff,len);
         //set length
