@@ -85,10 +85,6 @@ const char* BUS_cmdtostr(unsigned char cmd){
       return "CMD_SPI_DATA_ACTION";
     case CMD_PING:
         return "CMD_PING";
-    case CMD_MAG_DATA:
-        return "CMD_MAG_DATA";
-    case CMD_MAG_SAMPLE_CONFIG:
-        return "CMD_MAG_SAMPLE_CONFIG";
     case CMD_ERR_REQ:
         return "CMD_ERR_REQ";
     case CMD_IMG_READ_PIC:
