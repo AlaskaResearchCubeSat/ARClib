@@ -110,6 +110,9 @@ enum{BUS_SPI_IDLE=0,BUS_SPI_SLAVE,BUS_SPI_MASTER};
     
 //SPI data actions
 enum{SPI_DAT_ACTION_INVALID=0,SPI_DAT_ACTION_SD_WRITE,SPI_DAT_ACTION_NULL,SPI_DAT_ACTION_PRINT};
+    
+//LP main loop low power modes
+enum{ML_LP_EXIT,ML_LPM0,ML_LPM1,ML_LPM2,ML_LPM3,ML_LPM4};
 
 //SPI Data types
 enum{SPI_BEACON_DAT='B',SPI_IMG_DAT='I',SPI_LEDL_DAT='L',SPI_ERROR_DAT='E',SPI_ACDS_DAT='A'};
@@ -131,6 +134,9 @@ enum{BUS_FLAGS_INVALID_ADDR=0xFF,BUS_FLAGS_ADDR_DISABLED=0xFE,BUS_FLAGS_ADDR_MAS
 
 //ticker for time keeping
 typedef unsigned long ticker;
+
+//low power mode setting in low power main loop
+extern char BUS_lp_mode;
 
 //struct for I2C status
 typedef struct{
@@ -204,14 +210,29 @@ extern const BUS_VERSION ARClib_vstruct;
 
 //setup clocks and low tasking stuff for ARC
 void ARC_setup(void);
+//low voltage version
+void ARC_setup_lv(void);
+
+//setup clocks
+void initCLK(void);
+//setup clocks for low voltage
+void initCLK_lv(void);
+
+//wait for power supply to ramp up then turn on SVS
+short SVS_ramp(unsigned short timeout);
 
 //setup the ARC bus
 void initARCbus(unsigned char addr);
+//setup the ARC bus for the case when all other systems are off
+void initARCbus_pd(unsigned char addr);
 
 //Enter the Idle loop. Start the ARCbus tasks and drop idle tasks to lowest priority
 void mainLoop(void);
+//enter low power main loop. allows the MSP to go into all low power modes
+void mainLoop_lp(void);
 //main loop testing function, start ARC_Bus task then enter Idle task
 void mainLoop_testing(void (*cb)(void));
+
 
 //send packet over the bus
 int BUS_cmd_tx(unsigned char addr,void *buff,unsigned short len,unsigned short flags);

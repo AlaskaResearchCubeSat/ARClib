@@ -21,7 +21,6 @@ void _record_error(unsigned char level,unsigned short source,int err, unsigned s
  
  //initialize the MSP430 Clocks
 void initCLK(void){
-  extern ticker ticker_time;
   //set XT1 load caps, do this first so XT1 starts up sooner
   UCSCTL6=XCAP_0|XT2OFF|XT1DRIVE_3;
   //stop watchdog
@@ -43,10 +42,29 @@ void initCLK(void){
   }
   //use XT1 for ACLK and DCO for MCLK and SMCLK
   UCSCTL4=SELA_0|SELS_3|SELM_3;
- 
-  //set time ticker to zero
-  ticker_time=0;
+  
   //TODO: Maybe wait for LFXT to startup?
+}
+  
+//initialize the MSP430 Clocks for low voltage operation
+void initCLK_lv(void){
+  //set XT1 load caps, do this first so XT1 starts up sooner
+  UCSCTL6=XCAP_0|XT2OFF|XT1DRIVE_3;
+  //kick watchdog
+  WDT_KICK();
+  //set to lowest core voltage
+  if(PMM_setVCore(PMM_CORE_LEVEL_0)){
+    //core voltage could not be set, report error
+    _record_error(ERR_LEV_CRITICAL,BUS_ERR_SRC_STARTUP,STARTUP_LV_ERR_PMM_VCORE,PMMCTL0,0);
+  }
+  //setup clocks
+  //set frequency range
+  UCSCTL1=DCORSEL_3;
+  //setup FLL for 8 MHz operation
+  UCSCTL2=FLLD__1|(244);
+  UCSCTL3=SELREF__XT1CLK|FLLREFDIV__1;
+  //use XT1 for ACLK and DCO for MCLK and SMCLK
+  UCSCTL4=SELA_0|SELS_3|SELM_3;
 }
   
 
@@ -76,6 +94,12 @@ void initSVS(void){
       //setup high side supervisor and monitor
       SVSMHCTL=SVMHE|SVSHE|SVSHRVL_3|SVSMHRRL_7;
     break;
+    //settings for lowest core voltage settings
+    case PMMCOREV_0:
+      //setup high side supervisor and monitor
+      //TODO: setup this correctly
+      SVSMHCTL=SVMHE|SVSHE|SVSHRVL_3|SVSMHRRL_7;
+    break;
     default :
       //unexpected core voltage, did not set SVM
       _record_error(ERR_LEV_CRITICAL,BUS_ERR_SRC_STARTUP,STARTUP_ERR_SVM_UNEXPECTED_VCORE,PMMCTL0,0);
@@ -91,6 +115,7 @@ void initSVS(void){
 
 //low level setup code
 void ARC_setup(void){
+  extern ticker ticker_time;
   //setup error reporting library
   error_init();
   //record reset error first so that it appears first in error log
@@ -107,6 +132,8 @@ void ARC_setup(void){
   }
   //setup clocks
   initCLK();
+  //set time ticker to zero
+  ticker_time=0;
   //setup SVS
   initSVS();
   //setup timerA
@@ -136,6 +163,59 @@ void ARC_setup(void){
   //kick watchdog
   WDT_KICK();
 }
+
+//low level setup code
+void ARC_setup_lv(void){
+  extern ticker ticker_time;
+  //setup error reporting library
+  error_init();
+  //record reset error first so that it appears first in error log
+  //check for reset error
+  if(saved_error.magic==RESET_MAGIC_POST){
+    _record_error(saved_error.level,saved_error.source,saved_error.err,saved_error.argument,0);
+    //clear magic so we are not confused in the future
+    saved_error.magic=RESET_MAGIC_EMPTY;
+  }else{
+    //for some reason there is no error
+    _record_error(ERR_LEV_CRITICAL,BUS_ERR_SRC_STARTUP,STARTUP_ERR_NO_ERROR,0,0);
+    //clear magic so we are not confused in the future
+    saved_error.magic=RESET_MAGIC_EMPTY;
+  }
+  //setup clocks
+  initCLK_lv();
+  //set time ticker to zero
+  ticker_time=0;
+  //setup SVS
+  initSVS();
+  //setup timerA
+  init_timerA();
+  //set timer to increment by 1
+  ctl_time_increment=1;  
+  
+  //setup error handler
+  err_register_handler(BUS_MIN_ERR,BUS_MAX_ERR,err_decode_arcbus,ERR_FLAGS_LIB);
+
+  //init buffer
+  BUS_init_buffer();
+  //========[setup AUX supplies]=======
+  if(AUXCTL0&LOCKAUX){
+    //unlock AUX registers
+    AUXCTL0_H=AUXKEY_H;
+    //disable all supplies but VCC
+    AUXCTL1=AUX2MD|AUX1MD|AUX0MD|AUX0OK;
+    //clear LOCKAUX bit
+    AUXCTL0=AUXKEY;
+    //lock AUX registers
+    AUXCTL0_H=0;
+  }
+
+  //TODO: determine if ctl_timeslice_period should be set to allow preemptive rescheduling
+  
+  //kick watchdog
+  WDT_KICK();
+}
+
+ 
 
 //TODO: determine if these are necessary at startup
 //generate a clock on the I2C bus
@@ -309,6 +389,109 @@ void initARCbus(unsigned char addr){
   //=======[DMA configuration]========
   //prevent the DMA from interrupting read-modify-write instructions
   DMACTL4=DMARMWDIS;
+
+   //create a main task with maximum priority so other tasks can be created without interruption
+  //this should be called before other tasks are created
+  ctl_task_init(&idle_task, 255, "idle");  
+
+  //start timerA
+  start_timerA();
+
+}
+
+void BUS_pin_disable(void){
+    //disable I2C state change interrupts
+    UCB0IE=0;
+    //put UCB0 into reset state
+    UCB0CTL1|=UCSWRST;
+    //set level
+    P3OUT&=~(BUS_PINS_SPI|BUS_PINS_I2C);
+    //enable pull
+    //P3REN|=BUS_PINS_SPI|BUS_PINS_I2C;
+    //select GPIO function
+    P3SEL0&=~(BUS_PINS_SPI|BUS_PINS_I2C);
+}
+
+void BUS_pin_enable(void){
+    //disable pull
+    P3REN&=~(BUS_PINS_SPI|BUS_PINS_I2C);
+    //select special function
+    P3SEL0|=BUS_PINS_I2C;
+    //take UCB0 out of reset state
+    UCB0CTL1&=~UCSWRST;
+    //enable I2C state change interrupts
+    UCB0IE|=UCNACKIE|UCSTTIE|UCSTPIE|UCALIE|UCCLTOIE|UCTXIE0|UCRXIE0|UCTXIE1|UCRXIE1|UCTXIE2|UCRXIE2|UCTXIE3|UCRXIE3;
+}
+
+void initARCbus_pd(unsigned char addr){
+  int i;
+  //kick watchdog
+  WDT_KICK();
+  //===[initialize globals]===
+  //init event sets
+  ctl_events_init(&arcBus_stat.events,0);     //bus events
+  ctl_events_init(&SUB_events,0);             //subsystem events
+  ctl_events_init(&DMA_events,0);
+  //I2C mutex init
+  ctl_mutex_init(&arcBus_stat.i2c_stat.mutex);
+  //set I2C to idle mode
+  arcBus_stat.i2c_stat.mode=BUS_I2C_IDLE;
+  //initialize I2C packet queue to empty state
+  for(i=0;i<BUS_I2C_PACKET_QUEUE_LEN;i++){
+    I2C_rx_buf[i].stat=I2C_PACKET_STAT_EMPTY;
+  }
+  //initialize I2C packet queue pointers
+  I2C_rx_in=I2C_rx_out=0;
+  //set SPI to idle mode
+  arcBus_stat.spi_stat.mode=BUS_SPI_IDLE;
+  //startup with power off
+  powerState=SUB_PWR_OFF;
+  //============[setup I2C]============ 
+  //put UCB0 into reset state
+  UCB0CTLW0=UCSWRST;
+  //setup registers
+  //UCB0CTL0=UCMM|UCMODE_3|UCSYNC;
+  UCB0CTLW0|=UCMM|UCMST|UCMODE_3|UCSYNC|UCSSEL_2;
+  UCB0CTLW1=UCCLTO_3|UCASTP_0|UCGLIT_0;
+  //set baud rate to 50kB/s off of 20MHz SMCLK
+  UCB0BRW=400;
+  //set own address
+  UCB0I2COA0=UCOAEN|addr;
+  //enable general call address
+  UCB0I2COA0|=UCGCEN;
+  //============[setup SPI]============
+  //put UCA0 into reset state
+  UCA0CTLW0|=UCSWRST;
+  //set MSB first, 3 wire SPI mod, 8 bit words, clock off of SMCLK, keep reset
+  UCA0CTLW0=UCMSB|UCMODE_0|UCSYNC|UCSSEL__SMCLK|UCSWRST;
+  //clock UCA0 off of SMCLK
+  UCA0CTL1|=UCSSEL_2;
+  //set SPI clock to 3.2MHz
+  UCA0BRW=5;
+  //leave UCA1 in reset state until it is used for communication
+  
+  //put pins into idle state
+  BUS_pin_disable();
+
+  //======[setup pin interrupts]=======
+
+  //rising edge
+  P2IES=0x00;
+  //falling edge
+  //P1IES=0xFF;
+
+  //it is expected that this is the only processor awake at this time, so pull lines down
+  //pull down resistors
+  P2OUT=0;
+  //pull up resistors
+  //P2OUT=0xFF;
+  //enable pull resistors
+  //P2REN=0xFF;
+  
+  //clear flags
+  P2IFG=0;
+  //enable interrupts
+  P2IE=0xFF;
 
    //create a main task with maximum priority so other tasks can be created without interruption
   //this should be called before other tasks are created
