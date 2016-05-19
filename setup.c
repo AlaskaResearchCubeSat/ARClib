@@ -97,8 +97,8 @@ void initSVS(void){
     //settings for lowest core voltage settings
     case PMMCOREV_0:
       //setup high side supervisor and monitor
-      //TODO: setup this correctly
-      SVSMHCTL=SVMHE|SVSHE|SVSHRVL_3|SVSMHRRL_7;
+      //TODO: are these correct?
+      SVSMHCTL=SVMHE|SVSHE|SVSHRVL_0|SVSMHRRL_1;
     break;
     default :
       //unexpected core voltage, did not set SVM
