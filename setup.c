@@ -52,17 +52,17 @@ void initCLK_lv(void){
   UCSCTL6=XCAP_0|XT2OFF|XT1DRIVE_3;
   //kick watchdog
   WDT_KICK();
-  //set to lowest core voltage
-  if(PMM_setVCore(PMM_CORE_LEVEL_0)){
-    //core voltage could not be set, report error
-    _record_error(ERR_LEV_CRITICAL,BUS_ERR_SRC_STARTUP,STARTUP_LV_ERR_PMM_VCORE,PMMCTL0,0);
-  }
-  //setup clocks
+  //setup clocks first
   //set frequency range
   UCSCTL1=DCORSEL_3;
   //setup FLL for 8 MHz operation
   UCSCTL2=FLLD__1|(244);
   UCSCTL3=SELREF__XT1CLK|FLLREFDIV__1;
+  //set to lowest core voltage
+  if(PMM_setVCore(PMM_CORE_LEVEL_0)){
+    //core voltage could not be set, report error
+    _record_error(ERR_LEV_CRITICAL,BUS_ERR_SRC_STARTUP,STARTUP_LV_ERR_PMM_VCORE,PMMCTL0,0);
+  }
   //use XT1 for ACLK and DCO for MCLK and SMCLK
   UCSCTL4=SELA_0|SELS_3|SELM_3;
 }
