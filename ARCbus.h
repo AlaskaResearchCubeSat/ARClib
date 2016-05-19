@@ -218,9 +218,6 @@ void initCLK(void);
 //setup clocks for low voltage
 void initCLK_lv(void);
 
-//wait for power supply to ramp up then turn on SVS
-short SVS_ramp(unsigned short timeout);
-
 //setup the ARC bus
 void initARCbus(unsigned char addr);
 //setup the ARC bus for the case when all other systems are off
