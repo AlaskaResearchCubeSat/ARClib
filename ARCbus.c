@@ -9,6 +9,8 @@
 
 #include "ARCbus_internal.h"
 
+//This is used to keep track of the current I2C address that the current task claims to
+//be. The __thread modifier specifies that each task has a separate instance of this variable
 __thread unsigned char BUS_thread_addr_flags=0;
 
 //=======================================================================================
