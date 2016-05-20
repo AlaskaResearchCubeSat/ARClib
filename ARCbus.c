@@ -196,6 +196,7 @@ unsigned char *BUS_cmd_init(unsigned char *buf,unsigned char id){
 //check for own address
 int BUS_OA_check(unsigned char addr){
   int i;
+
   //base address for own I2C addresses
   volatile unsigned int * const oa_base=&UCB0I2COA0;
   //check if addr matches any slave address
@@ -292,6 +293,7 @@ static int BUS_I2C_err_track(int error){
 int BUS_cmd_tx(unsigned char addr,void *buff,unsigned short len,unsigned short flags){
   unsigned int e;
   short ret;
+  unsigned char addr_flags;
   int i;
   unsigned char resp[2];
   //check address
@@ -322,7 +324,7 @@ int BUS_cmd_tx(unsigned char addr,void *buff,unsigned short len,unsigned short f
     return ERR_BAD_LEN;
   }
   //check if a software transmission should be done
-  if(!(flags&BUS_CMD_FL_NO_SW_TX) && (BUS_OA_check(addr)==ERR_BAD_ADDR || addr==BUS_ADDR_GC)){
+  if(!(flags&BUS_CMD_FL_NO_SW_TX) && (BUS_OA_check(addr)==ERR_BAD_ADDR && addr==BUS_ADDR_GC)){
     for(i=0;;i++){
       //disable interrupts
       int en=ctl_global_interrupts_disable();
@@ -330,8 +332,16 @@ int BUS_cmd_tx(unsigned char addr,void *buff,unsigned short len,unsigned short f
       if(I2C_rx_buf[I2C_rx_in].stat==I2C_PACKET_STAT_EMPTY){
         //check if sending to the general call address
         if(addr==BUS_ADDR_GC){
+          //get thread address flags
+          addr_flags=BUS_thread_addr_flags;
+          //check if own address not set
+          if(addr_flags==0){
+            //default to ADDR0
+            //TODO: is this always correct
+            addr_flags=CMD_PARSE_ADDR0;
+          }
           //set flags for general call address
-          I2C_rx_buf[I2C_rx_in].flags=BUS_FLAGS_SW_GC|BUS_thread_addr_flags;
+          I2C_rx_buf[I2C_rx_in].flags=BUS_FLAGS_SW_GC|addr_flags;
         }else{
           //set flags
           I2C_rx_buf[I2C_rx_in].flags=BUS_addr_to_flags(addr);
