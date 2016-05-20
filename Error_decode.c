@@ -74,6 +74,8 @@ const char *err_decode_arcbus(char buf[150], unsigned short source,int err, unsi
           return buf;
         case MAIN_LOOP_ERR_UNEXPECTED_NACK_EV:
           return "ARCbus Main Loop : Unpected Tx NACK event";
+        case MAIN_LOOP_ERR_I2C_RX_BUSY_CNT:
+          return "ARCbus Main Loop : Maximum Rx Buffer Busy count reached";
       }
     break; 
     case BUS_ERR_SRC_STARTUP:

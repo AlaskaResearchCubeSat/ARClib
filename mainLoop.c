@@ -9,6 +9,8 @@
 #include <Error.h>
 #include "ARCbus_internal.h"
 
+#define MAX_I2C_BUF_BUSY    (10)
+
 //record error function, used to save an error without it cluttering up the terminal
 void record_error(unsigned char level,unsigned short source,int err, unsigned short argument,ticker time);
 
@@ -28,6 +30,9 @@ CTL_EVENT_SET_t SUB_events;
 
 //address of SPI slave during transaction
 static unsigned char SPI_addr=0;
+
+//keep track of how many times the bus is busy
+static int i2c_buf_busy_cnt;
 
 static void ARC_bus_helper(void *p);
 
@@ -185,7 +190,8 @@ static void ARC_bus_run(void *p) __toplevel{
   ctl_events_init(&BUS_helper_events,0);
   //start helper task
   ctl_task_run(&ARC_bus_helper_task,BUS_PRI_ARCBUS_HELPER,ARC_bus_helper,NULL,"ARC_Bus_helper",sizeof(helper_stack)/sizeof(helper_stack[0])-2,helper_stack+1,0);
-  
+  //zero buffer busy count
+  i2c_buf_busy_cnt=0;
   //event loop
   for(;;){
     //wait for something to happen
@@ -257,6 +263,8 @@ static void ARC_bus_run(void *p) __toplevel{
             //re-enable interrupts
             ctl_global_interrupts_enable();
         }else{
+        //zero buffer busy count
+        i2c_buf_busy_cnt=0;
         //clear response
         resp=0;
         //get len
@@ -680,6 +688,12 @@ static void ARC_bus_run(void *p) __toplevel{
     //check for errors and report
     if(e&BUS_INT_EV_I2C_RX_BUSY){
       report_error(ERR_LEV_ERROR,BUS_ERR_SRC_MAIN_LOOP,MAIN_LOOP_ERR_I2C_RX_BUSY,0);
+      //keep track of rx busy errors
+      i2c_buf_busy_cnt++;
+      //check for too many errors
+      if(i2c_buf_busy_cnt>MAX_I2C_BUF_BUSY){
+        reset(ERR_LEV_CRITICAL,BUS_ERR_SRC_MAIN_LOOP,MAIN_LOOP_ERR_I2C_RX_BUSY_CNT,i2c_buf_busy_cnt);
+      }
     }
     if(e&BUS_INT_EV_I2C_ARB_LOST){
       report_error(ERR_LEV_DEBUG,BUS_ERR_SRC_MAIN_LOOP,MAIN_LOOP_ERR_I2C_ARB_LOST,0);
