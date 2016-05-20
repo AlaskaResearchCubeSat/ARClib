@@ -354,8 +354,14 @@ int BUS_cmd_tx(unsigned char addr,void *buff,unsigned short len,unsigned short f
         }
         //set flag for new packet
         ctl_events_set_clear(&BUS_INT_events,BUS_INT_EV_I2C_CMD_RX,0);
-        //return here because transaction is complete
-        return RET_SUCCESS;
+        //check for general call address
+        if(addr==BUS_ADDR_GC){
+          //exit loop and send normally
+          break;
+        }else{
+          //return here because transaction is complete
+          return RET_SUCCESS;
+        }
       }else{
         //re-enable interrupts
         if(en){
