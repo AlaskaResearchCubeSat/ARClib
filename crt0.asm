@@ -41,10 +41,7 @@
 __reset proc
 
 ; Kick Watchdog use VLO for clock source so we can reset if crystal is not present
-        ;mov.w   #WDTPW+WDTCNTCL+WDTSSEL_2+WDTIS_2, &WDTCTL
-      
-; TESTING: disable watchdog
-        mov.w #WDTPW+WDTHOLD, &WDTCTL
+        mov.w   #WDTPW+WDTCNTCL+WDTSSEL_2+WDTIS_2, &WDTCTL
 
 ; Set up stack.
         mov.w   #___RAM_Address+___RAM_Size, sp
