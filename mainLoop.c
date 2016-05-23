@@ -591,36 +591,33 @@ static void ARC_bus_run(void *p) __toplevel{
               parse_mask=flags;
               //set response to unknown command
               resp=ERR_UNKNOWN_CMD;
-              //check if we received a software general call
-              if(parse_mask&BUS_FLAGS_SW_GC){
-                //loop through list and check for commands
-                while(parse_ptr!=NULL && ((BUS_FLAGS_SW_GC|CMD_PARSE_GC_ADDR)&parse_mask || resp==ERR_UNKNOWN_CMD)){                
-                  //check for general call command
-                  if((BUS_FLAGS_SW_GC|CMD_PARSE_GC_ADDR)&parse_mask){
-                    //check for the sender of a software GC
-                    if((BUS_FLAGS_SW_GC&parse_mask) && parse_ptr->flags&(parse_mask&(~BUS_FLAGS_SW_GC))){
-                      //this callback handles the software GC address that sent the packet, skip this callback
-                    }else{
-                      //check if this callback handles GC addresses
-                      if(CMD_PARSE_GC_ADDR&parse_ptr->flags){
-                        int tmp_resp;
-                        //check for subsystem command
-                        tmp_resp=parse_ptr->cb(addr,cmd,ptr,len,flags);
-                        //overwrite resp if resp is not success
-                        if(resp!=RET_SUCCESS){
-                          resp=tmp_resp;
-                        }
+              //loop through list and check for commands
+              while(parse_ptr!=NULL && ((BUS_FLAGS_SW_GC|CMD_PARSE_GC_ADDR)&parse_mask || resp==ERR_UNKNOWN_CMD)){                
+                //check for general call command
+                if((BUS_FLAGS_SW_GC|CMD_PARSE_GC_ADDR)&parse_mask){
+                  //check for the sender of a software GC
+                  if((BUS_FLAGS_SW_GC&parse_mask) && parse_ptr->flags&(parse_mask&(~BUS_FLAGS_SW_GC))){
+                    //this callback handles the software GC address that sent the packet, skip this callback
+                  }else{
+                    //check if this callback handles GC addresses
+                    if(CMD_PARSE_GC_ADDR&parse_ptr->flags){
+                      int tmp_resp;
+                      //check for subsystem command
+                      tmp_resp=parse_ptr->cb(addr,cmd,ptr,len,flags);
+                      //overwrite resp if resp is not success
+                      if(resp!=RET_SUCCESS){
+                        resp=tmp_resp;
                       }
                     }
-                    //check if flags match
-                    if(parse_ptr->flags&parse_mask){
-                      //check for subsystem command
-                      resp=parse_ptr->cb(addr,cmd,ptr,len,flags);
-                    }
                   }
-                  //get next callback structure
-                  parse_ptr=parse_ptr->next;
+                  //check if flags match
+                  if(parse_ptr->flags&parse_mask){
+                    //check for subsystem command
+                    resp=parse_ptr->cb(addr,cmd,ptr,len,flags);
+                  }
                 }
+                //get next callback structure
+                parse_ptr=parse_ptr->next;
               }
             break;
           }
