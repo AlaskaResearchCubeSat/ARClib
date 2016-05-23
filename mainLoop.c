@@ -610,6 +610,7 @@ static void ARC_bus_run(void *p) __toplevel{
                       }
                     }
                   }
+                }else{//not a general call command, find the right callback
                   //check if flags match
                   if(parse_ptr->flags&parse_mask){
                     //check for subsystem command
