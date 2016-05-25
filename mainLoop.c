@@ -947,13 +947,13 @@ void mainLoop_lp(void){
               //stop watchdog so we can go into LPM4
               WDT_STOP();
               //TODO: probably should disable timers or something here
+              //TODO: look at clock request logic to see what needs to be shutdown
               //LPM4
               LPM4;
               //Kick watchdog as we come out  
               WDT_STOP();
           break;
           default:
-            //TODO: do something here?
             //default to LPM0
             BUS_lp_mode=ML_LPM0;
       }
