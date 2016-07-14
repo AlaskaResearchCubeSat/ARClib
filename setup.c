@@ -23,8 +23,6 @@ void _record_error(unsigned char level,unsigned short source,int err, unsigned s
 void initCLK(void){
   //set XT1 load caps, do this first so XT1 starts up sooner
   UCSCTL6=XCAP_0|XT2OFF|XT1DRIVE_3;
-  //stop watchdog
-  //WDT_STOP();
   //kick watchdog
   WDT_KICK();
   //set higher core voltage
