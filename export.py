@@ -44,7 +44,12 @@ args = parser.parse_args()
 lib=os.path.join(args.prefix,"lib")
 include=os.path.join(args.prefix,"include")
 basename="BUSlib"
-gitpath="C:\\Program Files (x86)\\Git\\bin\\git.exe"
+gitpaths=("C:\\Program Files (x86)\\Git\\bin\\git.exe","C:\\Program Files\\Git\\bin\\git.exe")
+gitpath="git"
+for p in gitpaths:
+    if os.path.exists(p):
+        break
+
 
 #check if there are uncommited changes
 rc=subprocess.call([gitpath,"-C",inputDir,"diff-index","--quiet","HEAD"])
