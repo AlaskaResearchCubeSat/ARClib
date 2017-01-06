@@ -21,15 +21,15 @@ args = parser.parse_args()
 
 try:
 	#touple of paths to look for git at
-        gitpaths=("C:\\Program Files\\Git\\bin\\git.exe","C:\\Program Files (x86)\\Git\\bin\\git.exe")
-        #fallback git path
-        git_str="git"
-        #loop through paths and see if the file exists
-        for p in gitpaths:
-            #check if file exists
-            if os.path.exists(p):
-                #yes? done
-                break
+	gitpaths=("C:\\Program Files\\Git\\bin\\git.exe","C:\\Program Files (x86)\\Git\\bin\\git.exe")
+	#fallback git path
+	git_str="git"
+	#loop through paths and see if the file exists
+	for p in gitpaths:
+		#check if file exists
+		if os.path.exists(p):
+			#yes? done
+			break
 
 	#call git describe to get version strin
 	p=subprocess.Popen([git_str,"-C",inputDir,"describe","--dirty=-dty","--always","--match=v*.*"],stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
